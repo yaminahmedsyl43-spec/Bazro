@@ -111,6 +111,8 @@ a{
 <div id="cart"></div>
 <div class="total" id="total">Total: £0.00</div>
 <button onclick="checkout()">Checkout</button>
+<button onclick="downloadReceipt()">📥 Download Receipt</button>
+<button onclick="downloadDailyReceipts()">📦 Download Today Sales</button>
 <a href="history.html">📊 Sales History</a>
 </div>
 </div>
@@ -162,10 +164,21 @@ function changeQty(b,delta){
 
 function renderCart(){
   let t=0;
-  cart.innerHTML=cart.map(i=>{
+  const cartDiv=document.getElementById("cart");
+  cartDiv.innerHTML=cart.map(i=>{
     let l=i.price*i.qty; t+=l;
     return `<div class='cart-item'>
-      <span>${i.name}</span>
+      <span><strong>${i.name}</strong><br><small>£${i.price.toFixed(2)} each</small></span>
+      <div class='qty'>
+        <button onclick="changeQty('${i.barcode}',-1)">−</button>
+        <strong>${i.qty}</strong>
+        <button onclick="changeQty('${i.barcode}',1)">+</button>
+      </div>
+      <span><strong>£${l.toFixed(2)}</strong></span>
+    </div>`;
+  }).join('');
+  total.innerText=`Total: £${t.toFixed(2)}`;
+}</span>
       <div class='qty'>
         <button onclick="changeQty('${i.barcode}',-1)">−</button>
         <strong>${i.qty}</strong>
@@ -178,8 +191,69 @@ function renderCart(){
 }
 
 function checkout(){
-  if(!cart.length) return;
-  sales.push({date:new Date().toLocaleString(),items:cart});
+  if(!cart.length) return alert('Cart empty');
+  const sale={
+    date:new Date().toLocaleString(),
+    items:JSON.parse(JSON.stringify(cart))
+  };
+  sales.push(sale);
+  localStorage.setItem('sales',JSON.stringify(sales));
+  cart=[];
+  renderCart();
+  alert('Sale saved');
+}
+
+function downloadReceipt(){
+  if(!sales.length) return;
+  const s=sales[sales.length-1];
+  let text=`BAZRO RECEIPT
+${s.date}
+----------------------
+`;
+  let total=0;
+  s.items.forEach(i=>{
+    let l=i.price*i.qty; total+=l;
+    text+=`${i.qty}x ${i.name}  £${l.toFixed(2)}
+`;
+  });
+  text+=`----------------------
+TOTAL: £${total.toFixed(2)}`;
+  downloadText(text,`receipt_${Date.now()}.txt`);
+}
+
+function downloadDailyReceipts(){
+  if(!sales.length) return;
+  let today=new Date().toLocaleDateString();
+  let text=`BAZRO DAILY SALES (${today})
+=====================
+`;
+  let grand=0;
+  sales.filter(s=>s.date.includes(today)).forEach((s,idx)=>{
+    let total=0;
+    text+=`
+Sale #${idx+1} - ${s.date}
+`;
+    s.items.forEach(i=>{
+      let l=i.price*i.qty; total+=l;
+      text+=`${i.qty}x ${i.name} £${l.toFixed(2)}
+`;
+    });
+    text+=`Subtotal: £${total.toFixed(2)}
+`;
+    grand+=total;
+  });
+  text+=`
+GRAND TOTAL: £${grand.toFixed(2)}`;
+  downloadText(text,`daily_sales_${today.replace(/\//g,'-')}.txt`);
+}
+
+function downloadText(text,filename){
+  const blob=new Blob([text],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=filename;
+  a.click();
+});
   localStorage.setItem('sales',JSON.stringify(sales));
   cart=[];
   renderCart();
