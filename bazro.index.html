@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bazro POS</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        :root {
+            --primary: #2a5298;
+            --bg: #f4f7f6;
+            --card-bg: #ffffff;
+            --text: #333;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding-bottom: 50px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            text-align: center;
+            padding: 25px 15px;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .container { padding: 15px; max-width: 500px; margin: auto; }
+
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        h2 { margin-top: 0; font-size: 1.2rem; color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px; }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+            box-sizing: border-box;
+            -webkit-appearance: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            margin: 8px 0;
+            border-radius: 10px;
+            border: none;
+            background: var(--primary);
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        button:active { transform: scale(0.98); opacity: 0.9; }
+        .btn-secondary { background: #6c757d; }
+        .btn-scan { background: #00b894; }
+
+        #reader { 
+            width: 100%; 
+            border-radius: 12px; 
+            overflow: hidden; 
+            margin: 10px 0;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .total-section {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px solid var(--primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .total-price { font-size: 22px; font-weight: 900; color: var(--primary); }
+
+        footer { text-align: center; color: #888; font-size: 12px; margin-top: 20px; }
+
+        /* Scanning UI enhancement */
+        #reader__status_span { color: black !important; }
+    </style>
+</head>
+<body>
+
+<header>BAZRO POS</header>
+
+<div class="container">
+    <div class="card">
+        <h2>Inventory Management</h2>
+        <div id="reader"></div>
+        <button class="btn-scan" onclick="startScanner('barcode')">📷 Scan New Barcode</button>
+        <input id="barcode" placeholder="Barcode ID">
+        <input id="name" placeholder="Product Name">
+        <input id="price" type="number" step="0.01" placeholder="Price (£)">
+        <input id="stock" type="number" placeholder="Stock Quantity">
+        <button onclick="addProduct()">Save to Inventory</button>
+    </div>
+
+    <div class="card">
+        <h2>New Transaction</h2>
+        <button class="btn-scan" onclick="startScanner('sellBarcode')">📷 Scan to Add</button>
+        <input id="sellBarcode" placeholder="Enter Barcode">
+        <button class="btn-secondary" onclick="addToCart()">Add to Cart</button>
+
+        <h3>Current Basket</h3>
+        <div id="cartList">
+            </div>
+
+        <div class="total-section">
+            <span>Total Amount:</span>
+            <span class="total-price" id="total">£0.00</span>
+        </div>
+        <button style="background: #27ae60; margin-top: 20px;" onclick="checkout()">Complete Sale & Print Receipt</button>
+    </div>
+</div>
+
+<footer>Designed by Yamin &bull; POS v1.0</footer>
+
+<script>
+    let products = JSON.parse(localStorage.getItem("products")) || {};
+    let cart = [];
+    let total = 0;
+    let html5QrCode;
+
+    function addProduct() {
+        const b = document.getElementById('barcode').value;
+        const n = document.getElementById('name').value;
+        const p = document.getElementById('price').value;
+        const s = document.getElementById('stock').value;
+
+        if(!b || !n || !p) return alert("Please fill in Barcode, Name, and Price.");
+
+        products[b] = { 
+            name: n, 
+            price: parseFloat(p), 
+            stock: parseInt(s) || 0 
+        };
+
+        localStorage.setItem("products", JSON.stringify(products));
+        alert("Product saved successfully!");
+        
+        // Clear fields
+        ['barcode', 'name', 'price', 'stock'].forEach(id => document.getElementById(id).value = "");
+    }
+
+    function addToCart() {
+        const b = document.getElementById('sellBarcode').value;
+        const p = products[b];
+
+        if(!p) return alert("Product not found in inventory!");
+        if(p.stock <= 0) return alert("Error: Out of stock!");
+
+        cart.push({ name: p.name, price: p.price });
+        p.stock--;
+        total += p.price;
+
+        updateCartUI();
+        localStorage.setItem("products", JSON.stringify(products));
+        document.getElementById('sellBarcode').value = "";
+    }
+
+    function updateCartUI() {
+        const list = document.getElementById("cartList");
+        list.innerHTML = cart.map(item => `
+            <div class="cart-item">
+                <span>${item.name}</span>
+                <span>£${item.price.toFixed(2)}</span>
+            </div>
+        `).join('');
+
+        document.getElementById("total").innerText = `£${total.toFixed(2)}`;
+    }
+
+    function checkout() {
+        if(cart.length === 0) return alert("Basket is empty!");
+
+        let receipt = `--- BAZRO POS RECEIPT ---\n`;
+        receipt += `Date: ${new Date().toLocaleString()}\n\n`;
+        cart.forEach(item => {
+            receipt += `${item.name.padEnd(15)} £${item.price.toFixed(2)}\n`;
+        });
+        receipt += `\n-------------------------\n`;
+        receipt += `TOTAL: £${total.toFixed(2)}\n`;
+        receipt += `\nThank you for your business!`;
+
+        alert(receipt);
+
+        // Reset state
+        cart = [];
+        total = 0;
+        updateCartUI();
+    }
+
+    function startScanner(targetId) {
+        if (html5QrCode) {
+            html5QrCode.stop().then(() => { proceedWithStart(targetId); });
+        } else {
+            proceedWithStart(targetId);
+        }
+    }
+
+    function proceedWithStart(targetId) {
+        html5QrCode = new Html5Qrcode("reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+
+        html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            (decodedText) => {
+                document.getElementById(targetId).value = decodedText;
+                html5QrCode.stop();
+                if(targetId === 'sellBarcode') addToCart();
+            }
+        ).catch(err => {
+            alert("Camera Error: Ensure you are using HTTPS and have granted permissions.");
+        });
+    }
+</script>
+
+</body>
+</html>
