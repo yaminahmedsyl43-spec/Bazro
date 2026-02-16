@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Sales History</title>
+<style>
+body{font-family:sans-serif;background:#f5f5f5;padding:15px;}
+.card{background:#fff;padding:12px;border-radius:10px;margin-bottom:12px;}
+h3{margin:0 0 6px}
+</style>
+</head>
+<body>
+
+<h2>Sales History</h2>
+<div id="list"></div>
+
+<script>
+let sales=JSON.parse(localStorage.getItem("sales"))||[];
+let list=document.getElementById("list");
+
+list.innerHTML=sales.map(s=>{
+  let total=0;
+  let items=s.items.map(i=>{
+    total+=i.price*i.qty;
+    return `${i.qty}x ${i.name}`;
+  }).join("<br>");
+  return `<div class="card">
+    <h3>${s.date}</h3>
+    ${items}
+    <strong><br>Total: £${total.toFixed(2)}</strong>
+  </div>`;
+}).join("");
+</script>
+
+</body>
+</html>
