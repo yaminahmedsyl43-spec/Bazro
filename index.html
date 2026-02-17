@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Bazro POS - Pro Edition</title>
+<title>Bazro POS - Invoice Edition</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -89,8 +89,8 @@
         <div id="cart-display"></div>
         <div class="total-area" id="grand-total">Total: £0.00</div>
 
-        <button style="background:#27ae60" onclick="checkout()">Complete Transaction</button>
-        <button class="btn-pdf" onclick="generatePDF()">📥 Download PDF Receipt</button>
+        <button style="background:#27ae60" onclick="checkout()">Complete Sale</button>
+        <button class="btn-pdf" onclick="generatePDF()">📥 Share Bazro Invoice</button>
         <button class="btn-sec" onclick="downloadDaily()">Daily Report (.txt)</button>
     </div>
 </div>
@@ -181,75 +181,78 @@ function checkout() {
     sales.push({ date: new Date().toLocaleString(), items: [...cart] });
     localStorage.setItem("sales", JSON.stringify(sales));
     notify("SALE RECORDED", "#27ae60");
-    // We don't clear the cart here yet so the user can download the PDF first if they want.
 }
 
-/* --- PDF GENERATION --- */
-function generatePDF() {
+/* --- PDF GENERATION & SHARING --- */
+async function generatePDF() {
     if (!cart.length) return notify("No items to print", "red");
     
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({
-        orientation: 'p',
-        unit: 'mm',
-        format: 'a4'
-    });
+    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
 
-    // Styles & Header
+    // Header
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(28);
-    doc.text("BAZRO", 105, 30, { align: "center" });
+    doc.setFontSize(26);
+    doc.text("BAZRO INVOICE", 105, 30, { align: "center" });
     
-    doc.setFontSize(12);
+    doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text("9a Commercial St, Camborne TR14 8AT", 105, 38, { align: "center" });
-    doc.text("Receipt Date: " + new Date().toLocaleString(), 105, 45, { align: "center" });
+    doc.text("9a Commercial St, Camborne TR14 8AT", 105, 37, { align: "center" });
+    doc.text("Date: " + new Date().toLocaleString(), 105, 43, { align: "center" });
     
     doc.setLineWidth(0.5);
-    doc.line(20, 52, 190, 52);
+    doc.line(20, 50, 190, 50);
 
-    // Table Headers
+    // Table
     doc.setFont("helvetica", "bold");
-    doc.text("Item Name", 25, 62);
-    doc.text("Qty", 130, 62);
-    doc.text("Price", 150, 62);
-    doc.text("Total", 175, 62);
+    doc.text("Item", 25, 60);
+    doc.text("Qty", 130, 60);
+    doc.text("Price", 150, 60);
+    doc.text("Total", 175, 60);
+    doc.line(20, 63, 190, 63);
     
-    doc.line(20, 65, 190, 65);
     doc.setFont("helvetica", "normal");
-
-    let y = 75;
+    let y = 73;
     let grandTotal = 0;
 
     cart.forEach(item => {
         let lineTotal = item.qty * item.price;
         grandTotal += lineTotal;
-
         doc.text(item.name, 25, y);
         doc.text(item.qty.toString(), 133, y);
         doc.text("£" + item.price.toFixed(2), 150, y);
         doc.text("£" + lineTotal.toFixed(2), 175, y);
         y += 10;
-        
-        // Add new page if list is too long
         if (y > 270) { doc.addPage(); y = 20; }
     });
 
     doc.line(20, y, 190, y);
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16); doc.setFont("helvetica", "bold");
     doc.text("GRAND TOTAL: £" + grandTotal.toFixed(2), 190, y + 12, { align: "right" });
 
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "italic");
-    doc.text("Thank you for shopping at Bazro!", 105, y + 30, { align: "center" });
-
-    doc.save(`Bazro_Receipt_${Date.now()}.pdf`);
+    const fileName = `Bazro_Invoice_${Date.now()}.pdf`;
     
-    // Auto-clear after saving
-    cart = [];
-    renderCart();
-    stopScan();
+    // Get PDF as blob for sharing
+    const pdfBlob = doc.output('blob');
+    const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+    // Web Share API
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+            await navigator.share({
+                files: [file],
+                title: 'Bazro Invoice',
+                text: 'Thank you for shopping at Bazro!'
+            });
+            cart = []; renderCart(); stopScan();
+        } catch (err) {
+            doc.save(fileName); // Fallback to download
+        }
+    } else {
+        doc.save(fileName); // Fallback for desktop/older phones
+        notify("Saved to Downloads", "blue");
+        cart = []; renderCart(); stopScan();
+    }
 }
 
 function downloadDaily() {
