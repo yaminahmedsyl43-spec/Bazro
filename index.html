@@ -11,7 +11,7 @@
 
 <style>
     :root { --orange: #ff512f; --yellow: #f09819; --dark: #141e30; --green: #27ae60; --red: #e74c3c; --gold: #D4AF37; }
-    body { margin: 0; font-family: 'Segoe UI', Roboto, sans-serif; background: #f4f7f6; padding-bottom: 110px; color: #333; }
+    body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding-bottom: 110px; color: #333; }
     header { background: linear-gradient(135deg, #141e30, #243b55); padding: 18px; text-align: center; color: white; font-size: 24px; font-weight: 800; letter-spacing: 2px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
     
     .container { max-width: 500px; margin: auto; padding: 15px; }
@@ -22,41 +22,43 @@
     h3 { margin-top: 0; color: var(--dark); border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; font-size: 19px; }
     
     input { width: 100%; padding: 14px; margin: 10px 0; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; box-sizing: border-box; }
-    button { width: 100%; padding: 15px; margin: 8px 0; border-radius: 10px; border: none; background: linear-gradient(135deg, var(--orange), var(--yellow)); color: white; font-weight: bold; font-size: 16px; cursor: pointer; }
+    button { width: 100%; padding: 15px; margin: 8px 0; border-radius: 10px; border: none; background: linear-gradient(135deg, var(--orange), var(--yellow)); color: white; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
+    button:active { transform: scale(0.98); }
     
     .btn-sec { background: #34495e; }
     .btn-stop { background: var(--red); }
     .btn-pdf { background: #1a1a1a; border: 1px solid var(--gold); color: var(--gold); }
     .btn-qr { background: var(--gold); color: #000; }
-    .btn-small { padding: 8px; font-size: 12px; width: 48%; display: inline-block; margin: 4px 1%; }
+    .btn-danger { background: #c0392b; font-size: 12px; padding: 8px; width: auto; margin: 5px 0; }
 
-    #qr-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: none; align-items: center; justify-content: center; flex-direction: column; color: white; }
+    /* Overlay for QR */
+    #qr-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: none; align-items: center; justify-content: center; flex-direction: column; color: white; text-align: center; }
     #qr-code-box { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; }
 
+    /* Basket/Qty Controls */
     .qty-controls { display: flex; align-items: center; gap: 12px; background: #f8f9fa; padding: 5px 10px; border-radius: 20px; }
-    .btn-qty { width: 28px; height: 28px; background: var(--dark); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; border: none; }
+    .btn-qty { width: 30px; height: 30px; background: var(--dark); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; padding: 0; }
     
-    nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #eee; z-index: 1000; height: 75px; }
-    nav button { flex: 1; background: none; color: #95a5a6; border-top: 4px solid transparent; font-size: 11px; text-transform: uppercase; }
+    nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #eee; z-index: 1000; height: 75px; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); }
+    nav button { flex: 1; background: none; color: #95a5a6; border-top: 4px solid transparent; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding: 0; margin: 0; border-radius: 0; }
     nav button.active-nav { color: var(--orange); border-top-color: var(--orange); }
 
-    #status-msg { position: fixed; top: 90px; left: 50%; transform: translateX(-50%); padding: 12px 30px; border-radius: 50px; color: white; font-weight: 600; z-index: 9999; opacity: 0; transition: 0.4s; pointer-events: none; }
+    #status-msg { position: fixed; top: 90px; left: 50%; transform: translateX(-50%); padding: 12px 30px; border-radius: 50px; color: white; font-weight: 600; z-index: 9999; opacity: 0; transition: 0.4s; pointer-events: none; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     
     .row { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #f0f0f0; align-items: center; }
-    .sale-history-item { padding: 10px 0; border-bottom: 1px solid #eee; }
-    .sale-history-item:last-child { border-bottom: none; }
-
     #scanner-view { background: #000; border-radius: 20px; display: none; margin-bottom: 15px; padding: 10px; text-align: center; }
-    #reader { width: 100%; min-height: 250px; }
+    #reader { width: 100%; min-height: 250px; border-radius: 10px; overflow: hidden; }
+
+    .history-card { border-left: 5px solid var(--gold); padding: 10px; margin-bottom: 15px; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 </style>
 </head>
 <body>
 
 <div id="qr-overlay" onclick="this.style.display='none'">
-    <h2 style="color:var(--gold)">SCAN TO DOWNLOAD</h2>
+    <h2 style="color:var(--gold)">CUSTOMER SCAN</h2>
     <div id="qr-code-box"></div>
-    <p>Customer scan to receive PDF</p>
-    <button style="width:200px" onclick="document.getElementById('qr-overlay').style.display='none'">CLOSE</button>
+    <p>Point phone camera to download invoice</p>
+    <button style="width:150px" onclick="document.getElementById('qr-overlay').style.display='none'">DONE</button>
 </div>
 
 <div id="status-msg"></div>
@@ -65,7 +67,7 @@
 <div class="container">
     <div id="scanner-view">
         <div id="reader"></div>
-        <button id="flash-btn" style="display:none; background:#f1c40f; color:000; margin-bottom:10px;" onclick="toggleFlash()">🔦 FLASH: OFF</button>
+        <button id="flash-btn" style="display:none; background:#f1c40f; color:#000; margin-bottom:10px;" onclick="toggleFlash()">🔦 FLASH: OFF</button>
         <button class="btn-stop" onclick="stopScan()">CLOSE CAMERA</button>
     </div>
 
@@ -76,7 +78,6 @@
             <input id="sell_barcode" placeholder="Enter Barcode Manually">
             <button class="btn-sec" onclick="addToCart()">ADD TO BASKET</button>
         </div>
-
         <div class="card">
             <h3>Basket</h3>
             <div id="cart-list"></div>
@@ -85,27 +86,12 @@
             <button class="btn-qr" onclick="generateInvoiceQR(null)">📱 CUSTOMER SCAN (QR)</button>
             <button class="btn-pdf" onclick="downloadLuxuryInvoice(null)">📄 DOWNLOAD PDF</button>
         </div>
-
-        <div class="card">
-            <h3>Recent Sales</h3>
-            <div id="recent-sales-list"></div>
-        </div>
     </div>
 
-    <div id="page-stock" class="page">
+    <div id="page-history" class="page">
         <div class="card">
-            <h3>Inventory</h3>
-            <button onclick="startScan('add')">📷 SCAN NEW PRODUCT</button>
-            <input id="p_barcode" placeholder="Barcode ID">
-            <input id="p_name" placeholder="Product Name">
-            <input id="p_price" type="number" step="0.01" placeholder="Price £">
-            <button onclick="addProduct()">SAVE PRODUCT</button>
-        </div>
-        <div class="card">
-            <h3>Cloud Backup</h3>
-            <button class="btn-sec" onclick="exportData()">💾 EXPORT BACKUP</button>
-            <button class="btn-sec" onclick="document.getElementById('importFile').click()">📂 IMPORT BACKUP</button>
-            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
+            <h3>Sales History</h3>
+            <div id="history-content">No sales yet.</div>
         </div>
     </div>
 
@@ -119,10 +105,28 @@
             <button onclick="previewReport()">GENERATE SUMMARY</button>
         </div>
     </div>
+
+    <div id="page-stock" class="page">
+        <div class="card">
+            <h3>Inventory Management</h3>
+            <button onclick="startScan('add')">📷 SCAN NEW PRODUCT</button>
+            <input id="p_barcode" placeholder="Barcode ID">
+            <input id="p_name" placeholder="Product Name">
+            <input id="p_price" type="number" step="0.01" placeholder="Price £">
+            <button onclick="addProduct()">SAVE PRODUCT</button>
+        </div>
+        <div class="card">
+            <h3>Backup / Restore</h3>
+            <button class="btn-sec" onclick="exportData()">💾 EXPORT DATABASE</button>
+            <button class="btn-sec" onclick="document.getElementById('importFile').click()">📂 IMPORT DATABASE</button>
+            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
+        </div>
+    </div>
 </div>
 
 <nav>
     <button id="nav-sales" class="active-nav" onclick="showPage('sales')">SHOP</button>
+    <button id="nav-history" onclick="showPage('history')">HISTORY</button>
     <button id="nav-report" onclick="showPage('report')">REPORT</button>
     <button id="nav-stock" onclick="showPage('stock')">STOCK</button>
 </nav>
@@ -142,7 +146,7 @@ function showPage(p) {
     document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
     document.getElementById('page-'+p).classList.add('active-page');
     document.getElementById('nav-'+p).classList.add('active-nav');
-    if(p === 'sales') renderRecentSales();
+    if(p === 'history') renderHistory();
     stopScan();
 }
 
@@ -152,7 +156,7 @@ function notify(msg, color) {
     setTimeout(() => el.style.opacity = "0", 2500);
 }
 
-// INVOICE LOGIC (Works for Cart or History)
+// INVOICE BUILDER
 function createInvoiceData(historyIndex) {
     let items = (historyIndex === null) ? cart : sales[historyIndex].items;
     if (!items.length) return null;
@@ -195,7 +199,7 @@ function generateInvoiceQR(idx) {
     document.getElementById("qr-overlay").style.display = "flex";
 }
 
-// SHOP LOGIC
+// SHOP & BASKET
 function addToCart(manualCode = null) {
     const b = (manualCode || document.getElementById("sell_barcode").value).trim();
     if (!products[b]) return notify("Unknown Barcode", "red");
@@ -233,24 +237,36 @@ function renderCart() {
 
 function checkout() {
     if(!cart.length) return;
-    sales.unshift({ date: new Date().toLocaleTimeString(), items: [...cart] });
-    if(sales.length > 50) sales.pop(); // Keep database light
+    sales.unshift({ time: new Date().toLocaleString(), items: [...cart] });
     localStorage.setItem("sales", JSON.stringify(sales));
-    notify("Transaction Complete", "var(--green)");
-    cart = []; renderCart(); renderRecentSales();
+    notify("Sale Recorded", "var(--green)");
+    cart = []; renderCart();
 }
 
-function renderRecentSales() {
-    const list = document.getElementById("recent-sales-list");
-    const last5 = sales.slice(0, 5);
-    list.innerHTML = last5.map((s, idx) => {
-        let stotal = s.items.reduce((acc, i) => acc + (i.qty * i.price), 0);
-        return `<div class="sale-history-item">
-            <div style="font-size:14px;"><b>Time: ${s.date}</b> | Total: £${stotal.toFixed(2)}</div>
-            <button class="btn-pdf btn-small" onclick="downloadLuxuryInvoice(${idx})">PDF</button>
-            <button class="btn-qr btn-small" onclick="generateInvoiceQR(${idx})">QR</button>
+// HISTORY LOGIC
+function renderHistory() {
+    const cont = document.getElementById("history-content");
+    if(!sales.length) { cont.innerHTML = "No sales history."; return; }
+    cont.innerHTML = sales.map((s, idx) => {
+        let total = s.items.reduce((acc, i) => acc + (i.qty * i.price), 0);
+        return `<div class="history-card">
+            <strong>${s.time}</strong><br>
+            <small>${s.items.length} items - £${total.toFixed(2)}</small><br>
+            <div style="display:flex; gap:10px; margin-top:8px;">
+                <button class="btn-pdf" style="padding:8px; font-size:12px;" onclick="downloadLuxuryInvoice(${idx})">PDF</button>
+                <button class="btn-qr" style="padding:8px; font-size:12px;" onclick="generateInvoiceQR(${idx})">QR</button>
+                <button class="btn-danger" style="color:white;" onclick="deleteSale(${idx})">DELETE</button>
+            </div>
         </div>`;
     }).join("");
+}
+
+function deleteSale(idx) {
+    if(confirm("Remove this sale?")) {
+        sales.splice(idx, 1);
+        localStorage.setItem("sales", JSON.stringify(sales));
+        renderHistory();
+    }
 }
 
 // SCANNER (RESTORED A-Z)
@@ -265,13 +281,13 @@ async function startScan(mode) {
             if (scanPaused) return;
             if (mode === 'add') {
                 document.getElementById("p_barcode").value = code;
-                stopScan(); notify("Barcode Caught!", "var(--green)");
+                stopScan(); notify("Code Captured", "var(--green)");
             } else {
-                if (!products[code]) { notify("Unknown Item", "red"); return; }
+                if (!products[code]) { notify("Item Not in Stock", "red"); return; }
                 scanPaused = true;
                 addToCart(code);
-                notify(products[code].name + " Added!", "var(--green)");
-                setTimeout(() => { scanPaused = false; }, 2000); // 2 SEC DELAY
+                notify(products[code].name + " Added", "var(--green)");
+                setTimeout(() => { scanPaused = false; }, 2000); // 2 SECONDS PAUSE
             }
         });
         setTimeout(() => {
@@ -282,7 +298,7 @@ async function startScan(mode) {
 }
 
 async function stopScan() {
-    if (html5QrCode) { await html5QrCode.stop(); html5QrCode.clear(); }
+    if (html5QrCode) { try { await html5QrCode.stop(); html5QrCode.clear(); } catch(e) {} }
     document.getElementById("scanner-view").style.display = "none";
 }
 
@@ -292,13 +308,14 @@ async function toggleFlash() {
     document.getElementById("flash-btn").innerText = isFlashOn ? "🔦 FLASH: ON" : "🔦 FLASH: OFF";
 }
 
-// STOCK & DATABASE
+// DATABASE & STOCK
 function addProduct() {
     const b = document.getElementById("p_barcode").value, n = document.getElementById("p_name").value, p = document.getElementById("p_price").value;
-    if(!b || !n || !p) return notify("Missing Info", "red");
+    if(!b || !n || !p) return notify("Fill all fields", "red");
     products[b] = { name: n, price: Number(p) };
     localStorage.setItem("products", JSON.stringify(products));
     notify(n + " Saved", "var(--green)");
+    ["p_barcode", "p_name", "p_price"].forEach(id => document.getElementById(id).value = "");
 }
 
 function exportData() {
@@ -311,15 +328,12 @@ function importData(e) {
     const reader = new FileReader();
     reader.onload = (ev) => {
         const data = JSON.parse(ev.target.result);
-        localStorage.setItem("products", JSON.stringify(data.products));
-        localStorage.setItem("sales", JSON.stringify(data.sales));
+        localStorage.setItem("products", JSON.stringify(data.products || {}));
+        localStorage.setItem("sales", JSON.stringify(data.sales || []));
         location.reload();
     };
     reader.readAsText(e.target.files[0]);
 }
-
-// Start-up render
-renderRecentSales();
 </script>
 </body>
 </html>
