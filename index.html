@@ -18,11 +18,7 @@ header{
   text-align:center;
 }
 header img{height:50px}
-.container{
-  max-width:520px;
-  margin:auto;
-  padding:15px;
-}
+.container{max-width:520px;margin:auto;padding:15px}
 .card{
   background:#fff;
   padding:15px;
@@ -49,21 +45,9 @@ button{
   align-items:center;
   margin:6px 0;
 }
-.qty{
-  display:flex;
-  gap:6px;
-  align-items:center;
-}
-.qty button{
-  width:36px;
-  padding:6px;
-}
-.total{
-  text-align:right;
-  font-size:18px;
-  font-weight:800;
-  margin-top:10px;
-}
+.qty{display:flex;gap:6px;align-items:center}
+.qty button{width:36px;padding:6px}
+.total{text-align:right;font-size:18px;font-weight:800;margin-top:10px}
 #reader{margin-top:10px}
 </style>
 </head>
@@ -83,8 +67,8 @@ button{
 <button onclick="startScanner('add')">📷 Scan Barcode</button>
 <input id="barcode" placeholder="Barcode">
 <input id="name" placeholder="Product name">
-<input id="price" type="number" placeholder="Price">
-<input id="stock" type="number" placeholder="Stock">
+<input id="price" type="number" step="0.01" placeholder="Price">
+<input id="stock" type="number" placeholder="Stock (optional)">
 <button onclick="addProduct()">Save Product</button>
 </div>
 
@@ -106,106 +90,102 @@ button{
 </div>
 
 <script>
-let products = JSON.parse(localStorage.getItem("products")) || {};
-let sales = JSON.parse(localStorage.getItem("sales")) || [];
+/* ===== STORAGE ===== */
+let products = JSON.parse(localStorage.getItem("products") || "{}");
+let sales = JSON.parse(localStorage.getItem("sales") || "[]");
 let cart = [];
-let scanner = null;
+
+/* ===== SCANNER (SAFE SINGLE INSTANCE) ===== */
+const html5QrCode = new Html5Qrcode("reader");
+let scanning = false;
 let scanMode = "sell";
 
-/* -------- SCANNER -------- */
 function startScanner(mode){
   scanMode = mode;
-  if(scanner){ scanner.stop().catch(()=>{}); }
-  scanner = new Html5Qrcode("reader");
-
-  scanner.start(
+  if(scanning){
+    html5QrCode.stop().catch(()=>{});
+    scanning = false;
+  }
+  html5QrCode.start(
     { facingMode:"environment" },
     { fps:10, qrbox:250 },
-    code => {
-      if(scanMode === "add"){
-        document.getElementById("barcode").value = code;
+    code=>{
+      if(scanMode==="add"){
+        barcode.value = code;
       }else{
         addToCart(code);
       }
-      scanner.stop();
-    },
-    err => {}
-  );
+      html5QrCode.stop().then(()=>scanning=false);
+    }
+  ).then(()=>scanning=true)
+   .catch(()=>alert("Camera needs HTTPS or localhost"));
 }
 
-/* -------- ADD PRODUCT -------- */
+/* ===== PRODUCTS ===== */
 function addProduct(){
   const b = barcode.value.trim();
   const n = name.value.trim();
-  const p = price.value;
-  const s = stock.value || 0;
+  const p = price.value.trim();
+  const s = stock.value.trim() || "0";
 
-  if(b === "" || n === "" || p === ""){
-    alert("Enter barcode, name and price");
+  if(b==="" || n==="" || p===""){
+    alert("Barcode, name and price required");
     return;
   }
 
   products[b] = {
     name: n,
-    price: parseFloat(p),
-    stock: parseInt(s)
+    price: Number(p),
+    stock: Number(s)
   };
 
   localStorage.setItem("products", JSON.stringify(products));
 
-  barcode.value = "";
-  name.value = "";
-  price.value = "";
-  stock.value = "";
+  barcode.value="";
+  name.value="";
+  price.value="";
+  stock.value="";
 
   alert("Product saved");
 }
 
-/* -------- CART -------- */
+/* ===== CART ===== */
 function addToCart(code=null){
   const b = (code || sellBarcode.value).trim();
   const p = products[b];
 
   if(!p){ alert("Product not found"); return; }
-  if(p.stock <= 0){ alert("Out of stock"); return; }
+  if(p.stock<=0){ alert("Out of stock"); return; }
 
-  let item = cart.find(i => i.barcode === b);
-  if(item){
-    item.qty++;
-  }else{
-    cart.push({barcode:b,name:p.name,price:p.price,qty:1});
-  }
+  let item = cart.find(i=>i.barcode===b);
+  if(item){ item.qty++; }
+  else{ cart.push({barcode:b,name:p.name,price:p.price,qty:1}); }
 
   p.stock--;
   localStorage.setItem("products", JSON.stringify(products));
-  sellBarcode.value = "";
+  sellBarcode.value="";
   renderCart();
 }
 
-function changeQty(barcode,delta){
-  let item = cart.find(i => i.barcode === barcode);
-  if(!item) return;
+function changeQty(b,d){
+  let i = cart.find(x=>x.barcode===b);
+  if(!i) return;
+  if(d>0 && products[b].stock<=0) return;
 
-  if(delta > 0 && products[barcode].stock <= 0) return;
-
-  item.qty += delta;
-  products[barcode].stock -= delta;
-
-  if(item.qty <= 0){
-    cart = cart.filter(i => i.barcode !== barcode);
-  }
+  i.qty+=d;
+  products[b].stock-=d;
+  if(i.qty<=0) cart=cart.filter(x=>x.barcode!==b);
 
   localStorage.setItem("products", JSON.stringify(products));
   renderCart();
 }
 
 function renderCart(){
-  let total = 0;
-  const div = document.getElementById("cart");
+  let total=0;
+  const cartDiv = document.getElementById("cart");
 
-  div.innerHTML = cart.map(i=>{
-    let line = i.price * i.qty;
-    total += line;
+  cartDiv.innerHTML = cart.map(i=>{
+    let l=i.price*i.qty; total+=l;
     return `
       <div class="cart-item">
         <span><strong>${i.name}</strong><br>£${i.price.toFixed(2)}</span>
@@ -214,72 +194,66 @@ function renderCart(){
           <strong>${i.qty}</strong>
           <button onclick="changeQty('${i.barcode}',1)">+</button>
         </div>
-        <strong>£${line.toFixed(2)}</strong>
-      </div>
-    `;
+        <strong>£${l.toFixed(2)}</strong>
+      </div>`;
   }).join("");
 
-  document.getElementById("total").innerText = `Total: £${total.toFixed(2)}`;
+  document.getElementById("total").innerText=`Total: £${total.toFixed(2)}`;
 }
 
-/* -------- CHECKOUT -------- */
+/* ===== CHECKOUT ===== */
 function checkout(){
-  if(cart.length === 0){ alert("Cart empty"); return; }
+  if(!cart.length){ alert("Cart empty"); return; }
 
   sales.push({
     date:new Date().toLocaleString(),
     items:JSON.parse(JSON.stringify(cart))
   });
 
-  localStorage.setItem("sales", JSON.stringify(sales));
-  cart = [];
+  localStorage.setItem("sales",JSON.stringify(sales));
+  cart=[];
   renderCart();
   alert("Sale saved");
 }
 
-/* -------- RECEIPTS -------- */
+/* ===== RECEIPTS ===== */
 function downloadLastReceipt(){
-  if(sales.length === 0) return;
-
-  const s = sales[sales.length - 1];
-  let total = 0;
-  let text = `BAZRO RECEIPT\n${s.date}\n----------------\n`;
-
+  if(!sales.length) return;
+  const s=sales[sales.length-1];
+  let total=0;
+  let text=`BAZRO RECEIPT\n${s.date}\n----------------\n`;
   s.items.forEach(i=>{
-    let l = i.price * i.qty;
-    total += l;
-    text += `${i.qty}x ${i.name} £${l.toFixed(2)}\n`;
+    let l=i.price*i.qty; total+=l;
+    text+=`${i.qty}x ${i.name} £${l.toFixed(2)}\n`;
   });
-
-  text += `----------------\nTOTAL £${total.toFixed(2)}`;
+  text+=`----------------\nTOTAL £${total.toFixed(2)}`;
   download(text,`receipt_${Date.now()}.txt`);
 }
 
 function downloadDaily(){
-  let today = new Date().toLocaleDateString();
-  let text = `BAZRO DAILY SALES ${today}\n================\n`;
-  let grand = 0;
+  let today=new Date().toLocaleDateString();
+  let text=`BAZRO DAILY SALES ${today}\n================\n`;
+  let grand=0;
 
-  sales.filter(s => s.date.includes(today)).forEach((s,n)=>{
-    let total = 0;
-    text += `\nSale ${n+1} - ${s.date}\n`;
+  sales.filter(s=>s.date.includes(today)).forEach((s,n)=>{
+    let total=0;
+    text+=`\nSale ${n+1} - ${s.date}\n`;
     s.items.forEach(i=>{
-      let l = i.price * i.qty;
-      total += l;
-      text += `${i.qty}x ${i.name} £${l.toFixed(2)}\n`;
+      let l=i.price*i.qty; total+=l;
+      text+=`${i.qty}x ${i.name} £${l.toFixed(2)}\n`;
     });
-    text += `Subtotal £${total.toFixed(2)}\n`;
-    grand += total;
+    text+=`Subtotal £${total.toFixed(2)}\n`;
+    grand+=total;
   });
 
-  text += `\nGRAND TOTAL £${grand.toFixed(2)}`;
+  text+=`\nGRAND TOTAL £${grand.toFixed(2)}`;
   download(text,`daily_${today.replace(/\//g,'-')}.txt`);
 }
 
 function download(text,name){
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([text],{type:"text/plain"}));
-  a.download = name;
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([text],{type:"text/plain"}));
+  a.download=name;
   a.click();
 }
 </script>
