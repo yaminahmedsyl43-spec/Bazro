@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Bazro POS - A4 Invoice Edition</title>
+<title>Bazro POS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -46,7 +46,7 @@
 <body>
 
 <div id="status-msg"></div>
-<header>BAZRO POS</header>
+<header>BAZRO</header>
 
 <div class="container">
 
@@ -84,7 +84,7 @@
         </div>
         <div id="eod-report-box">
             <h2 style="margin:0">BAZRO</h2>
-            <p id="r_date"></p>
+            <p id="r_date" style="font-size: 12px;"></p>
             <hr>
             <div style="display:flex; justify-content:space-between"><span>Cash:</span><span id="r_cash"></span></div>
             <div style="display:flex; justify-content:space-between"><span>Card:</span><span id="r_card"></span></div>
@@ -135,6 +135,9 @@ let cart = [];
 let html5QrCode = null;
 let isFlashOn = false;
 let scanPaused = false;
+
+const BAZRO_ADDRESS = "9a Commercial St, Camborne TR14 8AT";
+const BAZRO_PHONE = "07534 100986";
 
 function showPage(p) {
     document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
@@ -189,6 +192,7 @@ async function startScan(mode) {
 async function stopScan() {
     if (html5QrCode) { try { await html5QrCode.stop(); html5QrCode.clear(); } catch(e) {} }
     document.getElementById("scanner-view").style.display = "none";
+    isFlashOn = false;
 }
 
 async function toggleFlash() {
@@ -251,45 +255,53 @@ function downloadA4Invoice() {
     const doc = new jsPDF('p', 'mm', 'a4');
     const date = new Date().toLocaleString();
 
-    // Header
-    doc.setFontSize(22); doc.setTextColor(255, 81, 47);
-    doc.text("BAZRO SHOP - INVOICE", 105, 20, { align: 'center' });
+    // Header Branding
+    doc.setFontSize(26); doc.setTextColor(255, 81, 47); doc.setFont(undefined, 'bold');
+    doc.text("BAZRO", 105, 20, { align: 'center' });
     
+    // Contact Info
+    doc.setFontSize(10); doc.setTextColor(80); doc.setFont(undefined, 'normal');
+    doc.text(BAZRO_ADDRESS, 105, 27, { align: 'center' });
+    doc.text(`Phone: ${BAZRO_PHONE}`, 105, 32, { align: 'center' });
+    
+    // Receipt Metadata
     doc.setFontSize(10); doc.setTextColor(100);
-    doc.text(`Date: ${date}`, 20, 30);
-    doc.text(`Receipt ID: ${Date.now()}`, 20, 35);
+    doc.text(`Date: ${date}`, 20, 42);
+    doc.text(`Invoice ID: INV-${Date.now().toString().slice(-6)}`, 20, 47);
     
     // Table Header
-    doc.setDrawColor(200); doc.line(20, 45, 190, 45);
-    doc.setFontSize(11); doc.setTextColor(0);
-    doc.text("Item Name", 25, 52);
-    doc.text("Qty", 100, 52);
-    doc.text("Price", 130, 52);
-    doc.text("Subtotal", 160, 52);
-    doc.line(20, 55, 190, 55);
+    doc.setDrawColor(200); doc.line(20, 52, 190, 52);
+    doc.setFontSize(11); doc.setTextColor(0); doc.setFont(undefined, 'bold');
+    doc.text("Item Description", 25, 59);
+    doc.text("Qty", 100, 59);
+    doc.text("Unit Price", 130, 59);
+    doc.text("Subtotal", 160, 59);
+    doc.line(20, 62, 190, 62);
 
-    let y = 62;
+    let y = 70;
     let total = 0;
+    doc.setFont(undefined, 'normal');
     itemsToPrint.forEach(item => {
         const sub = item.qty * item.price;
         total += sub;
-        doc.text(item.name.substring(0, 25), 25, y);
+        doc.text(item.name.substring(0, 30), 25, y);
         doc.text(item.qty.toString(), 102, y);
         doc.text(`£${item.price.toFixed(2)}`, 130, y);
         doc.text(`£${sub.toFixed(2)}`, 160, y);
         y += 8;
+        if(y > 270) { doc.addPage(); y = 20; }
     });
 
-    // Footer
-    doc.line(20, y, 190, y);
+    // Total Section
+    doc.setDrawColor(0); doc.line(120, y, 190, y);
     doc.setFontSize(14); doc.setFont(undefined, 'bold');
-    doc.text(`TOTAL AMOUNT: £${total.toFixed(2)}`, 190, y + 10, { align: 'right' });
+    doc.text(`GRAND TOTAL: £${total.toFixed(2)}`, 190, y + 10, { align: 'right' });
     
-    doc.setFontSize(10); doc.setFont(undefined, 'normal');
-    doc.text("Thank you for shopping at Bazro!", 105, y + 30, { align: 'center' });
+    doc.setFontSize(10); doc.setFont(undefined, 'italic'); doc.setTextColor(100);
+    doc.text("Thank you for your business!", 105, y + 30, { align: 'center' });
 
     doc.save(`Bazro_Invoice_${Date.now()}.pdf`);
-    notify("A4 Invoice Downloaded", "var(--green)");
+    notify("Invoice Downloaded", "var(--green)");
 }
 
 // --- REPORT & STOCK LOGIC ---
@@ -311,7 +323,7 @@ function previewReport() {
 async function shareReportImage() {
     const canvas = await html2canvas(document.getElementById("eod-report-box"));
     canvas.toBlob(async (blob) => {
-        const file = new File([blob], "Report.jpg", { type: "image/jpeg" });
+        const file = new File([blob], "Bazro_EOD.jpg", { type: "image/jpeg" });
         if (navigator.share) await navigator.share({ files: [file] });
     }, "image/jpeg");
 }
@@ -344,7 +356,7 @@ function renderStockLog() {
 }
 
 function clearHistory() { if(confirm("Clear history?")) { sales = []; localStorage.setItem("sales", "[]"); renderHistory(); } }
-function exportData() { const blob = new Blob([JSON.stringify({products, sales})], {type:"application/json"}); const a = document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="bazro.json"; a.click(); }
+function exportData() { const blob = new Blob([JSON.stringify({products, sales})], {type:"application/json"}); const a = document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="bazro_data.json"; a.click(); }
 </script>
 </body>
 </html>
