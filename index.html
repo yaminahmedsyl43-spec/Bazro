@@ -5,6 +5,7 @@
 <title>Bazro POS - Pro Edition</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
     :root { --orange: #ff512f; --yellow: #f09819; --dark: #141e30; }
@@ -35,6 +36,7 @@
     }
     button:active { transform: scale(0.98); opacity: 0.9; }
     .btn-sec { background: #444; }
+    .btn-pdf { background: #2980b9; }
     .btn-stop { background: #d63031; margin-top: 10px; }
     
     #scanner-box { display: none; text-align: center; }
@@ -49,7 +51,6 @@
     
     .total-area { text-align: right; font-size: 22px; font-weight: 800; margin: 20px 0; color: var(--orange); }
     
-    /* Notification Popups */
     #status-msg {
         position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
         padding: 12px 25px; border-radius: 30px; color: white;
@@ -61,11 +62,9 @@
 <body>
 
 <div id="status-msg"></div>
-
 <header>BAZRO POS</header>
 
 <div class="container">
-
     <div id="scanner-box" class="card">
         <div id="reader"></div>
         <button class="btn-stop" onclick="stopScan()">Close Camera</button>
@@ -91,113 +90,67 @@
         <div class="total-area" id="grand-total">Total: £0.00</div>
 
         <button style="background:#27ae60" onclick="checkout()">Complete Transaction</button>
-        <button class="btn-sec" onclick="downloadLast()">Last Receipt</button>
-        <button class="btn-sec" onclick="downloadDaily()">Daily Report</button>
+        <button class="btn-pdf" onclick="generatePDF()">📥 Download PDF Receipt</button>
+        <button class="btn-sec" onclick="downloadDaily()">Daily Report (.txt)</button>
     </div>
-
 </div>
 
 <script>
-/* --- APP STATE --- */
 let products = JSON.parse(localStorage.getItem("products") || "{}");
 let sales = JSON.parse(localStorage.getItem("sales") || "[]");
 let cart = [];
 let qrScanner = null;
 let scanPaused = false;
 
-/* --- NOTIFICATION SYSTEM --- */
 function notify(msg, color) {
     const el = document.getElementById("status-msg");
-    el.innerText = msg;
-    el.style.background = color;
-    el.style.opacity = "1";
+    el.innerText = msg; el.style.background = color; el.style.opacity = "1";
     setTimeout(() => { el.style.opacity = "0"; }, 2000);
 }
 
-/* --- SCANNER LOGIC --- */
 async function startScan(mode) {
     document.getElementById("scanner-box").style.display = "block";
     if (!qrScanner) qrScanner = new Html5Qrcode("reader");
-
     try {
-        await qrScanner.start(
-            { facingMode: "environment" },
-            { fps: 15, qrbox: 250 },
-            (code) => {
-                if (scanPaused) return;
-
-                if (mode === "add") {
-                    document.getElementById("p_barcode").value = code;
-                    stopScan();
-                } else {
-                    handleAutoScan(code);
-                }
-            }
-        );
-    } catch (err) {
-        notify("Camera Error", "red");
-    }
+        await qrScanner.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, (code) => {
+            if (scanPaused) return;
+            if (mode === "add") { document.getElementById("p_barcode").value = code; stopScan(); }
+            else { handleAutoScan(code); }
+        });
+    } catch (err) { notify("Camera Error", "red"); }
 }
 
 function handleAutoScan(code) {
     const b = code.trim();
-    if (!products[b]) {
-        // Just log to console or show short notify, DON'T use alert
-        notify("Unknown Barcode", "#444");
-        return;
-    }
-
-    scanPaused = true; // Stop double-scans
+    if (!products[b]) { notify("Unknown Barcode", "#444"); return; }
+    scanPaused = true;
     addToCart(b);
     notify("Added: " + products[b].name, "#27ae60");
     if(navigator.vibrate) navigator.vibrate(60);
-
-    setTimeout(() => { scanPaused = false; }, 1800); // 1.8 second delay
+    setTimeout(() => { scanPaused = false; }, 1800);
 }
 
 async function stopScan() {
-    if (qrScanner) {
-        await qrScanner.stop();
-        document.getElementById("scanner-box").style.display = "none";
-        scanPaused = false;
-    }
+    if (qrScanner) { await qrScanner.stop(); document.getElementById("scanner-box").style.display = "none"; scanPaused = false; }
 }
 
-/* --- PRODUCT LOGIC --- */
 function addProduct() {
-    const b = document.getElementById("p_barcode").value.trim();
-    const n = document.getElementById("p_name").value.trim();
-    const p = document.getElementById("p_price").value;
-    const s = document.getElementById("p_stock").value || 0;
-
+    const b = document.getElementById("p_barcode").value.trim(), n = document.getElementById("p_name").value.trim(), p = document.getElementById("p_price").value, s = document.getElementById("p_stock").value || 0;
     if (!b || !n || !p) return notify("Missing Info!", "red");
-
     products[b] = { name: n, price: Number(p), stock: Number(s) };
     localStorage.setItem("products", JSON.stringify(products));
-    
     notify("Saved to Database", "blue");
-    document.querySelectorAll(".card input").forEach(i => i.value = "");
+    document.querySelectorAll(".card:nth-child(2) input").forEach(i => i.value = "");
 }
 
-/* --- CART LOGIC --- */
 function addToCart(manualCode = null) {
     const b = (manualCode || document.getElementById("sell_barcode").value).trim();
     if (!b) return;
-
     const prod = products[b];
-    if (!prod) {
-        if(!manualCode) notify("Not Found", "red");
-        return;
-    }
+    if (!prod) { if(!manualCode) notify("Not Found", "red"); return; }
     if (prod.stock <= 0) return notify("Out of Stock", "orange");
-
     let item = cart.find(i => i.barcode === b);
-    if (item) {
-        item.qty++;
-    } else {
-        cart.push({ barcode: b, name: prod.name, price: prod.price, qty: 1 });
-    }
-
+    if (item) { item.qty++; } else { cart.push({ barcode: b, name: prod.name, price: prod.price, qty: 1 }); }
     prod.stock--;
     localStorage.setItem("products", JSON.stringify(products));
     document.getElementById("sell_barcode").value = "";
@@ -207,16 +160,8 @@ function addToCart(manualCode = null) {
 function updateQty(b, amt) {
     let item = cart.find(i => i.barcode === b);
     if (!item) return;
-
-    if (amt > 0) {
-        if (products[b].stock <= 0) return notify("No Stock Left", "orange");
-        item.qty++;
-        products[b].stock--;
-    } else {
-        item.qty--;
-        products[b].stock++;
-        if (item.qty <= 0) cart = cart.filter(i => i.barcode !== b);
-    }
+    if (amt > 0) { if (products[b].stock <= 0) return notify("No Stock Left", "orange"); item.qty++; products[b].stock--; }
+    else { item.qty--; products[b].stock++; if (item.qty <= 0) cart = cart.filter(i => i.barcode !== b); }
     localStorage.setItem("products", JSON.stringify(products));
     renderCart();
 }
@@ -225,30 +170,85 @@ function renderCart() {
     let total = 0;
     const div = document.getElementById("cart-display");
     div.innerHTML = cart.map(i => {
-        const line = i.qty * i.price;
-        total += line;
-        return `
-            <div class="cart-item">
-                <span><strong>${i.name}</strong><br>£${i.price.toFixed(2)}</span>
-                <div class="qty-controls">
-                    <button class="qty-btn" onclick="updateQty('${i.barcode}',-1)">-</button>
-                    <strong>${i.qty}</strong>
-                    <button class="qty-btn" onclick="updateQty('${i.barcode}',1)">+</button>
-                </div>
-                <strong>£${line.toFixed(2)}</strong>
-            </div>`;
+        const line = i.qty * i.price; total += line;
+        return `<div class="cart-item"><span><strong>${i.name}</strong><br>£${i.price.toFixed(2)}</span><div class="qty-controls"><button class="qty-btn" onclick="updateQty('${i.barcode}',-1)">-</button><strong>${i.qty}</strong><button class="qty-btn" onclick="updateQty('${i.barcode}',1)">+</button></div><strong>£${line.toFixed(2)}</strong></div>`;
     }).join("");
     document.getElementById("grand-total").innerText = `Total: £${total.toFixed(2)}`;
 }
 
-/* --- CHECKOUT & DATA --- */
 function checkout() {
     if (!cart.length) return notify("Cart is empty", "red");
     sales.push({ date: new Date().toLocaleString(), items: [...cart] });
     localStorage.setItem("sales", JSON.stringify(sales));
+    notify("SALE RECORDED", "#27ae60");
+    // We don't clear the cart here yet so the user can download the PDF first if they want.
+}
+
+/* --- PDF GENERATION --- */
+function generatePDF() {
+    if (!cart.length) return notify("No items to print", "red");
+    
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4'
+    });
+
+    // Styles & Header
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(28);
+    doc.text("BAZRO", 105, 30, { align: "center" });
+    
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.text("9a Commercial St, Camborne TR14 8AT", 105, 38, { align: "center" });
+    doc.text("Receipt Date: " + new Date().toLocaleString(), 105, 45, { align: "center" });
+    
+    doc.setLineWidth(0.5);
+    doc.line(20, 52, 190, 52);
+
+    // Table Headers
+    doc.setFont("helvetica", "bold");
+    doc.text("Item Name", 25, 62);
+    doc.text("Qty", 130, 62);
+    doc.text("Price", 150, 62);
+    doc.text("Total", 175, 62);
+    
+    doc.line(20, 65, 190, 65);
+    doc.setFont("helvetica", "normal");
+
+    let y = 75;
+    let grandTotal = 0;
+
+    cart.forEach(item => {
+        let lineTotal = item.qty * item.price;
+        grandTotal += lineTotal;
+
+        doc.text(item.name, 25, y);
+        doc.text(item.qty.toString(), 133, y);
+        doc.text("£" + item.price.toFixed(2), 150, y);
+        doc.text("£" + lineTotal.toFixed(2), 175, y);
+        y += 10;
+        
+        // Add new page if list is too long
+        if (y > 270) { doc.addPage(); y = 20; }
+    });
+
+    doc.line(20, y, 190, y);
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("GRAND TOTAL: £" + grandTotal.toFixed(2), 190, y + 12, { align: "right" });
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "italic");
+    doc.text("Thank you for shopping at Bazro!", 105, y + 30, { align: "center" });
+
+    doc.save(`Bazro_Receipt_${Date.now()}.pdf`);
+    
+    // Auto-clear after saving
     cart = [];
     renderCart();
-    notify("SALE COMPLETED", "#27ae60");
     stopScan();
 }
 
@@ -256,39 +256,16 @@ function downloadDaily() {
     const today = new Date().toLocaleDateString();
     let text = `BAZRO DAILY REPORT [${today}]\n\n`;
     let grandTotal = 0;
-    
     sales.filter(s => s.date.includes(today)).forEach((s, idx) => {
-        let sub = 0;
-        text += `TRANS #${idx+1} (${s.date})\n`;
-        s.items.forEach(it => {
-            let l = it.qty * it.price; sub += l;
-            text += `- ${it.name} [x${it.qty}] £${l.toFixed(2)}\n`;
-        });
-        text += `Total: £${sub.toFixed(2)}\n\n`;
-        grandTotal += sub;
+        let sub = 0; text += `TRANS #${idx+1} (${s.date})\n`;
+        s.items.forEach(it => { let l = it.qty * it.price; sub += l; text += `- ${it.name} [x${it.qty}] £${l.toFixed(2)}\n`; });
+        text += `Total: £${sub.toFixed(2)}\n\n`; grandTotal += sub;
     });
     text += `GRAND TOTAL FOR DAY: £${grandTotal.toFixed(2)}`;
-    saveFile(text, "daily_report");
-}
-
-function downloadLast() {
-    if (!sales.length) return notify("No Sales Found", "red");
-    const s = sales[sales.length - 1];
-    let total = 0;
-    let text = `BAZRO RECEIPT\n${s.date}\n\n`;
-    s.items.forEach(i => {
-        let l = i.qty * i.price; total += l;
-        text += `${i.name} x${i.qty} @ £${i.price.toFixed(2)} = £${l.toFixed(2)}\n`;
-    });
-    text += `\nTOTAL: £${total.toFixed(2)}\n\nThank you!`;
-    saveFile(text, "receipt");
-}
-
-function saveFile(text, filename) {
     const blob = new Blob([text], { type: "text/plain" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `${filename}_${Date.now()}.txt`;
+    a.download = `daily_report_${Date.now()}.txt`;
     a.click();
 }
 </script>
