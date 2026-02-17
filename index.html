@@ -42,7 +42,27 @@
     .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 14px; }
     .stock-log { background: #eee; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 12px; }
 
-    #eod-report-box { padding: 30px; background: white; border: 1px solid #000; width: 280px; margin: 15px auto; color: black; display: none; text-align: center; }
+    /* Updated Report Box Styles to match Image */
+    #eod-report-box { 
+        padding: 40px; 
+        background: white; 
+        width: 350px; 
+        margin: 15px auto; 
+        color: black; 
+        display: none; 
+        text-align: center;
+        border: 1px solid #eee;
+        font-family: Arial, sans-serif;
+    }
+    .report-header h2 { font-size: 42px; margin: 0; letter-spacing: 2px; }
+    .report-header .date-line { font-size: 24px; font-weight: bold; margin: 5px 0; }
+    .report-header .addr-line { font-size: 14px; color: #666; margin-bottom: 20px; }
+    .report-divider { border-top: 3px solid #999; margin: 15px 0; }
+    .report-dashed { border-top: 2px dashed #ccc; margin: 12px 0; }
+    .report-row { display: flex; justify-content: space-between; font-size: 20px; padding: 4px 0; }
+    .report-row b { font-weight: bold; }
+    .report-net { font-size: 24px; font-weight: 900; }
+    .report-till { margin-top: 30px; font-size: 16px; color: #666; }
 </style>
 </head>
 <body>
@@ -80,20 +100,34 @@
             <input type="date" id="report_date">
             <input type="number" id="cash_total" placeholder="Cash (£)">
             <input type="number" id="card_total" placeholder="Card (£)">
-            <input type="number" id="till_cash" placeholder="Till (£)">
+            <input type="number" id="till_cash" placeholder="Till Left (£)">
             <input type="number" id="expense_total" placeholder="Expenses (£)">
             <button onclick="previewReport()">Create Preview</button>
         </div>
+
         <div id="eod-report-box">
-            <h2 style="margin:0">BAZRO</h2>
-            <p id="r_date" style="font-size: 12px;"></p>
-            <hr>
-            <div style="display:flex; justify-content:space-between"><span>Cash:</span><span id="r_cash"></span></div>
-            <div style="display:flex; justify-content:space-between"><span>Card:</span><span id="r_card"></span></div>
-            <div style="display:flex; justify-content:space-between"><span>Exp:</span><span id="r_exp"></span></div>
-            <hr>
-            <div style="display:flex; justify-content:space-between; font-weight:bold"><span>NET:</span><span id="r_net"></span></div>
+            <div class="report-header">
+                <h2>BAZRO</h2>
+                <div class="date-line" id="r_date"></div>
+                <div class="addr-line">Camborne TR14 8AT</div>
+            </div>
+            <div class="report-divider"></div>
+            
+            <div class="report-row"><b>Cash Sales:</b><span id="r_cash"></span></div>
+            <div class="report-dashed"></div>
+            
+            <div class="report-row"><b>Card Sales:</b><span id="r_card"></span></div>
+            <div class="report-dashed"></div>
+            
+            <div class="report-row"><b>Expenses:</b><span id="r_exp"></span></div>
+            <div class="report-divider"></div>
+            
+            <div class="report-row report-net"><b>NET TOTAL:</b><span id="r_net"></span></div>
+            <div class="report-dashed"></div>
+            
+            <div class="report-row report-till"><span>Till Left:</span><span id="r_till"></span></div>
         </div>
+
         <button id="share-report-btn" style="display:none; background:var(--green)" onclick="shareReportImage()">📤 Share Image</button>
     </div>
 
@@ -300,14 +334,23 @@ function downloadA4Invoice() {
 function previewReport() {
     const d = document.getElementById("report_date").value;
     if(!d) return notify("Select Date", "red");
+    
+    // Formatting date to DD/MM/YYYY
+    const dateObj = new Date(d);
+    const formattedDate = dateObj.getDate().toString().padStart(2, '0') + '/' + (dateObj.getMonth()+1).toString().padStart(2, '0') + '/' + dateObj.getFullYear();
+
     const cash = Number(document.getElementById("cash_total").value);
     const card = Number(document.getElementById("card_total").value);
     const exp = Number(document.getElementById("expense_total").value);
-    document.getElementById("r_date").innerText = d;
+    const till = Number(document.getElementById("till_cash").value);
+
+    document.getElementById("r_date").innerText = formattedDate;
     document.getElementById("r_cash").innerText = "£" + cash.toFixed(2);
     document.getElementById("r_card").innerText = "£" + card.toFixed(2);
-    document.getElementById("r_exp").innerText = "£" + exp.toFixed(2);
+    document.getElementById("r_exp").innerText = "- £" + exp.toFixed(2);
     document.getElementById("r_net").innerText = "£" + (cash + card - exp).toFixed(2);
+    document.getElementById("r_till").innerText = "£" + till.toFixed(2);
+
     document.getElementById("eod-report-box").style.display = "block";
     document.getElementById("share-report-btn").style.display = "block";
 }
@@ -316,7 +359,16 @@ async function shareReportImage() {
     const canvas = await html2canvas(document.getElementById("eod-report-box"));
     canvas.toBlob(async (blob) => {
         const file = new File([blob], "Bazro_EOD.jpg", { type: "image/jpeg" });
-        if (navigator.share) await navigator.share({ files: [file] });
+        if (navigator.share) {
+            try {
+                await navigator.share({ files: [file] });
+            } catch(e) { notify("Sharing failed", "red"); }
+        } else {
+            const link = document.createElement('a');
+            link.download = 'Bazro_Report.jpg';
+            link.href = URL.createObjectURL(blob);
+            link.click();
+        }
     }, "image/jpeg");
 }
 
