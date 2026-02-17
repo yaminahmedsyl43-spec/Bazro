@@ -1,143 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bazro POS - Premium</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+:root { --orange: #ff512f; --yellow: #f09819; --dark: #141e30; --green: #27ae60; --red: #e74c3c; --gold: #D4AF37; }
+body { margin: 0; font-family: 'Segoe UI', Roboto, sans-serif; background: #f4f7f6; padding-bottom: 110px; color: #333; }
+header { background: linear-gradient(135deg, #141e30, #243b55); padding: 18px; text-align: center; color: white; font-size: 24px; font-weight: 800; letter-spacing: 2px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+.container { max-width: 500px; margin: auto; padding: 15px; }
+.page { display: none; }
+.active-page { display: block; }
+.card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 15px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.03); }
+h3 { margin-top: 0; color: var(--dark); border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; font-size: 19px; letter-spacing: 0.5px; }
+input { width: 100%; padding: 14px; margin: 10px 0; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; box-sizing: border-box; }
+button { width: 100%; padding: 15px; margin: 8px 0; border-radius: 10px; border: none; background: linear-gradient(135deg, var(--orange), var(--yellow)); color: white; font-weight: bold; font-size: 16px; cursor: pointer; }
+.btn-sec { background: #34495e; }
+.btn-stop { background: var(--red); }
+.btn-pdf { background: #1a1a1a; border: 1px solid var(--gold); color: var(--gold); }
+.btn-backup { background: #6c5ce7; }
+nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #eee; height: 75px; }
+nav button { flex: 1; background: none; color: #95a5a6; border-top: 4px solid transparent; font-size: 10px; padding: 0; }
+nav button.active-nav { color: var(--orange); border-top-color: var(--orange); }
+#status-msg { position: fixed; top: 90px; left: 50%; transform: translateX(-50%); padding: 12px 30px; border-radius: 50px; color: white; font-weight: 600; z-index: 9999; opacity: 0; transition: 0.4s; }
+</style>
+</head>
+<body>
+
+<div id="status-msg"></div>
+<header>BAZRO</header>
+
+<div class="container">
+<div id="page-sales" class="page active-page">
+<div class="card">
+<h3>Premium Checkout</h3>
+<input id="sell_barcode" placeholder="Enter Barcode">
+<button class="btn-sec" onclick="addToCart()">ADD TO BASKET</button>
+</div>
+
+<div class="card">
+<h3>Basket</h3>
+<div id="cart-list"></div>
+<div style="text-align:right; font-weight:800; font-size:24px; margin:20px 0;" id="cart-total">Total: £0.00</div>
+<button style="background:var(--green)" onclick="checkout()">COMPLETE TRANSACTION</button>
+<button class="btn-pdf" onclick="downloadLuxuryInvoice()">📄 DOWNLOAD PDF INVOICE (OPTIONAL)</button>
+</div>
+</div>
+</div>
+
 <script>
+
+let cart = [];
+
+const INFO = {
+    name: "BAZRO",
+    address: "9a Commercial St, Camborne TR14 8AT",
+    phone: "07534 100986"
+};
+
+function notify(msg, color) {
+    const el = document.getElementById("status-msg");
+    el.innerText = msg;
+    el.style.background = color;
+    el.style.opacity = "1";
+    setTimeout(() => el.style.opacity = "0", 2500);
+}
 
 async function downloadLuxuryInvoice() {
 
-    const items = cart.length ? cart : (sales[0]?.items || []);
-    if (!items.length) return notify("No items to invoice", "red");
+    if (!cart.length) {
+        notify("Basket Empty - Invoice Optional", "red");
+        return;
+    }
 
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('p', 'mm', 'a4');
+    const doc = new jsPDF('p','mm','a4');
 
-    const invoiceNumber = `2026-${Date.now().toString().slice(-3)}`;
-    const today = new Date();
-    const dateStr = today.toLocaleDateString("en-GB");
+    const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
+    const today = new Date().toLocaleDateString("en-GB");
 
-    let startY = 20;
+    let y = 20;
 
-    // =========================
-    // COMPANY HEADER
-    // =========================
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(20);
-    doc.text("Bazro", 20, startY);
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(22);
+    doc.text(INFO.name, 20, y);
 
+    doc.setFont("helvetica","normal");
     doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text("9a Commercial Square - Camborne - TR14 8AT", 20, startY + 6);
-    doc.text("Co. Reg. No.: 15649986", 20, startY + 12);
-    doc.text("Email: bazro@webnest.co.uk | Phone: +447534100986", 20, startY + 18);
-    doc.text("Website: www.bazro.co.uk", 20, startY + 24);
+    doc.text(INFO.address, 20, y+7);
+    doc.text("Phone: " + INFO.phone, 20, y+13);
 
-    // =========================
-    // INVOICE INFO (RIGHT SIDE)
-    // =========================
-    doc.setFont("helvetica", "bold");
-    doc.text(`Invoice: ${invoiceNumber}`, 140, startY);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Invoice Date: ${dateStr}`, 140, startY + 8);
-    doc.text(`Due Date: ${dateStr}`, 140, startY + 16);
-    doc.text(`Customer No.: 1`, 140, startY + 24);
+    doc.setFont("helvetica","bold");
+    doc.text("INVOICE", 150, y);
 
-    // =========================
-    // BILL TO
-    // =========================
-    let billY = startY + 40;
+    doc.setFont("helvetica","normal");
+    doc.text("Invoice No: " + invoiceNumber, 150, y+7);
+    doc.text("Date: " + today, 150, y+14);
 
-    doc.setFont("helvetica", "bold");
-    doc.text("Bill To:", 20, billY);
+    y += 30;
 
-    doc.setFont("helvetica", "normal");
-    doc.text("Customer", 20, billY + 8);
-    doc.text("United Kingdom", 20, billY + 16);
+    doc.setFont("helvetica","bold");
+    doc.text("Description", 20, y);
+    doc.text("Qty", 120, y);
+    doc.text("Unit £", 140, y);
+    doc.text("VAT", 160, y);
+    doc.text("Amount £", 180, y);
 
-    // =========================
-    // TABLE HEADER
-    // =========================
-    let tableY = billY + 30;
+    doc.line(20, y+2, 200, y+2);
+    y += 10;
 
-    doc.setFont("helvetica", "bold");
-    doc.text("Description", 20, tableY);
-    doc.text("Quantity", 110, tableY);
-    doc.text("Unit Price", 135, tableY);
-    doc.text("VAT", 165, tableY);
-    doc.text("Amount", 180, tableY);
-
-    doc.line(20, tableY + 2, 200, tableY + 2);
-
-    tableY += 10;
-
-    doc.setFont("helvetica", "normal");
+    doc.setFont("helvetica","normal");
 
     let subtotal = 0;
-    let vat20 = 0;
-    let vat0 = 0;
+    let vatTotal = 0;
 
-    items.forEach(item => {
+    cart.forEach(item => {
 
-        const qty = item.qty;
-        const unit = item.price;
-        const amount = qty * unit;
-
-        // Simple VAT rule: if price has decimals assume 20% VAT (you can adjust)
-        const vatRate = 0.20;
-        const vatAmount = amount * vatRate;
+        const amount = item.qty * item.price;
+        const vat = amount * 0.20;
 
         subtotal += amount;
-        vat20 += vatAmount;
+        vatTotal += vat;
 
-        doc.text(item.name.substring(0, 35), 20, tableY);
-        doc.text(qty.toString(), 115, tableY);
-        doc.text(`£${unit.toFixed(2)}`, 135, tableY);
-        doc.text("20%", 168, tableY);
-        doc.text(`£${amount.toFixed(2)}`, 180, tableY);
+        doc.text(item.name.substring(0,35), 20, y);
+        doc.text(item.qty.toString(), 122, y);
+        doc.text(item.price.toFixed(2), 140, y);
+        doc.text("20%", 162, y);
+        doc.text(amount.toFixed(2), 180, y);
 
-        tableY += 8;
-
-        if (tableY > 260) {
-            doc.addPage();
-            tableY = 20;
-        }
-
+        y += 8;
     });
 
-    const total = subtotal + vat20;
+    const total = subtotal + vatTotal;
 
-    tableY += 10;
-    doc.line(120, tableY, 200, tableY);
+    y += 10;
+    doc.line(120, y, 200, y);
+    y += 8;
 
-    tableY += 8;
+    doc.setFont("helvetica","bold");
+    doc.text("Subtotal", 130, y);
+    doc.text("£"+subtotal.toFixed(2), 180, y);
 
-    doc.setFont("helvetica", "bold");
-    doc.text("Subtotal without VAT", 120, tableY);
-    doc.text(`£${subtotal.toFixed(2)}`, 180, tableY);
+    y += 8;
+    doc.text("VAT (20%)", 130, y);
+    doc.text("£"+vatTotal.toFixed(2), 180, y);
 
-    tableY += 8;
-    doc.text("VAT 20%", 120, tableY);
-    doc.text(`£${vat20.toFixed(2)}`, 180, tableY);
+    y += 10;
+    doc.setFontSize(14);
+    doc.text("TOTAL GBP", 130, y);
+    doc.text("£"+total.toFixed(2), 180, y);
 
-    tableY += 8;
-    doc.setFontSize(13);
-    doc.text("Total GBP", 120, tableY);
-    doc.text(`£${total.toFixed(2)}`, 180, tableY);
+    y += 20;
+    doc.setFontSize(10);
+    doc.setFont("helvetica","normal");
+    doc.text("Thank you for your business.", 20, y);
 
-    tableY += 15;
-
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "normal");
-    doc.text("Payment Instructions:", 20, tableY);
-    tableY += 8;
-
-    doc.text("Bank Transfer", 20, tableY);
-    tableY += 6;
-    doc.text("Account Name: GKIDEAS LIMITED", 20, tableY);
-    tableY += 6;
-    doc.text("Sort Code: 54-30-37", 20, tableY);
-    tableY += 6;
-    doc.text("Account Number: 39640965", 20, tableY);
-
-    doc.save(`Invoice_${invoiceNumber}.pdf`);
-
-    notify("Invoice Downloaded", "var(--green)");
+    doc.save(INFO.name + "_Invoice_" + invoiceNumber + ".pdf");
+    notify("PDF Invoice Downloaded","var(--green)");
 }
 
 </script>
+</body>
+</html>
