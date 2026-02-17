@@ -22,16 +22,15 @@
     .btn-sec { background: #444; }
     .btn-pdf { background: #2980b9; }
     .btn-stop { background: #d63031; }
-    .btn-flash { background: #f1c40f; color: #000; margin-bottom: 10px; font-size: 14px; }
+    .btn-flash { background: #f1c40f; color: #000; margin-bottom: 10px; }
     
-    /* Navigation */
     nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #ddd; z-index: 1000; }
     nav button { flex: 1; background: none; color: #777; padding: 15px 0; margin: 0; border-radius: 0; font-size: 11px; }
     nav button.active-nav { color: var(--orange); font-weight: 800; border-top: 3px solid var(--orange); }
 
-    /* EOD Image Styling */
-    #eod-report-box { padding: 20px; background: white; border: 2px solid #333; width: 300px; margin: 20px auto; color: black; display: none; }
-    .eod-line { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #ccc; }
+    /* EOD Report Image Styling */
+    #eod-report-box { padding: 25px; background: white; border: 1px solid #000; width: 280px; margin: 10px auto; color: black; display: none; }
+    .eod-line { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #ccc; font-size: 14px; }
     
     #status-msg { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 20px; color: white; font-weight: bold; z-index: 9999; opacity: 0; transition: 0.3s; }
     #scanner-view { background: black; border-radius: 12px; overflow: hidden; display: none; margin-bottom: 15px; text-align: center; padding: 10px; }
@@ -57,7 +56,7 @@
             <button class="btn-sec" onclick="addToCart()">Add to Cart</button>
         </div>
         <div class="card">
-            <h3>Current Basket</h3>
+            <h3>Basket</h3>
             <div id="cart-list"></div>
             <div style="text-align:right; font-weight:800; font-size:20px; margin:10px 0; color:var(--orange)" id="cart-total">Total: £0.00</div>
             <button style="background:var(--green)" onclick="checkout()">Complete Sale</button>
@@ -69,31 +68,36 @@
         <div class="card">
             <h3>End of Day Summary</h3>
             <input type="date" id="report_date">
-            <input type="number" id="cash_total" placeholder="Total Cash (£)">
-            <input type="number" id="card_total" placeholder="Total Card (£)">
+            <input type="number" id="cash_total" placeholder="Total Cash Sales (£)">
+            <input type="number" id="card_total" placeholder="Total Card Sales (£)">
+            <input type="number" id="till_cash" placeholder="Till Cash (Opening/Closing) (£)">
             <input type="number" id="expense_total" placeholder="Expenses (£)">
-            <button onclick="previewReport()">Create Report Image</button>
+            <button onclick="previewReport()">1. Create Report Preview</button>
         </div>
 
         <div id="eod-report-box">
             <h2 style="text-align:center;margin:0">BAZRO</h2>
-            <p style="text-align:center;font-size:12px">9a Commercial St, Camborne</p>
+            <p style="text-align:center;font-size:11px">Camborne TR14 8AT</p>
             <hr>
             <div class="eod-line"><strong>Date:</strong> <span id="r_date"></span></div>
-            <div class="eod-line"><strong>Cash:</strong> <span id="r_cash"></span></div>
-            <div class="eod-line"><strong>Card:</strong> <span id="r_card"></span></div>
+            <div class="eod-line"><strong>Cash Sales:</strong> <span id="r_cash"></span></div>
+            <div class="eod-line"><strong>Card Sales:</strong> <span id="r_card"></span></div>
+            <div class="eod-line"><strong>Till Cash:</strong> <span id="r_till"></span></div>
             <div class="eod-line"><strong>Expenses:</strong> <span id="r_exp"></span></div>
             <hr>
-            <div class="eod-line" style="font-size:18px"><strong>NET TOTAL:</strong> <span id="r_net"></span></div>
+            <div class="eod-line" style="font-size:18px"><strong>NET:</strong> <span id="r_net"></span></div>
         </div>
         
-        <button id="share-img-btn" style="display:none; background:var(--green)" onclick="shareReportImage()">📤 Share Report as Image (JPEG)</button>
+        <div id="report-actions" style="display:none">
+            <button style="background:var(--green)" onclick="shareReportImage(true)">📤 Share via WhatsApp</button>
+            <button class="btn-sec" onclick="shareReportImage(false)">💾 Download JPEG Image</button>
+        </div>
     </div>
 
     <div id="page-history" class="page">
         <div class="card">
             <h3>Recent Sales</h3>
-            <button class="btn-sec" onclick="exportData()">📤 Backup/Export Data</button>
+            <button class="btn-sec" onclick="exportData()">📤 Backup All Data</button>
             <div id="history-list"></div>
         </div>
     </div>
@@ -145,7 +149,6 @@ function notify(msg, color) {
     setTimeout(() => el.style.opacity = "0", 2000);
 }
 
-/* --- SCANNER & FLASH --- */
 async function startScan(mode) {
     document.getElementById("scanner-view").style.display = "block";
     if (!qrScanner) qrScanner = new Html5Qrcode("reader");
@@ -167,7 +170,7 @@ async function toggleFlash() {
 }
 
 async function stopScan() {
-    if (qrScanner) { if(isFlashOn) await toggleFlash(); await qrScanner.stop(); }
+    if (qrScanner) { if(isFlashOn) await toggleFlash(); try { await qrScanner.stop(); } catch(e){} }
     document.getElementById("scanner-view").style.display = "none";
 }
 
@@ -178,42 +181,41 @@ function handleAutoScan(code) {
     setTimeout(() => scanPaused = false, 1500);
 }
 
-/* --- EOD REPORT IMAGE LOGIC --- */
 function previewReport() {
     const date = document.getElementById("report_date").value;
     const cash = Number(document.getElementById("cash_total").value);
     const card = Number(document.getElementById("card_total").value);
+    const till = Number(document.getElementById("till_cash").value);
     const exp = Number(document.getElementById("expense_total").value);
-    
     if(!date) return notify("Select Date", "red");
-
     document.getElementById("r_date").innerText = date;
     document.getElementById("r_cash").innerText = "£" + cash.toFixed(2);
     document.getElementById("r_card").innerText = "£" + card.toFixed(2);
+    document.getElementById("r_till").innerText = "£" + till.toFixed(2);
     document.getElementById("r_exp").innerText = "- £" + exp.toFixed(2);
-    document.getElementById("r_net").innerText = "£" + (cash + card - exp).toFixed(2);
-    
+    document.getElementById("r_net").innerText = "£" + (cash + card + till - exp).toFixed(2);
     document.getElementById("eod-report-box").style.display = "block";
-    document.getElementById("share-img-btn").style.display = "block";
+    document.getElementById("report-actions").style.display = "block";
 }
 
-async function shareReportImage() {
+async function shareReportImage(isShare) {
     const box = document.getElementById("eod-report-box");
-    const canvas = await html2canvas(box);
+    const canvas = await html2canvas(box, { scale: 2 });
     canvas.toBlob(async (blob) => {
-        const file = new File([blob], "Bazro_EOD_Report.jpg", { type: "image/jpeg" });
-        if (navigator.share) {
-            await navigator.share({ files: [file], title: "Bazro EOD Report" });
+        const url = URL.createObjectURL(blob);
+        if (isShare && navigator.share) {
+            const file = new File([blob], "Bazro_Report.jpg", { type: "image/jpeg" });
+            try { await navigator.share({ files: [file], title: "Bazro EOD" }); } 
+            catch (e) { window.open(url); }
         } else {
-            const link = document.createElement('a');
-            link.download = 'Bazro_Report.jpg';
-            link.href = URL.createObjectURL(blob);
-            link.click();
+            const a = document.createElement('a');
+            a.download = 'Bazro_EOD_Report.jpg';
+            a.href = url;
+            a.click();
         }
     }, "image/jpeg");
 }
 
-/* --- CORE POS LOGIC --- */
 function addProduct() {
     const b = document.getElementById("p_barcode").value, n = document.getElementById("p_name").value, p = document.getElementById("p_price").value, s = document.getElementById("p_stock").value || 0;
     if (!b || !n || !p) return notify("Error", "red");
@@ -224,7 +226,7 @@ function addProduct() {
 
 function addToCart(manualCode = null) {
     const b = (manualCode || document.getElementById("sell_barcode").value).trim();
-    if (!products[b]) return notify("Missing in Stock", "red");
+    if (!products[b]) return notify("Not in stock", "red");
     let item = cart.find(i => i.barcode === b);
     if (item) item.qty++;
     else cart.push({ barcode: b, name: products[b].name, price: products[b].price, qty: 1 });
