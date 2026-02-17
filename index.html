@@ -2,273 +2,266 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Bazro POS</title>
-
+<title>Bazro POS - Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
-:root{
-  --p:#2a5298;
-  --g1:#1e3c72;
-  --g2:#2a5298;
-}
-body{
-  margin:0;
-  font-family:sans-serif;
-  background:#f4f7f6;
-  color:#333;
-}
-header{
-  background:linear-gradient(135deg,var(--g1),var(--g2));
-  color:white;
-  text-align:center;
-  padding:18px;
-  font-weight:800;
-  font-size:22px;
-}
-.container{
-  padding:15px;
-  max-width:520px;
-  margin:auto;
-}
-.card{
-  background:white;
-  padding:15px;
-  border-radius:14px;
-  margin-bottom:15px;
-  box-shadow:0 4px 12px rgba(0,0,0,.15);
-}
-input,button{
-  width:100%;
-  padding:12px;
-  margin-top:6px;
-  border-radius:10px;
-  border:1px solid #ddd;
-}
-button{
-  border:none;
-  background:var(--p);
-  color:white;
-  font-weight:700;
-}
-.btn-scan{background:#00b894}
-.btn-stop{background:#d63031;display:none}
-.cart-item{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:6px 0;
-  border-bottom:1px solid #eee;
-}
-.qty{
-  display:flex;
-  gap:6px;
-  align-items:center;
-}
-.qty button{
-  width:32px;
-  padding:4px;
-  background:#eee;
-  color:#111;
-  font-weight:800;
-}
-.total{
-  text-align:right;
-  font-size:18px;
-  font-weight:800;
-  margin-top:10px;
-  color:var(--p);
-}
-#reader{
-  margin:10px 0;
-}
+    :root { --orange: #ff512f; --yellow: #f09819; --dark: #141e30; --green: #27ae60; --red: #e74c3c; }
+    body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding-bottom: 80px; min-height: 100vh; }
+    header { background: linear-gradient(135deg, var(--orange), var(--yellow)); padding: 15px; text-align: center; color: white; font-size: 22px; font-weight: 800; position: sticky; top: 0; z-index: 100; }
+    .container { max-width: 500px; margin: auto; padding: 15px; }
+    .page { display: none; }
+    .active-page { display: block; }
+    .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    h3 { margin-top: 0; color: var(--dark); border-bottom: 2px solid var(--orange); padding-bottom: 8px; }
+    input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
+    button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 8px; border: none; background: linear-gradient(135deg, var(--orange), var(--yellow)); color: white; font-weight: bold; cursor: pointer; }
+    
+    .qty-btn { width: 35px; height: 35px; padding: 0; display: inline-block; margin: 0 5px; background: #eee; color: #333; }
+    .cart-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+
+    nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #ddd; z-index: 1000; height: 65px; }
+    nav button { flex: 1; background: none; color: #777; padding: 0; margin: 0; border-radius: 0; font-size: 11px; height: 100%; box-shadow: none; }
+    nav button.active-nav { color: var(--orange); font-weight: 800; border-top: 4px solid var(--orange); }
+
+    #eod-report-box { padding: 20px; background: white; border: 1px solid #000; width: 280px; margin: 10px auto; color: black; display: none; }
+    .eod-line { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #ccc; font-size: 14px; }
+    #status-msg { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 20px; color: white; z-index: 9999; opacity: 0; transition: 0.3s; pointer-events: none; }
+    #scanner-view { background: black; border-radius: 12px; overflow: hidden; display: none; margin-bottom: 15px; text-align: center; padding: 10px; }
+    
+    .scan-btns { display: flex; gap: 8px; margin-top: 10px; }
+    .scan-btns button { margin: 0; flex: 1; }
 </style>
 </head>
-
 <body>
 
-<header>BAZRO POS</header>
+<div id="status-msg"></div>
+<header>BAZRO SHOP</header>
 
 <div class="container">
+    <div id="page-sales" class="page active-page">
+        <div id="scanner-view">
+            <div id="reader"></div>
+            <div class="scan-btns">
+                <button id="flash-btn" style="background: var(--dark)" onclick="toggleFlash()">🔦 Light: OFF</button>
+                <button style="background:var(--red)" onclick="stopScan()">Close</button>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Checkout</h3>
+            <button onclick="startScan()">📷 Scan Items</button>
+            <input id="sell_barcode" placeholder="Manual Barcode">
+            <button style="background:var(--dark)" onclick="addToCart()">Add to Cart</button>
+        </div>
+        <div class="card">
+            <h3>Basket</h3>
+            <div id="cart-list"></div>
+            <div style="text-align:right; font-weight:800; font-size:20px; margin:10px 0; color:var(--orange)" id="cart-total">Total: £0.00</div>
+            <button style="background:var(--green)" onclick="checkout()">Complete Sale</button>
+        </div>
+    </div>
 
-<!-- ADD PRODUCT -->
-<div class="card">
-<h3>Manage Inventory</h3>
+    <div id="page-report" class="page">
+        <div class="card">
+            <h3>Daily Report Entry</h3>
+            <input type="date" id="report_date">
+            <input type="number" id="cash_total" placeholder="Cash (£)">
+            <input type="number" id="card_total" placeholder="Card (£)">
+            <input type="number" id="expense_total" placeholder="Expenses (£)">
+            <button onclick="saveAndPreviewReport()">Save & Preview Report</button>
+        </div>
+        <div id="eod-report-box">
+            <div style="font-size:20px; font-weight:900; text-align:center">BAZRO EOD</div>
+            <div id="r_date" style="text-align:center; margin-bottom:10px;"></div>
+            <div class="eod-line"><span>Cash:</span> <span id="r_cash"></span></div>
+            <div class="eod-line"><span>Card:</span> <span id="r_card"></span></div>
+            <div class="eod-line"><span>Exp:</span> <span id="r_exp"></span></div>
+            <div class="eod-line" style="font-weight:bold"><span>NET:</span> <span id="r_net"></span></div>
+        </div>
+        <div class="card">
+            <h3>Saved Reports</h3>
+            <div id="saved-reports-list" style="font-size:12px"></div>
+        </div>
+    </div>
 
-<input id="barcode" placeholder="Barcode">
-<input id="name" placeholder="Product name">
-<input id="price" type="number" step="0.01" placeholder="Price (£)">
-<input id="stock" type="number" placeholder="Stock">
+    <div id="page-history" class="page">
+        <div class="card">
+            <h3>Sales History</h3>
+            <div id="history-list"></div>
+            <button style="background:var(--red); margin-top:20px;" onclick="clearAllSales()">Clear All History</button>
+        </div>
+    </div>
 
-<button onclick="addProduct()">Save Product</button>
+    <div id="page-stock" class="page">
+        <div class="card">
+            <h3>Stock Management</h3>
+            <input id="p_barcode" placeholder="Barcode ID">
+            <input id="p_name" placeholder="Item Name">
+            <input id="p_price" type="number" step="0.01" placeholder="Price £">
+            <button onclick="addProduct()">Save to Inventory</button>
+        </div>
+    </div>
 </div>
 
-<!-- SELL -->
-<div class="card">
-<h3>Sell</h3>
-
-<div id="reader"></div>
-<button id="startBtn" class="btn-scan" onclick="startScanner()">📷 Start Scan</button>
-<button id="stopBtn" class="btn-stop" onclick="stopScanner()">🛑 Stop</button>
-
-<input id="sellBarcode" placeholder="Manual barcode">
-<button onclick="addToCart()">Add to Cart</button>
-
-<div id="cartList"></div>
-<div class="total" id="total">Total: £0.00</div>
-
-<button onclick="checkout()">Checkout</button>
-<button onclick="openInvoice()">🧾 Invoice</button>
-</div>
-
-</div>
+<nav>
+    <button id="nav-sales" class="active-nav" onclick="showPage('sales')">🛒 SHOP</button>
+    <button id="nav-report" onclick="showPage('report')">📊 REPORT</button>
+    <button id="nav-history" onclick="showPage('history')">📜 HISTORY</button>
+    <button id="nav-stock" onclick="showPage('stock')">📦 STOCK</button>
+</nav>
 
 <script>
-/* ===== DATA ===== */
 let products = JSON.parse(localStorage.getItem("products") || "{}");
-let cart = [];
 let sales = JSON.parse(localStorage.getItem("sales") || "[]");
+let eodReports = JSON.parse(localStorage.getItem("eodReports") || "[]");
+let cart = [];
+let qrScanner = null;
+let isFlashOn = false;
 
-/* ===== ADD PRODUCT (FIXED) ===== */
-function addProduct(){
-  const b = barcode.value.trim();
-  const n = name.value.trim();
-  const p = price.value;
-  const s = stock.value || 0;
-
-  if(b===""||n===""||p===""){
-    alert("Barcode, name and price required");
-    return;
-  }
-
-  products[b] = {
-    name:n,
-    price:parseFloat(p),
-    stock:parseInt(s)
-  };
-
-  localStorage.setItem("products",JSON.stringify(products));
-
-  barcode.value=name.value=price.value=stock.value="";
-  alert("Product saved");
+function showPage(p) {
+    document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
+    document.getElementById('page-'+p).classList.add('active-page');
+    document.getElementById('nav-'+p).classList.add('active-nav');
+    if(p==='history') renderHistory();
+    if(p==='report') renderSavedReports();
 }
 
-/* ===== CART ===== */
-function addToCart(code=null){
-  const b = (code||sellBarcode.value).trim();
-  const prod = products[b];
-
-  if(!prod){ alert("Product not found"); return; }
-  if(prod.stock<=0){ alert("Out of stock"); return; }
-
-  let item = cart.find(i=>i.barcode===b);
-  if(item) item.qty++;
-  else cart.push({barcode:b,name:prod.name,price:prod.price,qty:1});
-
-  prod.stock--;
-  localStorage.setItem("products",JSON.stringify(products));
-  sellBarcode.value="";
-  updateUI();
+function notify(m, c) {
+    const el = document.getElementById("status-msg");
+    el.innerText = m; el.style.background = c; el.style.opacity = "1";
+    setTimeout(() => el.style.opacity = "0", 2000);
 }
 
-function changeQty(b,d){
-  let i = cart.find(x=>x.barcode===b);
-  if(!i) return;
-
-  if(d>0 && products[b].stock<=0) return;
-
-  i.qty+=d;
-  products[b].stock-=d;
-
-  if(i.qty<=0) cart = cart.filter(x=>x.barcode!==b);
-
-  localStorage.setItem("products",JSON.stringify(products));
-  updateUI();
+function updateQty(barcode, delta) {
+    let item = cart.find(i => i.barcode === barcode);
+    if (item) {
+        item.qty += delta;
+        if (item.qty <= 0) cart = cart.filter(i => i.barcode !== barcode);
+    }
+    renderCart();
 }
 
-function updateUI(){
-  const list = document.getElementById("cartList");
-  let total = 0;
-
-  list.innerHTML = cart.map(i=>{
-    let l = i.qty*i.price;
-    total+=l;
-    return `
-    <div class="cart-item">
-      <span><strong>${i.name}</strong><br>£${i.price.toFixed(2)}</span>
-      <div class="qty">
-        <button onclick="changeQty('${i.barcode}',-1)">−</button>
-        <strong>${i.qty}</strong>
-        <button onclick="changeQty('${i.barcode}',1)">+</button>
-      </div>
-      <strong>£${l.toFixed(2)}</strong>
-    </div>`;
-  }).join("");
-
-  totalDiv.innerText = `Total: £${total.toFixed(2)}`;
+function addToCart(manualCode = null) {
+    const b = (manualCode || document.getElementById("sell_barcode").value).trim();
+    if (!products[b]) return notify("Unknown Barcode", "red");
+    let item = cart.find(i => i.barcode === b);
+    if (item) item.qty++; else cart.push({ barcode: b, name: products[b].name, price: products[b].price, qty: 1 });
+    renderCart(); document.getElementById("sell_barcode").value = "";
 }
 
-/* ===== SCANNER (UNCHANGED – iPHONE SAFE) ===== */
-let html5QrCode;
-
-function startScanner(){
-  startBtn.style.display="none";
-  stopBtn.style.display="block";
-
-  html5QrCode = new Html5Qrcode("reader");
-  html5QrCode.start(
-    {facingMode:"environment"},
-    {fps:10,qrbox:{width:250,height:150}},
-    txt=>addToCart(txt)
-  );
+function renderCart() {
+    let t = 0;
+    document.getElementById("cart-list").innerHTML = cart.map(i => {
+        t += i.qty * i.price;
+        return `<div class="cart-row">
+            <div><b>${i.name}</b><br>£${i.price.toFixed(2)}</div>
+            <div>
+                <button class="qty-btn" onclick="updateQty('${i.barcode}', -1)">-</button>
+                <span>${i.qty}</span>
+                <button class="qty-btn" onclick="updateQty('${i.barcode}', 1)">+</button>
+            </div>
+        </div>`;
+    }).join("");
+    document.getElementById("cart-total").innerText = `Total: £${t.toFixed(2)}`;
 }
 
-function stopScanner(){
-  html5QrCode.stop().then(()=>{
-    startBtn.style.display="block";
-    stopBtn.style.display="none";
-  });
+function checkout() {
+    if(!cart.length) return;
+    sales.unshift({ id: Date.now(), date: new Date().toLocaleString(), items: [...cart], total: cart.reduce((a,b)=>a+(b.qty*b.price),0) });
+    localStorage.setItem("sales", JSON.stringify(sales));
+    cart = []; renderCart(); notify("Sale Completed", "green");
 }
 
-/* ===== CHECKOUT ===== */
-function checkout(){
-  if(!cart.length){ alert("Cart empty"); return; }
-
-  sales.push({date:new Date().toLocaleString(),items:[...cart]});
-  localStorage.setItem("sales",JSON.stringify(sales));
-
-  cart=[];
-  updateUI();
-  alert("Sale saved");
+function renderHistory() {
+    document.getElementById("history-list").innerHTML = sales.map(s => `
+        <div style="padding:10px; border-bottom:1px solid #eee; font-size:13px;">
+            <strong>${s.date}</strong> - Total: £${s.total.toFixed(2)}<br>
+            <span style="color:#666">${s.items.map(i => `${i.name} (x${i.qty})`).join(", ")}</span>
+        </div>`).join("");
 }
 
-/* ===== INVOICE ===== */
-function openInvoice(){
-  if(!sales.length) return;
-
-  const s = sales[sales.length-1];
-  let rows="",total=0;
-
-  s.items.forEach(i=>{
-    let l=i.qty*i.price;
-    total+=l;
-    rows+=`<tr><td>${i.name}</td><td>${i.qty}</td><td>£${l.toFixed(2)}</td></tr>`;
-  });
-
-  const w=window.open("","inv");
-  w.document.write(`
-  <html><body style="font-family:sans-serif;background:#f4f7f6;padding:20px">
-  <div style="max-width:400px;margin:auto;background:white;padding:20px;border-radius:12px">
-  <h2 style="text-align:center;color:#2a5298">BAZRO</h2>
-  <p>${s.date}</p>
-  <table width="100%">${rows}</table>
-  <h3 style="text-align:right">Total £${total.toFixed(2)}</h3>
-  </div></body></html>`);
-  w.print();
+// --- DIRECT FLASH CONTROL ---
+async function startScan() {
+    document.getElementById("scanner-view").style.display = "block";
+    if (!qrScanner) qrScanner = new Html5Qrcode("reader");
+    
+    qrScanner.start(
+        { facingMode: "environment" }, 
+        { fps: 20, qrbox: 250 }, 
+        (code) => { addToCart(code); notify("Scanned!", "green"); }
+    ).catch(err => notify("Camera Error", "red"));
 }
+
+async function toggleFlash() {
+    if (!qrScanner) return;
+    try {
+        const track = qrScanner.getRunningTrack();
+        if (!track) return notify("Open Camera First", "orange");
+
+        const capabilities = track.getCapabilities();
+        if (!capabilities.torch) return notify("No Flash Hardware", "red");
+
+        isFlashOn = !isFlashOn;
+        await track.applyConstraints({
+            advanced: [{ torch: isFlashOn }]
+        });
+        
+        document.getElementById("flash-btn").innerText = isFlashOn ? "🔦 Light: ON" : "🔦 Light: OFF";
+        document.getElementById("flash-btn").style.background = isFlashOn ? "var(--green)" : "var(--dark)";
+    } catch (e) {
+        notify("Flash Error", "red");
+        console.error(e);
+    }
+}
+
+function stopScan() { 
+    if(qrScanner) {
+        qrScanner.stop().then(() => {
+            isFlashOn = false;
+            document.getElementById("flash-btn").innerText = "🔦 Light: OFF";
+            document.getElementById("flash-btn").style.background = "var(--dark)";
+        }).catch(() => {});
+    }
+    document.getElementById("scanner-view").style.display = "none"; 
+}
+
+function addProduct() {
+    const b = document.getElementById("p_barcode").value, n = document.getElementById("p_name").value, p = document.getElementById("p_price").value;
+    if(!b || !n || !p) return notify("Fill all fields", "red");
+    products[b] = { name: n, price: Number(p) };
+    localStorage.setItem("products", JSON.stringify(products));
+    notify("Stock Updated", "green");
+}
+
+function saveAndPreviewReport() {
+    const d = document.getElementById("report_date").value;
+    const cash = Number(document.getElementById("cash_total").value);
+    const card = Number(document.getElementById("card_total").value);
+    const exp = Number(document.getElementById("expense_total").value);
+    if(!d) return notify("Select Date", "red");
+    const report = { date: d, cash, card, exp, net: (cash + card - exp) };
+    eodReports.unshift(report);
+    localStorage.setItem("eodReports", JSON.stringify(eodReports));
+    document.getElementById("r_date").innerText = d;
+    document.getElementById("r_cash").innerText = "£"+cash.toFixed(2);
+    document.getElementById("r_card").innerText = "£"+card.toFixed(2);
+    document.getElementById("r_exp").innerText = "£"+exp.toFixed(2);
+    document.getElementById("r_net").innerText = "£"+report.net.toFixed(2);
+    document.getElementById("eod-report-box").style.display = "block";
+    renderSavedReports();
+    notify("Report Saved", "green");
+}
+
+function renderSavedReports() {
+    document.getElementById("saved-reports-list").innerHTML = eodReports.map(r => `
+        <div style="padding:8px; border-bottom:1px solid #eee">
+            <b>${r.date}</b> | Cash: £${r.cash} | Card: £${r.card} | Net: £${r.net.toFixed(2)}
+        </div>`).join("");
+}
+
+function clearAllSales() { if(confirm("Clear history?")) { sales = []; localStorage.setItem("sales", "[]"); renderHistory(); } }
 </script>
-
 </body>
 </html>
