@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Bazro POS</title>
+<title>Bazro POS - All-in-One</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -17,7 +17,6 @@
         --red: #e74c3c; 
     }
 
-    /* DYNAMIC CHANGING BACKGROUND */
     body { 
         margin: 0; 
         font-family: 'Segoe UI', sans-serif; 
@@ -54,20 +53,14 @@
     nav button { flex: 1; background: none; color: #777; padding: 0; margin: 0; border-radius: 0; font-size: 11px; height: 100%; box-shadow: none; }
     nav button.active-nav { color: var(--orange); font-weight: 800; border-top: 4px solid var(--orange); }
 
-    /* Success Tick Popup */
+    /* Admin Restriction Style */
+    .admin-only { display: none; }
+
     .scan-success-popup {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(0, 0, 0, 0.9);
-        color: white;
-        padding: 30px 50px;
-        border-radius: 20px;
-        text-align: center;
-        z-index: 10001;
-        display: none;
-        pointer-events: none;
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.9); color: white; padding: 30px 50px;
+        border-radius: 20px; text-align: center; z-index: 10001;
+        display: none; pointer-events: none;
     }
     .tick-icon { font-size: 70px; color: var(--green); display: block; margin-bottom: 10px; }
     .animate-pop { animation: fadeInOut 1.2s ease-in-out forwards; }
@@ -82,7 +75,6 @@
     #status-msg { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 20px; color: white; font-weight: bold; z-index: 9999; opacity: 0; transition: 0.3s; pointer-events: none; }
     #scanner-view, #stock-scanner-view { background: black; border-radius: 12px; overflow: hidden; display: none; margin-bottom: 15px; text-align: center; padding: 10px; }
 
-    /* EOD Receipt Style */
     #eod-report-box { padding: 30px; background: white; border: 1px solid #000; width: 280px; margin: 10px auto; color: black; display: none; text-align: center; }
     .eod-line { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #ccc; font-size: 14px; text-align: left; }
 </style>
@@ -169,9 +161,10 @@
 
 <nav>
     <button id="nav-sales" class="active-nav" onclick="showPage('sales')">🛒 SHOP</button>
-    <button id="nav-report" onclick="showPage('report')">📊 REPORT</button>
-    <button id="nav-history" onclick="showPage('history')">📜 HISTORY</button>
-    <button id="nav-stock" onclick="showPage('stock')">📦 STOCK</button>
+    <button id="nav-report" class="admin-only" onclick="showPage('report')">📊 REPORT</button>
+    <button id="nav-history" class="admin-only" onclick="showPage('history')">📜 HISTORY</button>
+    <button id="nav-stock" class="admin-only" onclick="showPage('stock')">📦 STOCK</button>
+    <button id="nav-admin" onclick="unlockAdmin()">🔑 ADMIN</button>
 </nav>
 
 <script>
@@ -182,7 +175,9 @@ let qrScanner = null;
 let stockScanner = null;
 let isFlashOn = false;
 let scanPaused = false;
+let isAdmin = false;
 
+// --- NAVIGATION & SECURITY ---
 function showPage(p) {
     document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
     document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
@@ -190,6 +185,18 @@ function showPage(p) {
     document.getElementById('nav-'+p).classList.add('active-nav');
     if(p==='history') renderHistory();
     stopScan(); stopStockScan();
+}
+
+function unlockAdmin() {
+    const pass = prompt("Enter Admin Password:");
+    if (pass === "1234") { // <--- Change your password here
+        isAdmin = true;
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = "block");
+        document.getElementById('nav-admin').style.display = "none";
+        notify("Admin Access Granted", "green");
+    } else {
+        notify("Access Denied", "red");
+    }
 }
 
 function notify(msg, color) {
@@ -286,6 +293,24 @@ async function shareReportImage() {
         const file = new File([blob], "Report.jpg", {type: "image/jpeg"});
         if (navigator.share) await navigator.share({files: [file]});
     });
+}
+
+function clearAllSales() {
+    if(confirm("Are you sure? This deletes ALL history!")) {
+        sales = [];
+        localStorage.setItem("sales", JSON.stringify(sales));
+        renderHistory();
+        notify("History Cleared", "red");
+    }
+}
+
+function exportData() {
+    const data = JSON.stringify({products, sales});
+    const blob = new Blob([data], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `Bazro_Backup_${new Date().toLocaleDateString()}.json`;
+    a.click();
 }
 </script>
 </body>
