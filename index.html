@@ -2,50 +2,34 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Bazro POS</title>
+<title>Bazro POS - Pro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <style>
-    :root { 
-        --orange: #ff512f; 
-        --yellow: #f09819; 
-        --dark: #141e30; 
-        --green: #27ae60; 
-        --red: #e74c3c; 
-    }
-
-    body { 
-        margin: 0; 
-        font-family: 'Segoe UI', sans-serif; 
-        background: #f0f2f5;
-        padding-bottom: 80px; 
-        min-height: 100vh;
-    }
-
-    header { background: linear-gradient(135deg, var(--orange), var(--yellow)); padding: 15px; text-align: center; color: white; font-size: 22px; font-weight: 800; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    :root { --orange: #ff512f; --yellow: #f09819; --dark: #141e30; --green: #27ae60; --red: #e74c3c; }
+    body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding-bottom: 80px; min-height: 100vh; }
+    header { background: linear-gradient(135deg, var(--orange), var(--yellow)); padding: 15px; text-align: center; color: white; font-size: 22px; font-weight: 800; position: sticky; top: 0; z-index: 100; }
     .container { max-width: 500px; margin: auto; padding: 15px; }
     .page { display: none; }
-    .active-page { display: block; animation: fadeIn 0.3s ease; }
+    .active-page { display: block; }
+    .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    h3 { margin-top: 0; color: var(--dark); border-bottom: 2px solid var(--orange); padding-bottom: 8px; }
+    input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
+    button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 8px; border: none; background: linear-gradient(135deg, var(--orange), var(--yellow)); color: white; font-weight: bold; cursor: pointer; }
     
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .qty-btn { width: 35px; height: 35px; padding: 0; display: inline-block; margin: 0 5px; background: #eee; color: #333; }
+    .cart-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
 
-    .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    h3 { margin-top: 0; color: var(--dark); border-bottom: 1px solid #eee; padding-bottom: 8px; }
-    input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; font-size: 16px; box-sizing: border-box; }
-    button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 8px; border: none; background: linear-gradient(135deg, var(--orange), var(--yellow)); color: white; font-weight: bold; font-size: 16px; cursor: pointer; }
-    
-    .btn-sec { background: #444; }
-    .btn-pdf { background: #2980b9; }
-    .btn-stop { background: var(--red); }
-    
-    nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #ddd; z-index: 1000; height: 70px; }
-    nav button { flex: 1; background: none; color: #777; padding: 0; margin: 0; border-radius: 0; font-size: 11px; height: 100%; }
-    nav button.active-nav { color: var(--orange); font-weight: 800; border-top: 4px solid var(--orange); background: #fff9f8; }
+    nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #ddd; z-index: 1000; height: 65px; }
+    nav button { flex: 1; background: none; color: #777; padding: 0; margin: 0; border-radius: 0; font-size: 11px; height: 100%; box-shadow: none; }
+    nav button.active-nav { color: var(--orange); font-weight: 800; border-top: 4px solid var(--orange); }
 
-    #status-msg { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 20px; color: white; font-weight: bold; z-index: 9999; opacity: 0; transition: 0.3s; pointer-events: none; }
+    #eod-report-box { padding: 20px; background: white; border: 1px solid #000; width: 280px; margin: 10px auto; color: black; display: none; }
+    .eod-line { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #ccc; font-size: 14px; }
+    #status-msg { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 20px; color: white; z-index: 9999; opacity: 0; transition: 0.3s; pointer-events: none; }
     #scanner-view { background: black; border-radius: 12px; overflow: hidden; display: none; margin-bottom: 15px; text-align: center; padding: 10px; }
 </style>
 </head>
@@ -58,13 +42,13 @@
     <div id="page-sales" class="page active-page">
         <div id="scanner-view">
             <div id="reader"></div>
-            <button class="btn-stop" onclick="stopScan()">Close Camera</button>
+            <button class="btn-stop" style="background:var(--red)" onclick="stopScan()">Close Camera</button>
         </div>
         <div class="card">
             <h3>Checkout</h3>
             <button onclick="startScan()">📷 Scan Items</button>
             <input id="sell_barcode" placeholder="Manual Barcode">
-            <button class="btn-sec" onclick="addToCart()">Add to Cart</button>
+            <button style="background:var(--dark)" onclick="addToCart()">Add to Cart</button>
         </div>
         <div class="card">
             <h3>Basket</h3>
@@ -74,26 +58,51 @@
         </div>
     </div>
 
-    <div id="page-stock" class="page">
+    <div id="page-report" class="page">
         <div class="card">
-            <h3>Inventory</h3>
-            <input id="p_barcode" placeholder="Barcode ID">
-            <input id="p_name" placeholder="Product Name">
-            <input id="p_price" type="number" step="0.01" placeholder="Price (£)">
-            <button onclick="addProduct()">Save Product</button>
+            <h3>Daily Report Entry</h3>
+            <input type="date" id="report_date">
+            <input type="number" id="cash_total" placeholder="Cash (£)">
+            <input type="number" id="card_total" placeholder="Card (£)">
+            <input type="number" id="expense_total" placeholder="Expenses (£)">
+            <button onclick="saveAndPreviewReport()">Save & Preview Report</button>
+        </div>
+        <div id="eod-report-box">
+            <div style="font-size:20px; font-weight:900; text-align:center">BAZRO EOD</div>
+            <div id="r_date" style="text-align:center; margin-bottom:10px;"></div>
+            <div class="eod-line"><span>Cash:</span> <span id="r_cash"></span></div>
+            <div class="eod-line"><span>Card:</span> <span id="r_card"></span></div>
+            <div class="eod-line"><span>Exp:</span> <span id="r_exp"></span></div>
+            <div class="eod-line" style="font-weight:bold"><span>NET:</span> <span id="r_net"></span></div>
+        </div>
+        <div class="card">
+            <h3>Saved Summaries</h3>
+            <div id="saved-reports-list" style="font-size:12px"></div>
         </div>
     </div>
 
     <div id="page-history" class="page">
         <div class="card">
-            <h3>Recent History</h3>
+            <h3>Sales History</h3>
             <div id="history-list"></div>
+            <button style="background:var(--red); margin-top:20px;" onclick="clearAllSales()">Clear All History</button>
+        </div>
+    </div>
+
+    <div id="page-stock" class="page">
+        <div class="card">
+            <h3>Stock Management</h3>
+            <input id="p_barcode" placeholder="Barcode ID">
+            <input id="p_name" placeholder="Item Name">
+            <input id="p_price" type="number" step="0.01" placeholder="Price £">
+            <button onclick="addProduct()">Save to Inventory</button>
         </div>
     </div>
 </div>
 
 <nav>
     <button id="nav-sales" class="active-nav" onclick="showPage('sales')">🛒 SHOP</button>
+    <button id="nav-report" onclick="showPage('report')">📊 REPORT</button>
     <button id="nav-history" onclick="showPage('history')">📜 HISTORY</button>
     <button id="nav-stock" onclick="showPage('stock')">📦 STOCK</button>
 </nav>
@@ -101,6 +110,7 @@
 <script>
 let products = JSON.parse(localStorage.getItem("products") || "{}");
 let sales = JSON.parse(localStorage.getItem("sales") || "[]");
+let eodReports = JSON.parse(localStorage.getItem("eodReports") || "[]");
 let cart = [];
 let qrScanner = null;
 
@@ -109,98 +119,111 @@ function showPage(p) {
     document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
     document.getElementById('page-'+p).classList.add('active-page');
     document.getElementById('nav-'+p).classList.add('active-nav');
-    if(p === 'history') updateHistory();
+    if(p==='history') renderHistory();
+    if(p==='report') renderSavedReports();
 }
 
-function notify(msg, color) {
+function notify(m, c) {
     const el = document.getElementById("status-msg");
-    el.innerText = msg; el.style.background = color; el.style.opacity = "1";
+    el.innerText = m; el.style.background = c; el.style.opacity = "1";
     setTimeout(() => el.style.opacity = "0", 2000);
 }
 
-async function startScan() {
-    document.getElementById("scanner-view").style.display = "block";
-    if (!qrScanner) qrScanner = new Html5Qrcode("reader");
-    try {
-        await qrScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (code) => {
-            addToCart(code);
-            notify("Item Added", "green");
-            if(navigator.vibrate) navigator.vibrate(50);
-        });
-    } catch (err) {
-        notify("Camera Error", "red");
+function updateQty(barcode, delta) {
+    let item = cart.find(i => i.barcode === barcode);
+    if (item) {
+        item.qty += delta;
+        if (item.qty <= 0) cart = cart.filter(i => i.barcode !== barcode);
     }
-}
-
-function stopScan() {
-    if (qrScanner) { qrScanner.stop().catch(e => console.log(e)); }
-    document.getElementById("scanner-view").style.display = "none";
-}
-
-function addProduct() {
-    const b = document.getElementById("p_barcode").value;
-    const n = document.getElementById("p_name").value;
-    const p = document.getElementById("p_price").value;
-    if(!b || !n || !p) return notify("Missing Info", "red");
-    
-    products[b] = { name: n, price: Number(p) };
-    localStorage.setItem("products", JSON.stringify(products));
-    notify("Saved!", "green");
-    document.getElementById("p_barcode").value = "";
-    document.getElementById("p_name").value = "";
-    document.getElementById("p_price").value = "";
+    renderCart();
 }
 
 function addToCart(manualCode = null) {
     const b = (manualCode || document.getElementById("sell_barcode").value).trim();
     if (!products[b]) return notify("Unknown Barcode", "red");
-    
     let item = cart.find(i => i.barcode === b);
-    if (item) {
-        item.qty++;
-    } else {
-        cart.push({ barcode: b, name: products[b].name, price: products[b].price, qty: 1 });
-    }
-    renderCart();
-    document.getElementById("sell_barcode").value = "";
+    if (item) item.qty++; else cart.push({ barcode: b, name: products[b].name, price: products[b].price, qty: 1 });
+    renderCart(); document.getElementById("sell_barcode").value = "";
 }
 
 function renderCart() {
     let t = 0;
-    const list = document.getElementById("cart-list");
-    list.innerHTML = cart.map(i => {
+    document.getElementById("cart-list").innerHTML = cart.map(i => {
         t += i.qty * i.price;
-        return `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee">
-            <span>${i.name} (x${i.qty})</span><span>£${(i.qty*i.price).toFixed(2)}</span>
+        return `<div class="cart-row">
+            <div><b>${i.name}</b><br>£${i.price.toFixed(2)}</div>
+            <div>
+                <button class="qty-btn" onclick="updateQty('${i.barcode}', -1)">-</button>
+                <span>${i.qty}</span>
+                <button class="qty-btn" onclick="updateQty('${i.barcode}', 1)">+</button>
+            </div>
         </div>`;
     }).join("");
     document.getElementById("cart-total").innerText = `Total: £${t.toFixed(2)}`;
 }
 
 function checkout() {
-    if (cart.length === 0) return notify("Cart is empty", "red");
-    const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-    const sale = {
-        date: new Date().toLocaleString(),
-        items: [...cart],
-        total: total
-    };
-    sales.push(sale);
+    if(!cart.length) return;
+    sales.unshift({ id: Date.now(), date: new Date().toLocaleString(), items: [...cart], total: cart.reduce((a,b)=>a+(b.qty*b.price),0) });
     localStorage.setItem("sales", JSON.stringify(sales));
-    cart = [];
-    renderCart();
-    notify("Sale Complete!", "green");
+    cart = []; renderCart(); notify("Sale Completed", "green");
 }
 
-function updateHistory() {
-    const hist = document.getElementById("history-list");
-    hist.innerHTML = sales.slice().reverse().map(s => `
-        <div style="border-bottom:1px solid #eee; padding:10px 0">
-            <small>${s.date}</small><br>
-            <strong>Total: £${s.total.toFixed(2)}</strong>
-        </div>
-    `).join("");
+function renderHistory() {
+    document.getElementById("history-list").innerHTML = sales.map(s => `
+        <div style="padding:10px; border-bottom:1px solid #eee; font-size:13px;">
+            <strong>${s.date}</strong> - Total: £${s.total.toFixed(2)}<br>
+            <span style="color:#666">${s.items.map(i => `${i.name} (x${i.qty})`).join(", ")}</span>
+        </div>`).join("");
 }
+
+function saveAndPreviewReport() {
+    const d = document.getElementById("report_date").value;
+    const cash = Number(document.getElementById("cash_total").value);
+    const card = Number(document.getElementById("card_total").value);
+    const exp = Number(document.getElementById("expense_total").value);
+    if(!d) return notify("Select Date", "red");
+
+    const report = { date: d, cash, card, exp, net: (cash + card - exp) };
+    eodReports.unshift(report);
+    localStorage.setItem("eodReports", JSON.stringify(eodReports));
+
+    document.getElementById("r_date").innerText = d;
+    document.getElementById("r_cash").innerText = "£"+cash.toFixed(2);
+    document.getElementById("r_card").innerText = "£"+card.toFixed(2);
+    document.getElementById("r_exp").innerText = "£"+exp.toFixed(2);
+    document.getElementById("r_net").innerText = "£"+report.net.toFixed(2);
+    document.getElementById("eod-report-box").style.display = "block";
+    renderSavedReports();
+    notify("Report Saved", "green");
+}
+
+function renderSavedReports() {
+    document.getElementById("saved-reports-list").innerHTML = eodReports.map(r => `
+        <div style="padding:8px; border-bottom:1px solid #eee">
+            <b>${r.date}</b> | Cash: £${r.cash} | Card: £${r.card} | Net: £${r.net.toFixed(2)}
+        </div>`).join("");
+}
+
+async function startScan() {
+    document.getElementById("scanner-view").style.display = "block";
+    if (!qrScanner) qrScanner = new Html5Qrcode("reader");
+    qrScanner.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (code) => {
+        addToCart(code); notify("Scanned!", "green");
+    });
+}
+
+function stopScan() { if(qrScanner) qrScanner.stop(); document.getElementById("scanner-view").style.display = "none"; }
+
+function addProduct() {
+    const b = document.getElementById("p_barcode").value, n = document.getElementById("p_name").value, p = document.getElementById("p_price").value;
+    if(!b || !n || !p) return notify("Fill all fields", "red");
+    products[b] = { name: n, price: Number(p) };
+    localStorage.setItem("products", JSON.stringify(products));
+    notify("Stock Updated", "green");
+}
+
+function clearAllSales() { if(confirm("Clear history?")) { sales = []; localStorage.setItem("sales", "[]"); renderHistory(); } }
 </script>
 </body>
 </html>
