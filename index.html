@@ -26,9 +26,10 @@
     .btn-sec { background: #444; }
     .btn-stop { background: var(--red); }
     .btn-pdf { background: #2980b9; }
+    .btn-flash { background: #f1c40f; color: #000; margin-bottom: 10px; display: none; }
     .btn-backup { background: #6c5ce7; margin-top: 5px; }
 
-    /* Quantity Toggle Styles */
+    /* Qty Toggle */
     .qty-controls { display: flex; align-items: center; gap: 10px; }
     .btn-qty { width: 32px; height: 32px; padding: 0; margin: 0; border-radius: 50%; font-size: 18px; line-height: 1; }
     .qty-val { font-weight: 800; min-width: 20px; text-align: center; }
@@ -37,15 +38,23 @@
     nav button { flex: 1; background: none; color: #777; padding: 0; margin: 0; border-radius: 0; font-size: 10px; font-weight: 700; border-top: 3px solid transparent; }
     nav button.active-nav { color: var(--orange); border-top: 3px solid var(--orange); }
 
-    .row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; align-items: center; }
+    .footer-sig { text-align: center; font-size: 11px; color: #aaa; padding: 10px 0; margin-top: 10px; }
 
-    /* EOD Receipt Layout */
-    #eod-report-box { padding: 40px; background: white; width: 320px; margin: 15px auto; color: black; display: none; text-align: center; border: 1px solid #eee; font-family: Arial, sans-serif; }
+    #scanner-view { background: #000; border-radius: 12px; overflow: hidden; display: none; margin-bottom: 15px; text-align: center; padding: 10px; }
+    #reader { width: 100%; min-height: 250px; background: #000; }
+
+    #status-msg { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); padding: 12px 25px; border-radius: 30px; color: white; font-weight: bold; z-index: 9999; opacity: 0; transition: 0.3s; pointer-events: none; min-width: 220px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+    
+    .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 14px; align-items: center; }
+    .stock-log { background: #eee; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 12px; }
+
+    /* EOD Image Box */
+    #eod-report-box { padding: 40px; background: white; width: 350px; margin: 15px auto; color: black; display: none; text-align: center; border: 1px solid #eee; font-family: Arial, sans-serif; }
     .report-header h2 { font-size: 42px; margin: 0; letter-spacing: 2px; }
     .report-divider { border-top: 3px solid #999; margin: 15px 0; }
     .report-dashed { border-top: 2px dashed #ccc; margin: 12px 0; }
-    .report-row { display: flex; justify-content: space-between; font-size: 18px; padding: 4px 0; }
-    .report-net { font-size: 22px; font-weight: 900; }
+    .report-row { display: flex; justify-content: space-between; font-size: 20px; padding: 4px 0; }
+    .report-net { font-size: 24px; font-weight: 900; }
 </style>
 </head>
 <body>
@@ -54,8 +63,9 @@
 <header>BAZRO</header>
 
 <div class="container">
-    <div id="scanner-view" style="display:none; background:#000; padding:10px; border-radius:12px; margin-bottom:15px; text-align:center;">
+    <div id="scanner-view">
         <div id="reader"></div>
+        <button id="flash-btn" class="btn-flash" onclick="toggleFlash()">🔦 Flashlight: OFF</button>
         <button class="btn-stop" onclick="stopScan()">Close Camera</button>
     </div>
 
@@ -85,11 +95,10 @@
             <input type="number" id="expense_total" placeholder="Expenses (£)">
             <button onclick="previewReport()">Create Preview</button>
         </div>
-
         <div id="eod-report-box">
             <div class="report-header">
                 <h2>BAZRO</h2>
-                <div id="r_date" style="font-size:22px; font-weight:bold;"></div>
+                <div id="r_date" style="font-size:24px; font-weight:bold;"></div>
                 <div style="font-size:14px; color:#666;">Camborne TR14 8AT</div>
             </div>
             <div class="report-divider"></div>
@@ -106,40 +115,65 @@
         <button id="share-report-btn" style="display:none; background:var(--green)" onclick="shareReportImage()">📤 Share Image</button>
     </div>
 
+    <div id="page-history" class="page">
+        <div class="card">
+            <h3>Sales History</h3>
+            <div id="history-list"></div>
+            <button style="background:var(--red); font-size:12px; margin-top:15px" onclick="clearHistory()">Wipe History</button>
+        </div>
+    </div>
+
     <div id="page-stock" class="page">
+        <div class="card">
+            <h3>Stock Management</h3>
+            <button onclick="startScan('add')">📷 Scan Barcode</button>
+            <input id="p_barcode" placeholder="Barcode ID">
+            <input id="p_name" placeholder="Item Name">
+            <input id="p_price" type="number" step="0.01" placeholder="Price £">
+            <input id="p_stock" type="number" placeholder="Qty">
+            <button onclick="addProduct()">Save Product</button>
+            <div class="stock-log">
+                <strong>Recent Activities:</strong>
+                <div id="stock-history-content">No data</div>
+            </div>
+        </div>
         <div class="card">
             <h3>Database Backup</h3>
             <button class="btn-backup" onclick="exportData()">💾 Export Data (.json)</button>
             <button class="btn-sec" onclick="document.getElementById('importFile').click()">📂 Import Data (.json)</button>
             <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
         </div>
-        <div class="card">
-            <h3>Add Product</h3>
-            <input id="p_barcode" placeholder="Barcode ID">
-            <input id="p_name" placeholder="Item Name">
-            <input id="p_price" type="number" step="0.01" placeholder="Price £">
-            <button onclick="addProduct()">Save Product</button>
-        </div>
     </div>
+
+    <div class="footer-sig">Design by Yamin</div>
 </div>
 
 <nav>
     <button id="nav-sales" class="active-nav" onclick="showPage('sales')">SHOP</button>
     <button id="nav-report" onclick="showPage('report')">REPORT</button>
+    <button id="nav-history" onclick="showPage('history')">HISTORY</button>
     <button id="nav-stock" onclick="showPage('stock')">STOCK</button>
 </nav>
 
 <script>
 let products = JSON.parse(localStorage.getItem("products") || "{}");
 let sales = JSON.parse(localStorage.getItem("sales") || "[]");
+let stockLog = JSON.parse(localStorage.getItem("stockLog") || "[]");
 let cart = [];
 let html5QrCode = null;
+let isFlashOn = false;
+let scanPaused = false;
+
+const BAZRO_ADDRESS = "9a Commercial St, Camborne TR14 8AT";
+const BAZRO_PHONE = "07534 100986";
 
 function showPage(p) {
     document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
     document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
     document.getElementById('page-'+p).classList.add('active-page');
     document.getElementById('nav-'+p).classList.add('active-nav');
+    if(p === 'history') renderHistory();
+    if(p === 'stock') renderStockLog();
     stopScan();
 }
 
@@ -149,92 +183,30 @@ function notify(msg, color) {
     setTimeout(() => el.style.opacity = "0", 2500);
 }
 
-function addToCart(manualCode = null) {
-    const b = (manualCode || document.getElementById("sell_barcode").value).trim();
-    if (!products[b]) return notify("Unknown Item", "red");
-    
-    let item = cart.find(i => i.barcode === b);
-    if (item) item.qty++;
-    else cart.push({ barcode: b, name: products[b].name, price: products[b].price, qty: 1 });
-    
-    renderCart();
-    document.getElementById("sell_barcode").value = "";
+function speak(text) {
+    const msg = new SpeechSynthesisUtterance(text);
+    window.speechSynthesis.speak(msg);
 }
 
-// Update Quantity Logic
-function updateQty(barcode, change) {
-    let itemIndex = cart.findIndex(i => i.barcode === barcode);
-    if (itemIndex === -1) return;
-
-    cart[itemIndex].qty += change;
-    if (cart[itemIndex].qty <= 0) {
-        cart.splice(itemIndex, 1);
-    }
-    renderCart();
-}
-
-function renderCart() {
-    let t = 0;
-    document.getElementById("cart-list").innerHTML = cart.map(i => {
-        t += i.qty * i.price;
-        return `
-        <div class="row">
-            <div style="flex:1;">
-                <div style="font-weight:bold;">${i.name}</div>
-                <div style="font-size:12px; color:#666;">£${i.price.toFixed(2)} each</div>
-            </div>
-            <div class="qty-controls">
-                <button class="btn-qty btn-sec" onclick="updateQty('${i.barcode}', -1)">-</button>
-                <span class="qty-val">${i.qty}</span>
-                <button class="btn-qty btn-sec" onclick="updateQty('${i.barcode}', 1)">+</button>
-            </div>
-            <div style="width:80px; text-align:right; font-weight:bold;">£${(i.qty*i.price).toFixed(2)}</div>
-        </div>`;
-    }).join("");
-    document.getElementById("cart-total").innerText = `Total: £${t.toFixed(2)}`;
-}
-
-function checkout() {
-    if(!cart.length) return;
-    sales.unshift({ id: Date.now(), date: new Date().toLocaleString(), items: [...cart] });
-    localStorage.setItem("sales", JSON.stringify(sales));
-    notify("Sale Complete", "var(--green)");
-    cart = []; renderCart();
-}
-
-async function startScan(mode) {
-    document.getElementById("scanner-view").style.display = "block";
-    html5QrCode = new Html5Qrcode("reader");
-    try {
-        await html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (code) => {
-            if (mode === 'add') { document.getElementById("p_barcode").value = code; stopScan(); }
-            else { addToCart(code); notify("Added!", "var(--green)"); }
-        });
-    } catch (err) { notify("Camera Error", "red"); }
-}
-
-async function stopScan() {
-    if (html5QrCode) { await html5QrCode.stop(); html5QrCode.clear(); }
-    document.getElementById("scanner-view").style.display = "none";
-}
-
-function addProduct() {
-    const b = document.getElementById("p_barcode").value, n = document.getElementById("p_name").value, p = document.getElementById("p_price").value;
-    if(!b || !n || !p) return notify("Missing Info", "red");
-    products[b] = { name: n, price: Number(p) };
-    localStorage.setItem("products", JSON.stringify(products));
-    notify("Saved!", "var(--green)");
-    ["p_barcode", "p_name", "p_price"].forEach(id => document.getElementById(id).value = "");
+// INVOICE & REPORT LOGIC
+function downloadA4Invoice() {
+    const items = cart.length ? cart : (sales[0]?.items || []);
+    if (!items.length) return notify("No items", "red");
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.text("BAZRO INVOICE", 10, 10);
+    let y = 30;
+    items.forEach(i => { doc.text(`${i.name} x${i.qty} - £${(i.qty*i.price).toFixed(2)}`, 10, y); y += 10; });
+    try { doc.save(`Invoice_${Date.now()}.pdf`); } catch(e) { window.open(URL.createObjectURL(doc.output('blob'))); }
 }
 
 function previewReport() {
     const d = document.getElementById("report_date").value;
-    if(!d) return;
+    if(!d) return notify("Select Date", "red");
     const cash = Number(document.getElementById("cash_total").value);
     const card = Number(document.getElementById("card_total").value);
     const exp = Number(document.getElementById("expense_total").value);
     const till = Number(document.getElementById("till_cash").value);
-
     document.getElementById("r_date").innerText = d.split('-').reverse().join('/');
     document.getElementById("r_cash").innerText = "£" + cash.toFixed(2);
     document.getElementById("r_card").innerText = "£" + card.toFixed(2);
@@ -253,38 +225,145 @@ async function shareReportImage() {
     }, "image/jpeg");
 }
 
-function downloadA4Invoice() {
-    const items = cart.length ? cart : (sales[0]?.items || []);
-    if (!items.length) return;
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    doc.text("BAZRO INVOICE", 10, 10);
-    let y = 30;
-    items.forEach(i => {
-        doc.text(`${i.name} x${i.qty} - £${(i.qty*i.price).toFixed(2)}`, 10, y);
-        y += 10;
-    });
-    try { doc.save("Invoice.pdf"); } catch(e) { 
-        window.open(URL.createObjectURL(doc.output('blob')), '_blank');
-    }
+// SCANNER SYSTEM
+async function startScan(mode) {
+    if (html5QrCode) { try { await html5QrCode.stop(); } catch(e) {} }
+    document.getElementById("reader").innerHTML = "";
+    document.getElementById("scanner-view").style.display = "block";
+    html5QrCode = new Html5Qrcode("reader");
+
+    try {
+        await html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (code) => {
+            if (scanPaused) return;
+            if (mode === 'add') {
+                document.getElementById("p_barcode").value = code;
+                stopScan();
+                notify("Barcode Caught!", "var(--green)");
+            } else {
+                if (!products[code]) { speak("Item not found"); notify("Unknown Barcode", "red"); return; }
+                scanPaused = true;
+                addToCart(code);
+                notify(products[code].name + " Added!", "var(--green)");
+                speak(products[code].name + " added");
+                setTimeout(() => { scanPaused = false; }, 2000); // 2 SECONDS WAIT
+            }
+        });
+        setTimeout(() => {
+            try {
+                const track = html5QrCode.getRunningTrackCapabilities();
+                document.getElementById("flash-btn").style.display = track.torch ? "block" : "none";
+            } catch(e) {}
+        }, 1000);
+    } catch (err) { notify("Camera Error", "red"); }
 }
 
+async function stopScan() {
+    if (html5QrCode) { try { await html5QrCode.stop(); html5QrCode.clear(); } catch(e) {} }
+    document.getElementById("scanner-view").style.display = "none";
+    isFlashOn = false;
+}
+
+async function toggleFlash() {
+    isFlashOn = !isFlashOn;
+    try {
+        await html5QrCode.applyVideoConstraints({ advanced: [{ torch: isFlashOn }] });
+        document.getElementById("flash-btn").innerText = isFlashOn ? "🔦 Flashlight: ON" : "🔦 Flashlight: OFF";
+    } catch(e) { notify("Flash Error", "orange"); }
+}
+
+// CART & QTY LOGIC
+function addToCart(manualCode = null) {
+    const b = (manualCode || document.getElementById("sell_barcode").value).trim();
+    if (!products[b]) return notify("Item Not in Stock", "red");
+    let item = cart.find(i => i.barcode === b);
+    if (item) item.qty++;
+    else cart.push({ barcode: b, name: products[b].name, price: products[b].price, qty: 1 });
+    renderCart();
+    document.getElementById("sell_barcode").value = "";
+}
+
+function updateQty(barcode, change) {
+    let item = cart.find(i => i.barcode === barcode);
+    if (!item) return;
+    item.qty += change;
+    if (item.qty <= 0) cart = cart.filter(i => i.barcode !== barcode);
+    renderCart();
+}
+
+function renderCart() {
+    let t = 0;
+    document.getElementById("cart-list").innerHTML = cart.map(i => {
+        t += i.qty * i.price;
+        return `
+        <div class="row">
+            <span style="flex:1;">${i.name} (x${i.qty})</span>
+            <div class="qty-controls">
+                <button class="btn-qty btn-sec" onclick="updateQty('${i.barcode}', -1)">-</button>
+                <span class="qty-val">${i.qty}</span>
+                <button class="btn-qty btn-sec" onclick="updateQty('${i.barcode}', 1)">+</button>
+            </div>
+            <span style="width:70px; text-align:right;">£${(i.qty*i.price).toFixed(2)}</span>
+        </div>`;
+    }).join("");
+    document.getElementById("cart-total").innerText = `Total: £${t.toFixed(2)}`;
+}
+
+function checkout() {
+    if(!cart.length) return;
+    sales.unshift({ id: Date.now(), date: new Date().toLocaleString(), items: [...cart] });
+    localStorage.setItem("sales", JSON.stringify(sales));
+    notify("Sale Recorded", "var(--green)");
+    speak("Transaction complete");
+    cart = []; renderCart();
+}
+
+// STOCK LOGIC
+function addProduct() {
+    const b = document.getElementById("p_barcode").value, n = document.getElementById("p_name").value, p = document.getElementById("p_price").value, s = document.getElementById("p_stock").value;
+    if(!b || !n || !p) return notify("Missing Info", "red");
+    products[b] = { name: n, price: Number(p), stock: Number(s || 0) };
+    localStorage.setItem("products", JSON.stringify(products));
+    stockLog.unshift({ name: n, qty: s || 0, time: new Date().toLocaleTimeString() });
+    if(stockLog.length > 5) stockLog.pop();
+    localStorage.setItem("stockLog", JSON.stringify(stockLog));
+    notify(n + " Saved", "var(--green)");
+    renderStockLog();
+    ["p_barcode", "p_name", "p_price", "p_stock"].forEach(id => document.getElementById(id).value = "");
+}
+
+function renderStockLog() {
+    const content = document.getElementById("stock-history-content");
+    content.innerHTML = stockLog.length ? stockLog.map(l => `<div>${l.time}: ${l.name} (${l.qty} in)</div>`).join("") : "No activity";
+}
+
+// BACKUP TOOLS
 function exportData() {
-    const blob = new Blob([JSON.stringify({products, sales})], {type: "application/json"});
+    const blob = new Blob([JSON.stringify({products, sales, stockLog})], {type: "application/json"});
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
-    a.download = "Bazro_Data.json"; a.click();
+    a.download = `Bazro_Backup_${Date.now()}.json`; a.click();
 }
 
-function importData(e) {
+function importData(event) {
     const reader = new FileReader();
-    reader.onload = (ev) => {
-        const data = JSON.parse(ev.target.result);
-        localStorage.setItem("products", JSON.stringify(data.products));
-        localStorage.setItem("sales", JSON.stringify(data.sales));
+    reader.onload = (e) => {
+        const data = JSON.parse(e.target.result);
+        localStorage.setItem("products", JSON.stringify(data.products || {}));
+        localStorage.setItem("sales", JSON.stringify(data.sales || []));
+        localStorage.setItem("stockLog", JSON.stringify(data.stockLog || []));
         location.reload();
     };
-    reader.readAsText(e.target.files[0]);
+    reader.readAsText(event.target.files[0]);
 }
+
+function renderHistory() {
+    document.getElementById("history-list").innerHTML = sales.map(s => `
+        <div class="card" style="font-size:13px">
+            <strong>${s.date}</strong><hr>
+            ${s.items.map(i => `• ${i.name} (Qty: ${i.qty}) - £${(i.qty*i.price).toFixed(2)}`).join("<br>")}
+        </div>
+    `).join("");
+}
+function clearHistory() { if(confirm("Clear history?")) { sales = []; localStorage.setItem("sales", "[]"); renderHistory(); } }
 </script>
 </body>
 </html>
