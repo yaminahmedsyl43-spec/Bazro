@@ -1,314 +1,621 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <title>Bazro POS - Ultra Edition</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<meta charset="UTF-8">
+
+<title>Bazro POS - Premium</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+
+
+<style>
+
+    :root { --orange: #ff512f; --yellow: #f09819; --dark: #141e30; --green: #27ae60; --red: #e74c3c; --gold: #D4AF37; }
+
+    body { margin: 0; font-family: 'Segoe UI', Roboto, sans-serif; background: #f4f7f6; padding-bottom: 110px; color: #333; }
+
+    header { background: linear-gradient(135deg, #141e30, #243b55); padding: 18px; text-align: center; color: white; font-size: 24px; font-weight: 800; letter-spacing: 2px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+
     
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-    <style>
-        :root { --brand: #e74c3c; --dark: #141e30; --bg: #f2f4f7; --success: #27ae60; --gold: #D4AF37; }
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); padding-bottom: 100px; color: #333; }
-        header { background: var(--dark); padding: 20px; text-align: center; color: white; font-size: 24px; font-weight: 800; letter-spacing: 2px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-        
-        .container { max-width: 500px; margin: auto; padding: 15px; }
-        .page { display: none; }
-        .active-page { display: block; }
-        
-        .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 15px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
-        h3 { margin-top: 0; color: var(--dark); border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }
-        
-        input, select { width: 100%; padding: 14px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; margin: 8px 0; border-radius: 12px; border: none; background: var(--brand); color: white; font-weight: bold; font-size: 16px; cursor: pointer; }
-        
-        .btn-sec { background: #34495e; }
-        .btn-share { background: #8e44ad; }
-        .btn-pdf { background: #1a1a1a; border: 1px solid var(--gold); color: var(--gold); }
-        .btn-flash { background: #f1c40f; color: #000; display: none; }
-        .btn-stop { background: #c0392b; margin-top: 10px; }
+    .container { max-width: 500px; margin: auto; padding: 15px; }
 
-        /* Full Screen Scanner Overlay */
-        #scanner-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 2000; padding-top: 50px; }
-        #reader { width: 90%; margin: auto; border-radius: 15px; overflow: hidden; }
+    .page { display: none; }
 
-        .row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; align-items: center; }
-        .qty-controls { display: flex; align-items: center; gap: 15px; background: #f8f9fa; padding: 5px 12px; border-radius: 20px; }
-        .btn-qty { width: 30px; height: 30px; border-radius: 50%; background: var(--dark); color: white; border: none; font-weight: bold; }
+    .active-page { display: block; }
 
-        nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #ddd; height: 75px; z-index: 1000; }
-        nav button { flex: 1; background: none; color: #95a5a6; font-size: 10px; text-transform: uppercase; border: none; font-weight: bold; }
-        nav button.active-nav { color: var(--brand); border-top: 4px solid var(--brand); }
+    
 
-        #eod-box { padding: 30px; background: white; width: 300px; margin: 20px auto; text-align: center; border: 1px solid #ddd; font-family: 'Times New Roman', serif; display: none; color: #000; }
-    </style>
+    .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 15px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.03); }
+
+    h3 { margin-top: 0; color: var(--dark); border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; font-size: 19px; letter-spacing: 0.5px; }
+
+    
+
+    input { width: 100%; padding: 14px; margin: 10px 0; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; transition: 0.3s; box-sizing: border-box; }
+
+    input:focus { border-color: var(--orange); outline: none; box-shadow: 0 0 8px rgba(255,81,47,0.2); }
+
+    
+
+    button { width: 100%; padding: 15px; margin: 8px 0; border-radius: 10px; border: none; background: linear-gradient(135deg, var(--orange), var(--yellow)); color: white; font-weight: bold; font-size: 16px; cursor: pointer; transition: transform 0.1s; }
+
+    button:active { transform: scale(0.98); }
+
+    
+
+    .btn-sec { background: #34495e; }
+
+    .btn-stop { background: var(--red); }
+
+    .btn-pdf { background: #1a1a1a; border: 1px solid var(--gold); color: var(--gold); }
+
+    .btn-flash { background: #f1c40f; color: #000; margin-bottom: 10px; display: none; }
+
+    .btn-backup { background: #6c5ce7; }
+
+
+
+    .qty-controls { display: flex; align-items: center; gap: 12px; background: #f8f9fa; padding: 5px 10px; border-radius: 20px; }
+
+    .btn-qty { width: 28px; height: 28px; padding: 0; margin: 0; border-radius: 50%; background: var(--dark); font-size: 18px; display: flex; align-items: center; justify-content: center; }
+
+    .qty-val { font-weight: 800; font-size: 16px; min-width: 15px; text-align: center; }
+
+    
+
+    nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #eee; z-index: 1000; height: 75px; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); }
+
+    nav button { flex: 1; background: none; color: #95a5a6; border-top: 4px solid transparent; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding: 0; }
+
+    nav button.active-nav { color: var(--orange); border-top-color: var(--orange); }
+
+
+
+    #status-msg { position: fixed; top: 90px; left: 50%; transform: translateX(-50%); padding: 12px 30px; border-radius: 50px; color: white; font-weight: 600; z-index: 9999; opacity: 0; transition: 0.4s; pointer-events: none; text-align: center; }
+
+    
+
+    .row { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #f0f0f0; align-items: center; }
+
+    .history-item { border-bottom: 2px solid #eee; padding: 15px 0; }
+
+    .history-meta { font-size: 12px; color: #7f8c8d; margin-bottom: 5px; }
+
+
+
+    #scanner-view { background: #000; border-radius: 20px; overflow: hidden; display: none; margin-bottom: 15px; padding: 10px; }
+
+    #reader { width: 100%; min-height: 250px; border-radius: 15px; }
+
+
+
+    #eod-report-box { padding: 40px; background: white; width: 320px; margin: 15px auto; color: black; display: none; text-align: center; border: 1px solid #eee; font-family: 'Times New Roman', serif; }
+
+    #qrcode { display: none; }
+
+</style>
+
 </head>
+
 <body>
+
+
+
+<div id="status-msg"></div>
 
 <header>BAZRO</header>
 
+<div id="qrcode"></div>
+
+
+
 <div class="container">
-    
-    <div id="scanner-overlay">
+
+    <div id="scanner-view">
+
         <div id="reader"></div>
-        <div style="padding: 20px;">
-            <button id="flash-btn" class="btn-flash" onclick="toggleFlash()">🔦 TURN ON LIGHT</button>
-            <button class="btn-stop" onclick="closeScanner()">CLOSE SCANNER</button>
-        </div>
+
+        <button id="flash-btn" class="btn-flash" onclick="toggleFlash()">🔦 FLASH: OFF</button>
+
+        <button class="btn-stop" onclick="stopScan()">CLOSE CAMERA</button>
+
     </div>
+
+
 
     <div id="page-sales" class="page active-page">
+
         <div class="card">
-            <h3>Customer (Optional)</h3>
-            <input id="inv_name" placeholder="Customer Name">
-            <input id="inv_addr" placeholder="Address">
+
+            <h3>Premium Checkout</h3>
+
+            <button onclick="startScan('sell')">📷 SCAN ITEM</button>
+
+            <input id="sell_barcode" placeholder="Enter Barcode Manually">
+
+            <button class="btn-sec" onclick="addToCart()">ADD TO BASKET</button>
+
         </div>
+
         <div class="card">
-            <h3>Scan & Add</h3>
-            <button onclick="openScanner('sell')">📷 OPEN CAMERA SCANNER</button>
-            <input id="manual_barcode" placeholder="Or Type Barcode">
-            <button class="btn-sec" onclick="addToCart()">ADD MANUALLY</button>
-        </div>
-        <div class="card">
+
             <h3>Basket</h3>
+
             <div id="cart-list"></div>
-            <div style="text-align:right; font-size:26px; font-weight:800; margin:20px 0;" id="cart-total">Total: £0.00</div>
-            <button style="background:var(--success)" onclick="finishSale()">COMPLETE SALE</button>
-            <button class="btn-pdf" onclick="generatePDF()">📄 DOWNLOAD INVOICE</button>
+
+            <div style="text-align:right; font-weight:800; font-size:24px; margin:20px 0; color:var(--dark)" id="cart-total">Total: £0.00</div>
+
+            <button style="background:var(--green)" onclick="checkout()">COMPLETE TRANSACTION</button>
+
+            <button class="btn-pdf" onclick="downloadLuxuryInvoice()">📄 DOWNLOAD QR INVOICE</button>
+
         </div>
+
     </div>
+
+
 
     <div id="page-report" class="page">
+
         <div class="card">
-            <h3>Daily Report</h3>
-            <input type="date" id="rep_date">
-            <input type="number" id="rep_cash" placeholder="Cash Sales (£)">
-            <input type="number" id="rep_card" placeholder="Card Sales (£)">
-            <input type="number" id="rep_exp" placeholder="Expenses (£)">
-            <input type="number" id="rep_till" placeholder="Till Remaining (£)">
-            <button onclick="showReport()">GENERATE REPORT</button>
+
+            <h3>End of Day</h3>
+
+            <input type="date" id="report_date">
+
+            <input type="number" id="cash_total" placeholder="Cash Sales (£)">
+
+            <input type="number" id="card_total" placeholder="Card Sales (£)">
+
+            <input type="number" id="expense_total" placeholder="Expenses (£)">
+
+            <input type="number" id="till_cash" placeholder="Till Remaining (£)">
+
+            <button onclick="previewReport()">GENERATE SUMMARY</button>
+
         </div>
-        
-        <div id="eod-box">
-            <h1 style="color:var(--brand); margin:0;">BAZRO</h1>
-            <p style="font-size:12px;">9a commercial square, Camborne, TR14 8AT</p>
-            <div id="d_date" style="font-weight:bold; margin:10px 0;"></div>
-            <hr>
-            <div style="display:flex; justify-content:space-between; margin:8px 0;"><span>CASH:</span><span id="d_cash"></span></div>
-            <div style="display:flex; justify-content:space-between; margin:8px 0;"><span>CARD:</span><span id="d_card"></span></div>
-            <div style="border-top:2px solid #000; padding-top:10px; font-weight:bold; font-size:22px; display:flex; justify-content:space-between;">
-                <span>TOTAL:</span><span id="d_total"></span>
-            </div>
-            <hr style="border:0.5px dashed #ccc; margin-top:20px;">
-            <div style="text-align:left; font-size:14px; margin-top:10px;">
-                <div>Expenses: <span id="d_exp"></span></div>
-                <div>Till Left: <span id="d_till"></span></div>
-            </div>
+
+        <div id="eod-report-box">
+
+             <h1 style="margin:0; font-size:40px; letter-spacing:4px; color: #e74c3c;">BAZRO</h1>
+
+             <div id="r_date" style="font-size:18px; margin:10px 0;"></div>
+
+             <p style="font-size:12px; color:gray;">9a Commercial St, Camborne TR14 8AT</p>
+
+             <hr>
+
+             <div style="display:flex; justify-content:space-between; margin:10px 0;"><span>CASH</span><span id="r_cash"></span></div>
+
+             <div style="display:flex; justify-content:space-between; margin:10px 0;"><span>CARD</span><span id="r_card"></span></div>
+
+             <div style="display:flex; justify-content:space-between; margin:10px 0; color:red;"><span>EXPENSES</span><span id="r_exp"></span></div>
+
+             <hr>
+
+             <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:20px;"><span>NET TOTAL</span><span id="r_net"></span></div>
+
+             <p style="margin-top:20px; font-size:14px; color:gray;">Till: <span id="r_till"></span></p>
+
         </div>
-        <button id="share-btn" class="btn-share" style="display:none;" onclick="shareAsImage()">📤 SHARE AS JPEG / WHATSAPP</button>
+
+        <button id="share-report-btn" style="display:none; background:var(--green)" onclick="shareReportImage()">📤 SHARE REPORT IMAGE</button>
+
     </div>
+
+
 
     <div id="page-history" class="page">
+
         <div class="card">
-            <h3>Recent Sales</h3>
-            <div id="hist-list"></div>
-            <button class="btn-stop" onclick="clearHist()">CLEAR HISTORY</button>
+
+            <h3>Transaction History</h3>
+
+            <div id="history-container"></div>
+
+            <button class="btn-stop" style="margin-top:20px" onclick="clearHistoryPrompt()">CLEAR ALL HISTORY</button>
+
         </div>
+
     </div>
+
+
 
     <div id="page-stock" class="page">
+
         <div class="card">
-            <h3>Add New Product</h3>
-            <button onclick="openScanner('stock')">📷 SCAN BARCODE</button>
-            <input id="p_code" placeholder="Barcode ID">
+
+            <h3>Stock Inventory</h3>
+
+            <button onclick="startScan('add')">📷 SCAN NEW PRODUCT</button>
+
+            <input id="p_barcode" placeholder="Barcode ID">
+
             <input id="p_name" placeholder="Product Name">
-            <input id="p_price" type="number" step="0.01" placeholder="Price £">
-            <select id="p_vat">
-                <option value="0">VAT: 0%</option>
-                <option value="20">VAT: 20%</option>
-            </select>
-            <button onclick="saveProduct()">SAVE TO STOCK</button>
+
+            <input id="p_price" type="number" step="0.01" placeholder="Selling Price £">
+
+            <input id="p_stock" type="number" placeholder="Initial Qty">
+
+            <button onclick="addProduct()">SAVE TO DATABASE</button>
+
         </div>
+
         <div class="card">
-            <h3>Database Backup</h3>
-            <button class="btn-sec" onclick="exportJSON()">💾 EXPORT BACKUP</button>
-            <button class="btn-sec" onclick="document.getElementById('imp').click()">📂 IMPORT BACKUP</button>
-            <input type="file" id="imp" style="display:none" onchange="importJSON(event)">
+
+            <h3>Cloud Backup</h3>
+
+            <button class="btn-backup" onclick="exportData()">💾 EXPORT DATABASE (.JSON)</button>
+
+            <button class="btn-sec" onclick="document.getElementById('importFile').click()">📂 IMPORT DATABASE</button>
+
+            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
+
         </div>
+
     </div>
+
 </div>
 
+
+
 <nav>
-    <button id="n-sales" class="active-nav" onclick="nav('sales')">SHOP</button>
-    <button id="n-report" onclick="nav('report')">REPORT</button>
-    <button id="n-history" onclick="nav('history')">HISTORY</button>
-    <button id="n-stock" onclick="nav('stock')">STOCK</button>
+
+    <button id="nav-sales" class="active-nav" onclick="showPage('sales')">SHOP</button>
+
+    <button id="nav-report" onclick="showPage('report')">REPORT</button>
+
+    <button id="nav-history" onclick="protectedAccess('history')">HISTORY</button>
+
+    <button id="nav-stock" onclick="showPage('stock')">STOCK</button>
+
 </nav>
 
+
+
 <script>
-    let products = JSON.parse(localStorage.getItem("bz_prods") || "{}");
-    let history = JSON.parse(localStorage.getItem("bz_hist") || "[]");
-    let cart = [];
-    let scanner = null;
-    let flashOn = false;
 
-    const BIZ = {
-        name: "BAZRO", addr: "9a commercial square - Camborne - TR14 8AT",
-        reg: "15649986", phone: "+447534100986",
-        acc: "GKIDEAS LIMITED", sort: "54-30-37", no: "39640965"
-    };
+let products = JSON.parse(localStorage.getItem("products") || "{}");
 
-    function nav(p) {
-        document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
-        document.getElementById('page-'+p).classList.add('active-page');
-        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
-        document.getElementById('n-'+p).classList.add('active-nav');
-        if(p === 'history') renderHist();
-        closeScanner();
+let sales = JSON.parse(localStorage.getItem("sales") || "[]");
+
+let cart = [];
+
+let html5QrCode = null;
+
+let isFlashOn = false;
+
+let scanPaused = false;
+
+
+
+const INFO = {
+
+    name: "BAZRO",
+
+    address: "9a Commercial St, Camborne TR14 8AT",
+
+    phone: "07534 100986"
+
+};
+
+
+
+const MASTER_PASS = "Yamin@83";
+
+
+
+function showPage(p) {
+
+    document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
+
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
+
+    document.getElementById('page-'+p).classList.add('active-page');
+
+    document.getElementById('nav-'+p).classList.add('active-nav');
+
+    if(p === 'history') renderHistory();
+
+    stopScan();
+
+}
+
+
+
+function protectedAccess(page) {
+
+    const pass = prompt("Enter Admin Password:");
+
+    if(pass === MASTER_PASS) {
+
+        showPage(page);
+
+    } else {
+
+        notify("Access Denied", "red");
+
     }
 
-    // --- SCANNER LOGIC ---
-    async function openScanner(mode) {
-        document.getElementById("scanner-overlay").style.display = "block";
-        scanner = new Html5Qrcode("reader");
-        try {
-            await scanner.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (code) => {
-                if(mode === 'sell') { addToCart(code); closeScanner(); } 
-                else { document.getElementById("p_code").value = code; closeScanner(); }
-            });
-            // Light check after camera is ready
-            setTimeout(() => {
-                const capabilities = scanner.getRunningTrackCapabilities();
-                if(capabilities.torch) document.getElementById("flash-btn").style.display = "block";
-            }, 1000);
-        } catch (e) { alert("Camera Permission Required"); closeScanner(); }
+}
+
+
+
+function notify(msg, color) {
+
+    const el = document.getElementById("status-msg");
+
+    el.innerText = msg; el.style.background = color; el.style.opacity = "1";
+
+    setTimeout(() => el.style.opacity = "0", 2500);
+
+}
+
+
+
+function renderHistory() {
+
+    const container = document.getElementById("history-container");
+
+    if(sales.length === 0) {
+
+        container.innerHTML = "<p style='text-align:center; color:gray;'>No transactions found.</p>";
+
+        return;
+
     }
 
-    async function closeScanner() {
-        if(scanner) { try { await scanner.stop(); } catch(e){} }
-        document.getElementById("scanner-overlay").style.display = "none";
-        document.getElementById("flash-btn").style.display = "none";
-        flashOn = false;
-    }
+    container.innerHTML = sales.map((sale, index) => {
 
-    async function toggleFlash() {
-        flashOn = !flashOn;
-        await scanner.applyVideoConstraints({ advanced: [{ torch: flashOn }] });
-        document.getElementById("flash-btn").innerText = flashOn ? "🔦 TURN OFF LIGHT" : "🔦 TURN ON LIGHT";
-    }
+        let saleTotal = 0;
 
-    // --- SALES ---
-    function addToCart(code) {
-        const b = code || document.getElementById("manual_barcode").value;
-        if(!products[b]) return alert("Product Not Found");
-        let item = cart.find(i => i.code === b);
-        if(item) item.qty++; else cart.push({ code: b, ...products[b], qty: 1 });
-        renderCart();
-        document.getElementById("manual_barcode").value = "";
-    }
+        const itemsHtml = sale.items.map(i => {
 
-    function renderCart() {
-        let total = 0;
-        document.getElementById("cart-list").innerHTML = cart.map(i => {
-            total += i.qty * i.price;
-            return `<div class="row">
-                <span><b>${i.name}</b><br>£${i.price.toFixed(2)}</span>
-                <div class="qty-controls">
-                    <button class="btn-qty" onclick="changeQty('${i.code}', -1)">-</button>
-                    <span>${i.qty}</span>
-                    <button class="btn-qty" onclick="changeQty('${i.code}', 1)">+</button>
-                </div>
-                <b>£${(i.qty*i.price).toFixed(2)}</b>
-            </div>`;
+            const sub = i.qty * i.price;
+
+            saleTotal += sub;
+
+            return `<div style="display:flex; justify-content:space-between; font-size:14px;">
+
+                        <span>${i.name} (x${i.qty})</span>
+
+                        <span>£${sub.toFixed(2)}</span>
+
+                    </div>`;
+
         }).join("");
-        document.getElementById("cart-total").innerText = `Total: £${total.toFixed(2)}`;
+
+        return `<div class="history-item">
+
+                    <div class="history-meta">#${sales.length - index} | ${sale.date}</div>
+
+                    ${itemsHtml}
+
+                    <div style="text-align:right; font-weight:bold; margin-top:5px; border-top:1px dashed #eee;">
+
+                        Total: £${saleTotal.toFixed(2)}
+
+                    </div>
+
+                </div>`;
+
+    }).join("");
+
+}
+
+
+
+function clearHistoryPrompt() {
+
+    if(confirm("Are you sure you want to delete ALL sales history?")) {
+
+        sales = [];
+
+        localStorage.setItem("sales", JSON.stringify(sales));
+
+        renderHistory();
+
+        notify("History Cleared", "var(--red)");
+
     }
 
-    function changeQty(code, delta) {
-        let item = cart.find(i => i.code === code);
-        item.qty += delta;
-        if(item.qty <= 0) cart = cart.filter(i => i.code !== code);
-        renderCart();
-    }
+}
 
-    function finishSale() {
-        if(!cart.length) return;
-        history.unshift({ date: new Date().toLocaleString(), total: cart.reduce((a,b)=>a+(b.qty*b.price),0), items: [...cart] });
-        localStorage.setItem("bz_hist", JSON.stringify(history));
-        alert("Transaction Completed"); cart = []; renderCart();
-    }
 
-    // --- PDF ---
-    function generatePDF() {
-        if(!cart.length) return alert("Empty Basket");
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        doc.setFontSize(22); doc.setTextColor(231, 76, 60); doc.text(BIZ.name, 15, 20);
-        doc.setFontSize(10); doc.setTextColor(0,0,0); doc.text(BIZ.addr, 15, 27);
-        doc.text("Bill to: " + (document.getElementById("inv_name").value || "Customer"), 15, 50);
-        
-        const body = cart.map(i => [i.name, i.qty, i.price.toFixed(2), i.vat+"%", (i.qty*i.price).toFixed(2)]);
-        doc.autoTable({ startY: 65, head: [['Item', 'Qty', 'Price', 'VAT', 'Total']], body: body, theme: 'grid' });
-        
-        let finalY = doc.lastAutoTable.finalY + 10;
-        doc.text(`Total Due: £${cart.reduce((a,b)=>a+(b.qty*b.price),0).toFixed(2)}`, 140, finalY);
-        doc.text(`Bank: ${BIZ.acc} | Sort: ${BIZ.sort} | Acc: ${BIZ.no}`, 15, 280);
-        doc.save("Bazro_Invoice.pdf");
-    }
 
-    // --- REPORT & IMAGE SHARE ---
-    function showReport() {
-        const cash = parseFloat(document.getElementById("rep_cash").value || 0);
-        const card = parseFloat(document.getElementById("rep_card").value || 0);
-        document.getElementById("d_date").innerText = document.getElementById("rep_date").value || "DAILY REPORT";
-        document.getElementById("d_cash").innerText = "£" + cash.toFixed(2);
-        document.getElementById("d_card").innerText = "£" + card.toFixed(2);
-        document.getElementById("d_total").innerText = "£" + (cash + card).toFixed(2);
-        document.getElementById("d_exp").innerText = "£" + (document.getElementById("rep_exp").value || 0);
-        document.getElementById("d_till").innerText = "£" + (document.getElementById("rep_till").value || 0);
-        document.getElementById("eod-box").style.display = "block";
-        document.getElementById("share-btn").style.display = "block";
-    }
+async function downloadLuxuryInvoice() {
 
-    async function shareAsImage() {
-        const box = document.getElementById("eod-box");
-        const canvas = await html2canvas(box);
-        canvas.toBlob(async (blob) => {
-            const file = new File([blob], "Bazro_Report.jpg", { type: "image/jpeg" });
-            if (navigator.share) {
-                await navigator.share({ files: [file], title: 'Bazro Daily Report' });
-            } else {
-                alert("Sharing not supported on this browser. Image downloaded instead.");
-                const link = document.createElement('a');
-                link.download = 'Bazro_Report.jpg';
-                link.href = URL.createObjectURL(blob);
-                link.click();
-            }
-        }, "image/jpeg");
-    }
+    const items = cart.length ? cart : (sales[0]?.items || []);
 
-    // --- STOCK ---
-    function saveProduct() {
-        const c = document.getElementById("p_code").value, n = document.getElementById("p_name").value, p = document.getElementById("p_price").value;
-        if(!c || !n || !p) return alert("Fill all fields");
-        products[c] = { name: n, price: parseFloat(p), vat: document.getElementById("p_vat").value };
-        localStorage.setItem("bz_prods", JSON.stringify(products));
-        alert("Product Saved!");
-        ["p_code","p_name","p_price"].forEach(id => document.getElementById(id).value = "");
-    }
+    if (!items.length) return notify("No items to invoice", "red");
 
-    function renderHist() {
-        document.getElementById("hist-list").innerHTML = history.map(h => `
-            <div class="row"><small>${h.date}</small> <b>£${h.total.toFixed(2)}</b></div>
-        `).join("");
-    }
+
+
+    const { jsPDF } = window.jspdf;
+
+    const doc = new jsPDF('p', 'mm', 'a4');
+
+
+
+    // Header Background
+
+    doc.setFillColor(20, 30, 48);
+
+    doc.rect(0, 0, 210, 40, 'F');
+
     
-    function clearHist() { if(confirm("Clear history?")) { history=[]; localStorage.setItem("bz_hist","[]"); renderHist(); } }
-    function exportJSON() { const b = new Blob([JSON.stringify({products, history})], {type:"application/json"}); const a = document.createElement("a"); a.href=URL.createObjectURL(b); a.download="Bazro_Backup.json"; a.click(); }
-    function importJSON(e) { const r = new FileReader(); r.onload=(ev)=>{ const d=JSON.parse(ev.target.result); localStorage.setItem("bz_prods", JSON.stringify(d.products)); localStorage.setItem("bz_hist", JSON.stringify(d.history)); location.reload(); }; r.readAsText(e.target.files[0]); }
-</script>
-</body>
-</html>
+
+    // RED LOGO TEXT
+
+    doc.setTextColor(231, 76, 60); // Red Colour (#e74c3c)
+
+    doc.setFontSize(30);
+
+    doc.setFont("helvetica", "bold");
+
+    doc.text(INFO.name, 105, 20, { align: 'center' });
+
+    
+
+    // Address Info
+
+    doc.setTextColor(255, 255, 255);
+
+    doc.setFontSize(10);
+
+    doc.setFont("helvetica", "normal");
+
+    doc.text(INFO.address, 105, 28, { align: 'center' });
+
+    doc.text(`T: ${INFO.phone}`, 105, 33, { align: 'center' });
+
+
+
+    doc.setTextColor(0, 0, 0);
+
+    const receiptID = `BAZ-${Date.now().toString().slice(-6)}`;
+
+    doc.text(`Receipt ID: #${receiptID}`, 20, 50);
+
+    doc.text(`Date: ${new Date().toLocaleString()}`, 20, 56);
+
+    
+
+    let y = 72;
+
+    let total = 0;
+
+    let qrText = `${INFO.name} RECEIPT\nID: ${receiptID}\n---\n`;
+
+
+
+    doc.setFont("helvetica", "bold");
+
+    doc.text("Item", 20, y);
+
+    doc.text("Qty", 130, y);
+
+    doc.text("Price", 170, y);
+
+    y += 10;
+
+    doc.setFont("helvetica", "normal");
+
+
+
+    items.forEach(i => {
+
+        const sub = i.qty * i.price;
+
+        total += sub;
+
+        doc.text(i.name.substring(0, 35), 20, y);
+
+        doc.text(i.qty.toString(), 132, y);
+
+        doc.text(`£${sub.toFixed(2)}`, 170, y);
+
+        qrText += `${i.name} x${i.qty}: £${sub.toFixed(2)}\n`;
+
+        y += 8;
+
+    });
+
+
+
+    qrText += `---\nTOTAL: £${total.toFixed(2)}\nThank you!`;
+
+
+
+    doc.line(20, y + 5, 190, y + 5);
+
+    doc.setFontSize(16);
+
+    doc.setFont("helvetica", "bold");
+
+    doc.text(`TOTAL AMOUNT: £${total.toFixed(2)}`, 190, y + 15, { align: 'right' });
+
+
+
+    const qrDiv = document.getElementById("qrcode");
+
+    qrDiv.innerHTML = "";
+
+    new QRCode(qrDiv, { text: qrText, width: 128, height: 128 });
+
+
+
+    setTimeout(() => {
+
+        const qrImg = qrDiv.querySelector("img").src;
+
+        doc.addImage(qrImg, 'PNG', 85, y + 25, 40, 40);
+
+        doc.setFontSize(10);
+
+        doc.setFont("helvetica", "italic");
+
+        doc.text("Scan to download details", 105, y + 70, { align: 'center' });
+
+        doc.save(`Bazro_Invoice_${receiptID}.pdf`);
+
+        notify("Invoice Downloaded", "var(--green)");
+
+    }, 150);
+
+}
+
+
+
+async function startScan(mode) {
+
+    if (html5QrCode) { try { await html5QrCode.stop(); } catch(e) {} }
+
+    document.getElementById("reader").innerHTML = "";
+
+    document.getElementById("scanner-view").style.display = "block";
+
+    html5QrCode = new Html5Qrcode("reader");
+
+
+
+    try {
+
+        await html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (code) => {
+
+            if (scanPaused) return;
+
+            if (mode === 'add') {
+
+                document.getElementById("p_barcode").value = code;
+
+                stopScan();
+
+                notify("Barcode Caught!", "var(--green)");
+
+            } else {
+
+                if (!products[code]) { 
+
+                    scanPaused = true;
+
+                    notify("Unknown Barcode", "red"); 
+
+                    setTimeout(() => { scanPaused = false; }, 2000); // 2 Sec Wait
+
+                    return; 
+
+                }
