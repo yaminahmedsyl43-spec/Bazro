@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Bazro POS - Invoice Edition</title>
+<title>Bazro POS - Pro Edition</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -37,6 +37,7 @@
     button:active { transform: scale(0.98); opacity: 0.9; }
     .btn-sec { background: #444; }
     .btn-pdf { background: #2980b9; }
+    .btn-sync { background: #8e44ad; }
     .btn-stop { background: #d63031; margin-top: 10px; }
     
     #scanner-box { display: none; text-align: center; }
@@ -71,17 +72,23 @@
     </div>
 
     <div class="card">
-        <h3>Add to Inventory</h3>
+        <h3>Inventory</h3>
         <button onclick="startScan('add')">📷 Scan Barcode</button>
         <input id="p_barcode" placeholder="Barcode ID">
         <input id="p_name" placeholder="Product Name">
         <input id="p_price" type="number" step="0.01" placeholder="Price (£)">
-        <input id="p_stock" type="number" placeholder="Current Stock">
+        <input id="p_stock" type="number" placeholder="Stock Level">
         <button onclick="addProduct()">Save Product</button>
+        
+        <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
+        
+        <button class="btn-sync" onclick="exportData()">📤 Export Data to Other Phone</button>
+        <button class="btn-sync" onclick="document.getElementById('importFile').click()">📥 Import Data from File</button>
+        <input type="file" id="importFile" style="display:none" onchange="importData(event)">
     </div>
 
     <div class="card">
-        <h3>Checkout Counter</h3>
+        <h3>Checkout</h3>
         <button onclick="startScan('sell')">📷 Continuous Scan</button>
         <input id="sell_barcode" placeholder="Manual Entry">
         <button class="btn-sec" onclick="addToCart()">Add Manually</button>
@@ -91,7 +98,6 @@
 
         <button style="background:#27ae60" onclick="checkout()">Complete Sale</button>
         <button class="btn-pdf" onclick="generatePDF()">📥 Share Bazro Invoice</button>
-        <button class="btn-sec" onclick="downloadDaily()">Daily Report (.txt)</button>
     </div>
 </div>
 
@@ -108,6 +114,40 @@ function notify(msg, color) {
     setTimeout(() => { el.style.opacity = "0"; }, 2000);
 }
 
+/* --- SYNC LOGIC --- */
+function exportData() {
+    const data = { products, sales };
+    const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `bazro_data_backup.json`;
+    a.click();
+    notify("Backup Created! Send this file to your other device.", "blue");
+}
+
+function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const imported = JSON.parse(e.target.result);
+            if (imported.products) {
+                products = imported.products;
+                sales = imported.sales || [];
+                localStorage.setItem("products", JSON.stringify(products));
+                localStorage.setItem("sales", JSON.stringify(sales));
+                notify("Data Imported Successfully!", "green");
+                location.reload(); // Refresh to show new data
+            }
+        } catch (err) {
+            notify("Invalid File", "red");
+        }
+    };
+    reader.readAsText(file);
+}
+
+/* --- SCAN & CART LOGIC (Keep existing) --- */
 async function startScan(mode) {
     document.getElementById("scanner-box").style.display = "block";
     if (!qrScanner) qrScanner = new Html5Qrcode("reader");
@@ -139,8 +179,7 @@ function addProduct() {
     if (!b || !n || !p) return notify("Missing Info!", "red");
     products[b] = { name: n, price: Number(p), stock: Number(s) };
     localStorage.setItem("products", JSON.stringify(products));
-    notify("Saved to Database", "blue");
-    document.querySelectorAll(".card:nth-child(2) input").forEach(i => i.value = "");
+    notify("Saved Locally", "blue");
 }
 
 function addToCart(manualCode = null) {
@@ -153,14 +192,13 @@ function addToCart(manualCode = null) {
     if (item) { item.qty++; } else { cart.push({ barcode: b, name: prod.name, price: prod.price, qty: 1 }); }
     prod.stock--;
     localStorage.setItem("products", JSON.stringify(products));
-    document.getElementById("sell_barcode").value = "";
     renderCart();
 }
 
 function updateQty(b, amt) {
     let item = cart.find(i => i.barcode === b);
     if (!item) return;
-    if (amt > 0) { if (products[b].stock <= 0) return notify("No Stock Left", "orange"); item.qty++; products[b].stock--; }
+    if (amt > 0) { if (products[b].stock <= 0) return notify("No Stock", "orange"); item.qty++; products[b].stock--; }
     else { item.qty--; products[b].stock++; if (item.qty <= 0) cart = cart.filter(i => i.barcode !== b); }
     localStorage.setItem("products", JSON.stringify(products));
     renderCart();
@@ -183,93 +221,35 @@ function checkout() {
     notify("SALE RECORDED", "#27ae60");
 }
 
-/* --- PDF GENERATION & SHARING --- */
+/* --- PDF INVOICE LOGIC --- */
 async function generatePDF() {
-    if (!cart.length) return notify("No items to print", "red");
-    
+    if (!cart.length) return notify("No items", "red");
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-
-    // Header
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(26);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(26);
     doc.text("BAZRO INVOICE", 105, 30, { align: "center" });
-    
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
     doc.text("9a Commercial St, Camborne TR14 8AT", 105, 37, { align: "center" });
     doc.text("Date: " + new Date().toLocaleString(), 105, 43, { align: "center" });
-    
-    doc.setLineWidth(0.5);
     doc.line(20, 50, 190, 50);
-
-    // Table
-    doc.setFont("helvetica", "bold");
-    doc.text("Item", 25, 60);
-    doc.text("Qty", 130, 60);
-    doc.text("Price", 150, 60);
-    doc.text("Total", 175, 60);
-    doc.line(20, 63, 190, 63);
-    
-    doc.setFont("helvetica", "normal");
-    let y = 73;
-    let grandTotal = 0;
-
+    let y = 73; let grandTotal = 0;
     cart.forEach(item => {
-        let lineTotal = item.qty * item.price;
-        grandTotal += lineTotal;
-        doc.text(item.name, 25, y);
-        doc.text(item.qty.toString(), 133, y);
-        doc.text("£" + item.price.toFixed(2), 150, y);
-        doc.text("£" + lineTotal.toFixed(2), 175, y);
+        let lineTotal = item.qty * item.price; grandTotal += lineTotal;
+        doc.text(item.name, 25, y); doc.text(item.qty.toString(), 133, y);
+        doc.text("£" + item.price.toFixed(2), 150, y); doc.text("£" + lineTotal.toFixed(2), 175, y);
         y += 10;
-        if (y > 270) { doc.addPage(); y = 20; }
     });
-
-    doc.line(20, y, 190, y);
-    doc.setFontSize(16); doc.setFont("helvetica", "bold");
+    doc.line(20, y, 190, y); doc.setFontSize(16); doc.setFont("helvetica", "bold");
     doc.text("GRAND TOTAL: £" + grandTotal.toFixed(2), 190, y + 12, { align: "right" });
-
-    const fileName = `Bazro_Invoice_${Date.now()}.pdf`;
     
-    // Get PDF as blob for sharing
+    const fileName = `Bazro_Invoice.pdf`;
     const pdfBlob = doc.output('blob');
     const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-    // Web Share API
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-            await navigator.share({
-                files: [file],
-                title: 'Bazro Invoice',
-                text: 'Thank you for shopping at Bazro!'
-            });
-            cart = []; renderCart(); stopScan();
-        } catch (err) {
-            doc.save(fileName); // Fallback to download
-        }
-    } else {
-        doc.save(fileName); // Fallback for desktop/older phones
-        notify("Saved to Downloads", "blue");
-        cart = []; renderCart(); stopScan();
-    }
-}
-
-function downloadDaily() {
-    const today = new Date().toLocaleDateString();
-    let text = `BAZRO DAILY REPORT [${today}]\n\n`;
-    let grandTotal = 0;
-    sales.filter(s => s.date.includes(today)).forEach((s, idx) => {
-        let sub = 0; text += `TRANS #${idx+1} (${s.date})\n`;
-        s.items.forEach(it => { let l = it.qty * it.price; sub += l; text += `- ${it.name} [x${it.qty}] £${l.toFixed(2)}\n`; });
-        text += `Total: £${sub.toFixed(2)}\n\n`; grandTotal += sub;
-    });
-    text += `GRAND TOTAL FOR DAY: £${grandTotal.toFixed(2)}`;
-    const blob = new Blob([text], { type: "text/plain" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `daily_report_${Date.now()}.txt`;
-    a.click();
+        await navigator.share({ files: [file], title: 'Bazro Invoice' });
+    } else { doc.save(fileName); }
+    cart = []; renderCart(); stopScan();
 }
 </script>
 
