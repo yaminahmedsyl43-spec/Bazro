@@ -26,44 +26,26 @@
     .btn-sec { background: #444; }
     .btn-stop { background: var(--red); }
     .btn-pdf { background: #2980b9; }
-    .btn-flash { background: #f1c40f; color: #000; margin-bottom: 10px; display: none; }
     .btn-backup { background: #6c5ce7; margin-top: 5px; }
+
+    /* Quantity Toggle Styles */
+    .qty-controls { display: flex; align-items: center; gap: 10px; }
+    .btn-qty { width: 32px; height: 32px; padding: 0; margin: 0; border-radius: 50%; font-size: 18px; line-height: 1; }
+    .qty-val { font-weight: 800; min-width: 20px; text-align: center; }
     
     nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #ddd; z-index: 1000; height: 70px; }
     nav button { flex: 1; background: none; color: #777; padding: 0; margin: 0; border-radius: 0; font-size: 10px; font-weight: 700; border-top: 3px solid transparent; }
     nav button.active-nav { color: var(--orange); border-top: 3px solid var(--orange); }
 
-    .footer-sig { text-align: center; font-size: 11px; color: #aaa; padding: 10px 0; margin-top: 10px; }
+    .row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; align-items: center; }
 
-    #scanner-view { background: #000; border-radius: 12px; overflow: hidden; display: none; margin-bottom: 15px; text-align: center; padding: 10px; }
-    #reader { width: 100%; min-height: 250px; background: #000; }
-
-    #status-msg { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); padding: 12px 25px; border-radius: 30px; color: white; font-weight: bold; z-index: 9999; opacity: 0; transition: 0.3s; pointer-events: none; min-width: 220px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-    
-    .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 14px; }
-    .stock-log { background: #eee; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 12px; }
-
-    /* Receipt Format from Image */
-    #eod-report-box { 
-        padding: 40px; 
-        background: white; 
-        width: 350px; 
-        margin: 15px auto; 
-        color: black; 
-        display: none; 
-        text-align: center;
-        border: 1px solid #eee;
-        font-family: Arial, sans-serif;
-    }
+    /* EOD Receipt Layout */
+    #eod-report-box { padding: 40px; background: white; width: 320px; margin: 15px auto; color: black; display: none; text-align: center; border: 1px solid #eee; font-family: Arial, sans-serif; }
     .report-header h2 { font-size: 42px; margin: 0; letter-spacing: 2px; }
-    .report-header .date-line { font-size: 24px; font-weight: bold; margin: 5px 0; }
-    .report-header .addr-line { font-size: 14px; color: #666; margin-bottom: 20px; }
     .report-divider { border-top: 3px solid #999; margin: 15px 0; }
     .report-dashed { border-top: 2px dashed #ccc; margin: 12px 0; }
-    .report-row { display: flex; justify-content: space-between; font-size: 20px; padding: 4px 0; }
-    .report-row b { font-weight: bold; }
-    .report-net { font-size: 24px; font-weight: 900; }
-    .report-till { margin-top: 30px; font-size: 16px; color: #666; }
+    .report-row { display: flex; justify-content: space-between; font-size: 18px; padding: 4px 0; }
+    .report-net { font-size: 22px; font-weight: 900; }
 </style>
 </head>
 <body>
@@ -72,10 +54,8 @@
 <header>BAZRO</header>
 
 <div class="container">
-
-    <div id="scanner-view">
+    <div id="scanner-view" style="display:none; background:#000; padding:10px; border-radius:12px; margin-bottom:15px; text-align:center;">
         <div id="reader"></div>
-        <button id="flash-btn" class="btn-flash" onclick="toggleFlash()">🔦 Flashlight: OFF</button>
         <button class="btn-stop" onclick="stopScan()">Close Camera</button>
     </div>
 
@@ -109,8 +89,8 @@
         <div id="eod-report-box">
             <div class="report-header">
                 <h2>BAZRO</h2>
-                <div class="date-line" id="r_date"></div>
-                <div class="addr-line">Camborne TR14 8AT</div>
+                <div id="r_date" style="font-size:22px; font-weight:bold;"></div>
+                <div style="font-size:14px; color:#666;">Camborne TR14 8AT</div>
             </div>
             <div class="report-divider"></div>
             <div class="report-row"><b>Cash Sales:</b><span id="r_cash"></span></div>
@@ -121,74 +101,45 @@
             <div class="report-divider"></div>
             <div class="report-row report-net"><b>NET TOTAL:</b><span id="r_net"></span></div>
             <div class="report-dashed"></div>
-            <div class="report-row report-till"><span>Till Left:</span><span id="r_till"></span></div>
+            <div class="report-row" style="color:#666; font-size:16px;"><span>Till Left:</span><span id="r_till"></span></div>
         </div>
         <button id="share-report-btn" style="display:none; background:var(--green)" onclick="shareReportImage()">📤 Share Image</button>
     </div>
 
-    <div id="page-history" class="page">
-        <div class="card">
-            <h3>Sales History</h3>
-            <div id="history-list"></div>
-            <button style="background:var(--red); font-size:12px; margin-top:15px" onclick="clearHistory()">Wipe History</button>
-        </div>
-    </div>
-
     <div id="page-stock" class="page">
-        <div class="card">
-            <h3>Stock Management</h3>
-            <button onclick="startScan('add')">📷 Scan Barcode</button>
-            <input id="p_barcode" placeholder="Barcode ID">
-            <input id="p_name" placeholder="Item Name">
-            <input id="p_price" type="number" step="0.01" placeholder="Price £">
-            <input id="p_stock" type="number" placeholder="Qty">
-            <button onclick="addProduct()">Save Product</button>
-        </div>
-
         <div class="card">
             <h3>Database Backup</h3>
             <button class="btn-backup" onclick="exportData()">💾 Export Data (.json)</button>
             <button class="btn-sec" onclick="document.getElementById('importFile').click()">📂 Import Data (.json)</button>
             <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
         </div>
-
         <div class="card">
-            <div class="stock-log">
-                <strong>Recent Activities:</strong>
-                <div id="stock-history-content">No data</div>
-            </div>
+            <h3>Add Product</h3>
+            <input id="p_barcode" placeholder="Barcode ID">
+            <input id="p_name" placeholder="Item Name">
+            <input id="p_price" type="number" step="0.01" placeholder="Price £">
+            <button onclick="addProduct()">Save Product</button>
         </div>
     </div>
-
-    <div class="footer-sig">Design by Yamin</div>
 </div>
 
 <nav>
     <button id="nav-sales" class="active-nav" onclick="showPage('sales')">SHOP</button>
     <button id="nav-report" onclick="showPage('report')">REPORT</button>
-    <button id="nav-history" onclick="showPage('history')">HISTORY</button>
     <button id="nav-stock" onclick="showPage('stock')">STOCK</button>
 </nav>
 
 <script>
 let products = JSON.parse(localStorage.getItem("products") || "{}");
 let sales = JSON.parse(localStorage.getItem("sales") || "[]");
-let stockLog = JSON.parse(localStorage.getItem("stockLog") || "[]");
 let cart = [];
 let html5QrCode = null;
-let isFlashOn = false;
-let scanPaused = false;
-
-const BAZRO_ADDRESS = "9a Commercial St, Camborne TR14 8AT";
-const BAZRO_PHONE = "07534 100986";
 
 function showPage(p) {
     document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
     document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
     document.getElementById('page-'+p).classList.add('active-page');
     document.getElementById('nav-'+p).classList.add('active-nav');
-    if(p === 'history') renderHistory();
-    if(p === 'stock') renderStockLog();
     stopScan();
 }
 
@@ -198,131 +149,47 @@ function notify(msg, color) {
     setTimeout(() => el.style.opacity = "0", 2500);
 }
 
-function speak(text) {
-    const msg = new SpeechSynthesisUtterance(text);
-    window.speechSynthesis.speak(msg);
-}
-
-// BACKUP TOOLS
-function exportData() {
-    const data = { products, sales, stockLog };
-    const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Bazro_Backup_${Date.now()}.json`;
-    a.click();
-}
-
-function importData(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const data = JSON.parse(e.target.result);
-            if (confirm("Importing will replace current data. Continue?")) {
-                localStorage.setItem("products", JSON.stringify(data.products || {}));
-                localStorage.setItem("sales", JSON.stringify(data.sales || []));
-                localStorage.setItem("stockLog", JSON.stringify(data.stockLog || []));
-                location.reload();
-            }
-        } catch (err) { alert("Invalid backup file."); }
-    };
-    reader.readAsText(file);
-}
-
-// INVOICE DOWNLOAD WITH MOBILE FALLBACK
-function downloadA4Invoice() {
-    const itemsToPrint = cart.length > 0 ? cart : (sales[0] ? sales[0].items : []);
-    if (!itemsToPrint.length) return notify("No items to print", "orange");
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('p', 'mm', 'a4');
-    const date = new Date().toLocaleString();
-
-    doc.setFontSize(26); doc.setTextColor(255, 81, 47); doc.setFont(undefined, 'bold');
-    doc.text("BAZRO", 105, 20, { align: 'center' });
-    doc.setFontSize(10); doc.setTextColor(80); doc.setFont(undefined, 'normal');
-    doc.text(BAZRO_ADDRESS, 105, 27, { align: 'center' });
-    doc.text(`Phone: ${BAZRO_PHONE}`, 105, 32, { align: 'center' });
-    doc.text(`Date: ${date}`, 20, 42);
-    doc.setDrawColor(200); doc.line(20, 52, 190, 52);
-    
-    let y = 60;
-    let total = 0;
-    itemsToPrint.forEach(item => {
-        const sub = item.qty * item.price;
-        total += sub;
-        doc.text(`${item.name} (x${item.qty})`, 25, y);
-        doc.text(`£${sub.toFixed(2)}`, 160, y);
-        y += 8;
-    });
-
-    doc.setFontSize(14); doc.setFont(undefined, 'bold');
-    doc.text(`GRAND TOTAL: £${total.toFixed(2)}`, 190, y + 10, { align: 'right' });
-
-    // Try direct download first, then fallback to open in new tab
-    try {
-        doc.save(`Bazro_Invoice_${Date.now()}.pdf`);
-    } catch (e) {
-        const blob = doc.output('blob');
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-    }
-    notify("Invoice Generated", "var(--green)");
-}
-
-// SCANNER & CART LOGIC
-async function startScan(mode) {
-    if (html5QrCode && html5QrCode.getState() !== 1) {
-        try { await html5QrCode.stop(); } catch(e) {}
-    }
-    document.getElementById("reader").innerHTML = "";
-    document.getElementById("scanner-view").style.display = "block";
-    html5QrCode = new Html5Qrcode("reader");
-
-    try {
-        await html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (code) => {
-            if (scanPaused) return;
-            if (mode === 'add') {
-                document.getElementById("p_barcode").value = code;
-                stopScan();
-            } else {
-                handleAutoScan(code);
-            }
-        });
-    } catch (err) { notify("Camera Error", "red"); }
-}
-
-async function stopScan() {
-    if (html5QrCode) { try { await html5QrCode.stop(); html5QrCode.clear(); } catch(e) {} }
-    document.getElementById("scanner-view").style.display = "none";
-}
-
-function handleAutoScan(code) {
-    if (!products[code]) { speak("Item not found"); return; }
-    scanPaused = true;
-    addToCart(code);
-    notify(products[code].name + " Added!", "var(--green)");
-    setTimeout(() => { scanPaused = false; }, 2000);
-}
-
 function addToCart(manualCode = null) {
     const b = (manualCode || document.getElementById("sell_barcode").value).trim();
-    if (!products[b]) return notify("Item Not in Stock", "red");
+    if (!products[b]) return notify("Unknown Item", "red");
+    
     let item = cart.find(i => i.barcode === b);
     if (item) item.qty++;
     else cart.push({ barcode: b, name: products[b].name, price: products[b].price, qty: 1 });
+    
     renderCart();
     document.getElementById("sell_barcode").value = "";
+}
+
+// Update Quantity Logic
+function updateQty(barcode, change) {
+    let itemIndex = cart.findIndex(i => i.barcode === barcode);
+    if (itemIndex === -1) return;
+
+    cart[itemIndex].qty += change;
+    if (cart[itemIndex].qty <= 0) {
+        cart.splice(itemIndex, 1);
+    }
+    renderCart();
 }
 
 function renderCart() {
     let t = 0;
     document.getElementById("cart-list").innerHTML = cart.map(i => {
         t += i.qty * i.price;
-        return `<div class="row"><span>${i.name} <strong>x${i.qty}</strong></span><span>£${(i.qty*i.price).toFixed(2)}</span></div>`;
+        return `
+        <div class="row">
+            <div style="flex:1;">
+                <div style="font-weight:bold;">${i.name}</div>
+                <div style="font-size:12px; color:#666;">£${i.price.toFixed(2)} each</div>
+            </div>
+            <div class="qty-controls">
+                <button class="btn-qty btn-sec" onclick="updateQty('${i.barcode}', -1)">-</button>
+                <span class="qty-val">${i.qty}</span>
+                <button class="btn-qty btn-sec" onclick="updateQty('${i.barcode}', 1)">+</button>
+            </div>
+            <div style="width:80px; text-align:right; font-weight:bold;">£${(i.qty*i.price).toFixed(2)}</div>
+        </div>`;
     }).join("");
     document.getElementById("cart-total").innerText = `Total: £${t.toFixed(2)}`;
 }
@@ -331,28 +198,49 @@ function checkout() {
     if(!cart.length) return;
     sales.unshift({ id: Date.now(), date: new Date().toLocaleString(), items: [...cart] });
     localStorage.setItem("sales", JSON.stringify(sales));
-    notify("Sale Recorded", "var(--green)");
+    notify("Sale Complete", "var(--green)");
     cart = []; renderCart();
+}
+
+async function startScan(mode) {
+    document.getElementById("scanner-view").style.display = "block";
+    html5QrCode = new Html5Qrcode("reader");
+    try {
+        await html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (code) => {
+            if (mode === 'add') { document.getElementById("p_barcode").value = code; stopScan(); }
+            else { addToCart(code); notify("Added!", "var(--green)"); }
+        });
+    } catch (err) { notify("Camera Error", "red"); }
+}
+
+async function stopScan() {
+    if (html5QrCode) { await html5QrCode.stop(); html5QrCode.clear(); }
+    document.getElementById("scanner-view").style.display = "none";
+}
+
+function addProduct() {
+    const b = document.getElementById("p_barcode").value, n = document.getElementById("p_name").value, p = document.getElementById("p_price").value;
+    if(!b || !n || !p) return notify("Missing Info", "red");
+    products[b] = { name: n, price: Number(p) };
+    localStorage.setItem("products", JSON.stringify(products));
+    notify("Saved!", "var(--green)");
+    ["p_barcode", "p_name", "p_price"].forEach(id => document.getElementById(id).value = "");
 }
 
 function previewReport() {
     const d = document.getElementById("report_date").value;
-    if(!d) return notify("Select Date", "red");
-    const dateObj = new Date(d);
-    const formattedDate = dateObj.getDate().toString().padStart(2, '0') + '/' + (dateObj.getMonth()+1).toString().padStart(2, '0') + '/' + dateObj.getFullYear();
-
+    if(!d) return;
     const cash = Number(document.getElementById("cash_total").value);
     const card = Number(document.getElementById("card_total").value);
     const exp = Number(document.getElementById("expense_total").value);
     const till = Number(document.getElementById("till_cash").value);
 
-    document.getElementById("r_date").innerText = formattedDate;
+    document.getElementById("r_date").innerText = d.split('-').reverse().join('/');
     document.getElementById("r_cash").innerText = "£" + cash.toFixed(2);
     document.getElementById("r_card").innerText = "£" + card.toFixed(2);
     document.getElementById("r_exp").innerText = "- £" + exp.toFixed(2);
     document.getElementById("r_net").innerText = "£" + (cash + card - exp).toFixed(2);
     document.getElementById("r_till").innerText = "£" + till.toFixed(2);
-
     document.getElementById("eod-report-box").style.display = "block";
     document.getElementById("share-report-btn").style.display = "block";
 }
@@ -361,45 +249,42 @@ async function shareReportImage() {
     const canvas = await html2canvas(document.getElementById("eod-report-box"));
     canvas.toBlob(async (blob) => {
         const file = new File([blob], "Bazro_EOD.jpg", { type: "image/jpeg" });
-        if (navigator.share) {
-            try { await navigator.share({ files: [file] }); } catch(e) { }
-        } else {
-            const link = document.createElement('a');
-            link.download = 'Bazro_Report.jpg';
-            link.href = URL.createObjectURL(blob);
-            link.click();
-        }
+        if (navigator.share) await navigator.share({ files: [file] });
     }, "image/jpeg");
 }
 
-function renderHistory() {
-    document.getElementById("history-list").innerHTML = sales.map(s => `
-        <div class="card" style="font-size:13px">
-            <strong>${s.date}</strong><hr>
-            ${s.items.map(i => `• ${i.name} (Qty: ${i.qty}) - £${(i.qty*i.price).toFixed(2)}`).join("<br>")}
-        </div>
-    `).join("");
+function downloadA4Invoice() {
+    const items = cart.length ? cart : (sales[0]?.items || []);
+    if (!items.length) return;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.text("BAZRO INVOICE", 10, 10);
+    let y = 30;
+    items.forEach(i => {
+        doc.text(`${i.name} x${i.qty} - £${(i.qty*i.price).toFixed(2)}`, 10, y);
+        y += 10;
+    });
+    try { doc.save("Invoice.pdf"); } catch(e) { 
+        window.open(URL.createObjectURL(doc.output('blob')), '_blank');
+    }
 }
 
-function addProduct() {
-    const b = document.getElementById("p_barcode").value, n = document.getElementById("p_name").value, p = document.getElementById("p_price").value, s = document.getElementById("p_stock").value;
-    if(!b || !n || !p) return notify("Missing Info", "red");
-    products[b] = { name: n, price: Number(p), stock: Number(s || 0) };
-    localStorage.setItem("products", JSON.stringify(products));
-    stockLog.unshift({ name: n, qty: s || 0, time: new Date().toLocaleTimeString() });
-    if(stockLog.length > 5) stockLog.pop();
-    localStorage.setItem("stockLog", JSON.stringify(stockLog));
-    notify(n + " Saved", "var(--green)");
-    ["p_barcode", "p_name", "p_price", "p_stock"].forEach(id => document.getElementById(id).value = "");
+function exportData() {
+    const blob = new Blob([JSON.stringify({products, sales})], {type: "application/json"});
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+    a.download = "Bazro_Data.json"; a.click();
 }
 
-function renderStockLog() {
-    const content = document.getElementById("stock-history-content");
-    content.innerHTML = stockLog.length ? stockLog.map(l => `<div>${l.time}: ${l.name} (${l.qty} in)</div>`).join("") : "No activity";
+function importData(e) {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        const data = JSON.parse(ev.target.result);
+        localStorage.setItem("products", JSON.stringify(data.products));
+        localStorage.setItem("sales", JSON.stringify(data.sales));
+        location.reload();
+    };
+    reader.readAsText(e.target.files[0]);
 }
-
-function clearHistory() { if(confirm("Clear history?")) { sales = []; localStorage.setItem("sales", "[]"); renderHistory(); } }
-function toggleFlash() { isFlashOn = !isFlashOn; html5QrCode.applyVideoConstraints({ advanced: [{ torch: isFlashOn }] }); }
 </script>
 </body>
 </html>
