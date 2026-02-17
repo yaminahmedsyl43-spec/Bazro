@@ -5,6 +5,8 @@
 <title>Bazro POS - Pro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <style>
     :root { --orange: #ff512f; --yellow: #f09819; --dark: #141e30; --green: #27ae60; --red: #e74c3c; }
@@ -18,6 +20,7 @@
     input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
     button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 8px; border: none; background: linear-gradient(135deg, var(--orange), var(--yellow)); color: white; font-weight: bold; cursor: pointer; }
     
+    /* Qty Buttons */
     .qty-btn { width: 35px; height: 35px; padding: 0; display: inline-block; margin: 0 5px; background: #eee; color: #333; }
     .cart-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
 
@@ -25,11 +28,11 @@
     nav button { flex: 1; background: none; color: #777; padding: 0; margin: 0; border-radius: 0; font-size: 11px; height: 100%; box-shadow: none; }
     nav button.active-nav { color: var(--orange); font-weight: 800; border-top: 4px solid var(--orange); }
 
+    .admin-only { display: none; }
     #eod-report-box { padding: 20px; background: white; border: 1px solid #000; width: 280px; margin: 10px auto; color: black; display: none; }
     .eod-line { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #ccc; font-size: 14px; }
     #status-msg { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 20px; color: white; z-index: 9999; opacity: 0; transition: 0.3s; pointer-events: none; }
     #scanner-view { background: black; border-radius: 12px; overflow: hidden; display: none; margin-bottom: 15px; text-align: center; padding: 10px; }
-    .scanner-controls { display: flex; gap: 10px; margin-top: 10px; }
 </style>
 </head>
 <body>
@@ -41,9 +44,9 @@
     <div id="page-sales" class="page active-page">
         <div id="scanner-view">
             <div id="reader"></div>
-            <div class="scanner-controls">
-                <button id="torch-btn" style="background:#444" onclick="toggleTorch()">🔦 Flashlight Off</button>
-                <button style="background:var(--red)" onclick="stopScan()">Close</button>
+            <div style="display:flex; gap:10px;">
+                <button id="torch-btn" style="background:#444" onclick="toggleTorch()">🔦 Flashlight</button>
+                <button class="btn-stop" style="background:var(--red)" onclick="stopScan()">Close Camera</button>
             </div>
         </div>
         <div class="card">
@@ -62,12 +65,12 @@
 
     <div id="page-report" class="page">
         <div class="card">
-            <h3>Daily Report</h3>
+            <h3>Daily Report Entry</h3>
             <input type="date" id="report_date">
             <input type="number" id="cash_total" placeholder="Cash (£)">
             <input type="number" id="card_total" placeholder="Card (£)">
             <input type="number" id="expense_total" placeholder="Expenses (£)">
-            <button onclick="saveAndPreviewReport()">Save & Preview</button>
+            <button onclick="saveAndPreviewReport()">Save & Preview Report</button>
         </div>
         <div id="eod-report-box">
             <div style="font-size:20px; font-weight:900; text-align:center">BAZRO EOD</div>
@@ -78,7 +81,7 @@
             <div class="eod-line" style="font-weight:bold"><span>NET:</span> <span id="r_net"></span></div>
         </div>
         <div class="card">
-            <h3>Saved Reports</h3>
+            <h3>Saved Summaries</h3>
             <div id="saved-reports-list" style="font-size:12px"></div>
         </div>
     </div>
@@ -104,9 +107,10 @@
 
 <nav>
     <button id="nav-sales" class="active-nav" onclick="showPage('sales')">🛒 SHOP</button>
-    <button id="nav-report" onclick="showPage('report')">📊 REPORT</button>
-    <button id="nav-history" onclick="showPage('history')">📜 HISTORY</button>
-    <button id="nav-stock" onclick="showPage('stock')">📦 STOCK</button>
+    <button id="nav-report" class="admin-only" onclick="showPage('report')">📊 REPORT</button>
+    <button id="nav-history" class="admin-only" onclick="showPage('history')">📜 HISTORY</button>
+    <button id="nav-stock" class="admin-only" onclick="showPage('stock')">📦 STOCK</button>
+    <button id="nav-admin" onclick="unlockAdmin()">🔑 ADMIN</button>
 </nav>
 
 <script>
@@ -114,8 +118,18 @@ let products = JSON.parse(localStorage.getItem("products") || "{}");
 let sales = JSON.parse(localStorage.getItem("sales") || "[]");
 let eodReports = JSON.parse(localStorage.getItem("eodReports") || "[]");
 let cart = [];
-let html5QrCode = null;
+let qrScanner = null;
 let isTorchOn = false;
+
+// --- SECURITY ---
+function unlockAdmin() {
+    const pass = prompt("Enter Password:");
+    if (pass === "Yamin@83") {
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = "block");
+        document.getElementById('nav-admin').style.display = "none";
+        notify("Admin Unlocked", "green");
+    } else { notify("Wrong Password", "red"); }
+}
 
 function showPage(p) {
     document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
@@ -132,6 +146,7 @@ function notify(m, c) {
     setTimeout(() => el.style.opacity = "0", 2000);
 }
 
+// --- CART LOGIC ---
 function updateQty(barcode, delta) {
     let item = cart.find(i => i.barcode === barcode);
     if (item) {
@@ -165,6 +180,7 @@ function renderCart() {
     document.getElementById("cart-total").innerText = `Total: £${t.toFixed(2)}`;
 }
 
+// --- HISTORY & REPORTS ---
 function checkout() {
     if(!cart.length) return;
     sales.unshift({ id: Date.now(), date: new Date().toLocaleString(), items: [...cart], total: cart.reduce((a,b)=>a+(b.qty*b.price),0) });
@@ -206,42 +222,47 @@ function renderSavedReports() {
         </div>`).join("");
 }
 
-// --- FLASHLIGHT FIX ---
+// --- SCANNER & FLASHLIGHT FIX ---
 async function startScan() {
     document.getElementById("scanner-view").style.display = "block";
-    if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+    if (!qrScanner) qrScanner = new Html5Qrcode("reader");
     
-    try {
-        await html5QrCode.start(
-            { facingMode: "environment" }, 
-            { fps: 20, qrbox: 250 }, 
-            (decodedText) => { addToCart(decodedText); notify("Scanned!", "green"); }
-        );
-    } catch (err) { notify("Camera Error", "red"); }
+    qrScanner.start(
+        { facingMode: "environment" }, 
+        { fps: 20, qrbox: 250 }, 
+        (code) => { addToCart(code); notify("Scanned!", "green"); }
+    ).catch(err => notify("Camera Error", "red"));
 }
 
 async function toggleTorch() {
-    if (!html5QrCode) return;
-    const track = html5QrCode.getRunningTrack();
-    if (!track || !track.getCapabilities().torch) return notify("No Flash Available", "red");
-
-    isTorchOn = !isTorchOn;
+    if (!qrScanner) return;
     try {
-        await track.applyConstraints({ advanced: [{ torch: isTorchOn }] });
-        document.getElementById("torch-btn").innerText = isTorchOn ? "🔦 Flashlight On" : "🔦 Flashlight Off";
+        const track = qrScanner.getRunningTrack();
+        if (!track) return notify("Wait for camera...", "red");
+        
+        // Check if device supports torch
+        const capabilities = track.getCapabilities();
+        if (!capabilities.torch) return notify("No Flash on Device", "red");
+
+        isTorchOn = !isTorchOn;
+        await track.applyConstraints({
+            advanced: [{ torch: isTorchOn }]
+        });
+        
         document.getElementById("torch-btn").style.background = isTorchOn ? "var(--green)" : "#444";
-    } catch (e) { notify("Flash Error", "red"); }
+    } catch (e) {
+        notify("Flash Failed", "red");
+    }
 }
 
-async function stopScan() {
-    if (html5QrCode) {
-        try {
-            await html5QrCode.stop();
+function stopScan() { 
+    if(qrScanner) {
+        qrScanner.stop().then(() => {
             isTorchOn = false;
-            document.getElementById("torch-btn").innerText = "🔦 Flashlight Off";
-        } catch (e) { }
+            document.getElementById("torch-btn").style.background = "#444";
+        });
     }
-    document.getElementById("scanner-view").style.display = "none";
+    document.getElementById("scanner-view").style.display = "none"; 
 }
 
 function addProduct() {
