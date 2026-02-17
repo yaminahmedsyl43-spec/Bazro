@@ -39,9 +39,10 @@
     .btn-pdf { background: #2980b9; }
     .btn-sync { background: #8e44ad; }
     .btn-stop { background: #d63031; margin-top: 10px; }
+    .btn-flash { background: #f1c40f; color: #000; margin-bottom: 5px; }
     
     #scanner-box { display: none; text-align: center; }
-    #reader { width: 100%; border-radius: 12px; overflow: hidden; margin-bottom: 10px; }
+    #reader { width: 100%; border-radius: 12px; overflow: hidden; margin-bottom: 10px; background: #000; }
     
     .cart-item {
         display: flex; justify-content: space-between; align-items: center;
@@ -68,6 +69,7 @@
 <div class="container">
     <div id="scanner-box" class="card">
         <div id="reader"></div>
+        <button id="flash-btn" class="btn-flash" onclick="toggleFlash()">🔦 Flashlight: OFF</button>
         <button class="btn-stop" onclick="stopScan()">Close Camera</button>
     </div>
 
@@ -107,6 +109,7 @@ let sales = JSON.parse(localStorage.getItem("sales") || "[]");
 let cart = [];
 let qrScanner = null;
 let scanPaused = false;
+let isFlashOn = false;
 
 function notify(msg, color) {
     const el = document.getElementById("status-msg");
@@ -122,7 +125,7 @@ function exportData() {
     a.href = URL.createObjectURL(blob);
     a.download = `bazro_data_backup.json`;
     a.click();
-    notify("Backup Created! Send this file to your other device.", "blue");
+    notify("Backup Created!", "blue");
 }
 
 function importData(event) {
@@ -137,29 +140,62 @@ function importData(event) {
                 sales = imported.sales || [];
                 localStorage.setItem("products", JSON.stringify(products));
                 localStorage.setItem("sales", JSON.stringify(sales));
-                notify("Data Imported Successfully!", "green");
-                location.reload(); // Refresh to show new data
+                notify("Data Imported!", "green");
+                location.reload();
             }
-        } catch (err) {
-            notify("Invalid File", "red");
-        }
+        } catch (err) { notify("Invalid File", "red"); }
     };
     reader.readAsText(file);
 }
 
-/* --- SCAN & CART LOGIC (Keep existing) --- */
+/* --- SCANNER LOGIC --- */
 async function startScan(mode) {
     document.getElementById("scanner-box").style.display = "block";
     if (!qrScanner) qrScanner = new Html5Qrcode("reader");
+
+    const config = { 
+        fps: 20, 
+        qrbox: { width: 250, height: 200 },
+        aspectRatio: 1.0 // Helps with focusing on square-ish barcodes
+    };
+
     try {
-        await qrScanner.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, (code) => {
-            if (scanPaused) return;
-            if (mode === "add") { document.getElementById("p_barcode").value = code; stopScan(); }
-            else { handleAutoScan(code); }
-        });
+        await qrScanner.start(
+            { facingMode: "environment" }, 
+            config, 
+            (code) => {
+                if (scanPaused) return;
+                if (mode === "add") { document.getElementById("p_barcode").value = code; stopScan(); }
+                else { handleAutoScan(code); }
+            }
+        );
+        // Check if flashlight is supported after start
+        const capabilities = qrScanner.getRunningTrackCapabilities();
+        document.getElementById("flash-btn").style.display = capabilities.torch ? "block" : "none";
     } catch (err) { notify("Camera Error", "red"); }
 }
 
+async function toggleFlash() {
+    if (!qrScanner) return;
+    try {
+        isFlashOn = !isFlashOn;
+        await qrScanner.applyVideoConstraints({
+            advanced: [{ torch: isFlashOn }]
+        });
+        document.getElementById("flash-btn").innerText = isFlashOn ? "🔦 Flashlight: ON" : "🔦 Flashlight: OFF";
+    } catch (e) { notify("Flash not supported", "orange"); }
+}
+
+async function stopScan() {
+    if (qrScanner) {
+        if (isFlashOn) await toggleFlash(); // Turn off flash before closing
+        await qrScanner.stop();
+        document.getElementById("scanner-box").style.display = "none";
+        scanPaused = false;
+    }
+}
+
+/* --- REST OF LOGIC (Inventory/Cart/PDF) --- */
 function handleAutoScan(code) {
     const b = code.trim();
     if (!products[b]) { notify("Unknown Barcode", "#444"); return; }
@@ -170,16 +206,13 @@ function handleAutoScan(code) {
     setTimeout(() => { scanPaused = false; }, 1800);
 }
 
-async function stopScan() {
-    if (qrScanner) { await qrScanner.stop(); document.getElementById("scanner-box").style.display = "none"; scanPaused = false; }
-}
-
 function addProduct() {
     const b = document.getElementById("p_barcode").value.trim(), n = document.getElementById("p_name").value.trim(), p = document.getElementById("p_price").value, s = document.getElementById("p_stock").value || 0;
     if (!b || !n || !p) return notify("Missing Info!", "red");
     products[b] = { name: n, price: Number(p), stock: Number(s) };
     localStorage.setItem("products", JSON.stringify(products));
     notify("Saved Locally", "blue");
+    document.querySelectorAll(".card:nth-child(2) input").forEach(i => i.value = "");
 }
 
 function addToCart(manualCode = null) {
@@ -221,7 +254,6 @@ function checkout() {
     notify("SALE RECORDED", "#27ae60");
 }
 
-/* --- PDF INVOICE LOGIC --- */
 async function generatePDF() {
     if (!cart.length) return notify("No items", "red");
     const { jsPDF } = window.jspdf;
