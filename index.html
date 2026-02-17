@@ -7,7 +7,6 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
     :root { --orange: #ff512f; --yellow: #f09819; --dark: #141e30; --green: #27ae60; --red: #e74c3c; --gold: #D4AF37; }
@@ -33,6 +32,7 @@
     .btn-flash { background: #f1c40f; color: #000; margin-bottom: 10px; display: none; }
     .btn-backup { background: #6c5ce7; }
 
+    /* Basket/Qty Controls */
     .qty-controls { display: flex; align-items: center; gap: 12px; background: #f8f9fa; padding: 5px 10px; border-radius: 20px; }
     .btn-qty { width: 28px; height: 28px; padding: 0; margin: 0; border-radius: 50%; background: var(--dark); font-size: 18px; display: flex; align-items: center; justify-content: center; }
     .qty-val { font-weight: 800; font-size: 16px; min-width: 15px; text-align: center; }
@@ -48,18 +48,14 @@
     #scanner-view { background: #000; border-radius: 20px; overflow: hidden; display: none; margin-bottom: 15px; padding: 10px; }
     #reader { width: 100%; min-height: 250px; border-radius: 15px; }
 
+    /* Report Preview Box */
     #eod-report-box { padding: 40px; background: white; width: 320px; margin: 15px auto; color: black; display: none; text-align: center; border: 1px solid #eee; font-family: 'Times New Roman', serif; }
-    
-    /* Hidden QR div */
-    #qrcode { display: none; }
 </style>
 </head>
 <body>
 
 <div id="status-msg"></div>
 <header>BAZRO</header>
-
-<div id="qrcode"></div>
 
 <div class="container">
     <div id="scanner-view">
@@ -80,7 +76,7 @@
             <div id="cart-list"></div>
             <div style="text-align:right; font-weight:800; font-size:24px; margin:20px 0; color:var(--dark)" id="cart-total">Total: £0.00</div>
             <button style="background:var(--green)" onclick="checkout()">COMPLETE TRANSACTION</button>
-            <button class="btn-pdf" onclick="downloadLuxuryInvoice()">📄 DOWNLOAD QR INVOICE</button>
+            <button class="btn-pdf" onclick="downloadLuxuryInvoice()">📄 DOWNLOAD LUXURY INVOICE</button>
         </div>
     </div>
 
@@ -167,37 +163,40 @@ function speak(text) {
     window.speechSynthesis.speak(msg);
 }
 
-// UPDATED LUXURY INVOICE WITH QR CODE
-async function downloadLuxuryInvoice() {
+// LUXURY INVOICE LOGIC
+function downloadLuxuryInvoice() {
     const items = cart.length ? cart : (sales[0]?.items || []);
     if (!items.length) return notify("No items to invoice", "red");
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('p', 'mm', 'a4');
 
-    // HEADER
-    doc.setFillColor(20, 30, 48);
+    // LUXURY HEADER
+    doc.setFillColor(20, 30, 48); // Dark Elegant Background
     doc.rect(0, 0, 210, 40, 'F');
-    doc.setTextColor(212, 175, 55);
+    
+    doc.setTextColor(212, 175, 55); // GOLD
     doc.setFontSize(30);
     doc.setFont("helvetica", "bold");
     doc.text(INFO.name, 105, 20, { align: 'center' });
     
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
     doc.text(INFO.address, 105, 28, { align: 'center' });
     doc.text(`T: ${INFO.phone}`, 105, 33, { align: 'center' });
 
     // BODY
     doc.setTextColor(0, 0, 0);
-    const receiptID = `BAZ-${Date.now().toString().slice(-6)}`;
-    doc.text(`Receipt ID: #${receiptID}`, 20, 50);
+    doc.setFontSize(12);
+    doc.text(`Receipt ID: #${Date.now().toString().slice(-6)}`, 20, 50);
     doc.text(`Date: ${new Date().toLocaleString()}`, 20, 56);
+    
+    doc.setDrawColor(200);
+    doc.line(20, 62, 190, 62);
     
     let y = 72;
     let total = 0;
-    let qrData = `${INFO.name} RECEIPT\nID: ${receiptID}\n---\n`;
-
     doc.setFont("helvetica", "bold");
     doc.text("Item", 20, y);
     doc.text("Qty", 130, y);
@@ -211,38 +210,27 @@ async function downloadLuxuryInvoice() {
         doc.text(i.name.substring(0, 35), 20, y);
         doc.text(i.qty.toString(), 132, y);
         doc.text(`£${sub.toFixed(2)}`, 170, y);
-        qrData += `${i.name} x${i.qty}: £${sub.toFixed(2)}\n`;
         y += 8;
     });
-
-    qrData += `---\nTOTAL: £${total.toFixed(2)}\nThank you!`;
 
     doc.line(20, y + 5, 190, y + 5);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text(`TOTAL: £${total.toFixed(2)}`, 190, y + 15, { align: 'right' });
+    doc.text(`TOTAL AMOUNT: £${total.toFixed(2)}`, 190, y + 15, { align: 'right' });
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "italic");
+    doc.text("Thank you for shopping at Bazro.", 105, y + 30, { align: 'center' });
 
-    // GENERATE AND ADD QR CODE
-    const qrDiv = document.getElementById("qrcode");
-    qrDiv.innerHTML = "";
-    new QRCode(qrDiv, { text: qrData, width: 128, height: 128 });
-
-    // Small delay to ensure QR is rendered
-    setTimeout(() => {
-        const qrImg = qrDiv.querySelector("img").src;
-        doc.addImage(qrImg, 'PNG', 85, y + 25, 40, 40);
-        
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "italic");
-        doc.text("Scan to download receipt info", 105, y + 70, { align: 'center' });
-        doc.text("Thank you for shopping at Bazro.", 105, y + 75, { align: 'center' });
-
-        doc.save(`Bazro_Invoice_${receiptID}.pdf`);
-        notify("QR Invoice Ready", "var(--green)");
-    }, 100);
+    try {
+        doc.save(`Bazro_Invoice_${Date.now()}.pdf`);
+    } catch (e) {
+        window.open(URL.createObjectURL(doc.output('blob')), '_blank');
+    }
+    notify("Luxury Invoice Ready", "var(--green)");
 }
 
-// REST OF YOUR FUNCTIONS (Scanner, Cart, Stock) REMAIN EXACTLY THE SAME...
+// SCANNER (RESTORED EVERYTHING)
 async function startScan(mode) {
     if (html5QrCode) { try { await html5QrCode.stop(); } catch(e) {} }
     document.getElementById("reader").innerHTML = "";
@@ -262,7 +250,7 @@ async function startScan(mode) {
                 addToCart(code);
                 notify(products[code].name + " Added!", "var(--green)");
                 speak(products[code].name + " added");
-                setTimeout(() => { scanPaused = false; }, 2000); 
+                setTimeout(() => { scanPaused = false; }, 2000); // 2 SECONDS WAIT RESTORED
             }
         });
         setTimeout(() => {
@@ -285,6 +273,7 @@ async function toggleFlash() {
     document.getElementById("flash-btn").innerText = isFlashOn ? "🔦 FLASH: ON" : "🔦 FLASH: OFF";
 }
 
+// CART & QTY
 function addToCart(manualCode = null) {
     const b = (manualCode || document.getElementById("sell_barcode").value).trim();
     if (!products[b]) return notify("Unknown Barcode", "red");
@@ -329,6 +318,7 @@ function checkout() {
     cart = []; renderCart();
 }
 
+// DATABASE & STOCK
 function addProduct() {
     const b = document.getElementById("p_barcode").value, n = document.getElementById("p_name").value, p = document.getElementById("p_price").value;
     if(!b || !n || !p) return notify("Missing Info", "red");
@@ -357,6 +347,7 @@ function importData(e) {
     reader.readAsText(e.target.files[0]);
 }
 
+// REPORTS
 function previewReport() {
     const d = document.getElementById("report_date").value;
     if(!d) return;
@@ -383,3 +374,4 @@ async function shareReportImage() {
 </script>
 </body>
 </html>
+
