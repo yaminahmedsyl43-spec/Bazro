@@ -2,46 +2,51 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Bazro POS - Premium Edition</title>
+    <title>Bazro POS - All-In-One Premium</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
-        :root { --brand: #e74c3c; --dark: #141e30; --bg: #f4f7f6; --green: #27ae60; --gold: #D4AF37; }
-        body { margin: 0; font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); padding-bottom: 110px; color: #333; }
-        header { background: var(--dark); padding: 18px; text-align: center; color: white; font-size: 24px; font-weight: 800; letter-spacing: 2px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        :root { --orange: #ff512f; --yellow: #f09819; --dark: #141e30; --green: #27ae60; --red: #e74c3c; --gold: #D4AF37; }
+        body { margin: 0; font-family: 'Segoe UI', Roboto, sans-serif; background: #f4f7f6; padding-bottom: 110px; color: #333; }
+        header { background: linear-gradient(135deg, #141e30, #243b55); padding: 18px; text-align: center; color: white; font-size: 24px; font-weight: 800; letter-spacing: 2px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         
         .container { max-width: 500px; margin: auto; padding: 15px; }
         .page { display: none; }
         .active-page { display: block; }
         
-        .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 15px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
+        .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 15px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.03); }
         h3 { margin-top: 0; color: var(--dark); border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; font-size: 19px; }
         
         input, select { width: 100%; padding: 14px; margin: 10px 0; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; margin: 8px 0; border-radius: 10px; border: none; background: var(--brand); color: white; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
+        button { width: 100%; padding: 15px; margin: 8px 0; border-radius: 10px; border: none; background: linear-gradient(135deg, var(--orange), var(--yellow)); color: white; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.1s; }
         button:active { transform: scale(0.98); }
         
         .btn-sec { background: #34495e; }
+        .btn-stop { background: var(--red); }
         .btn-pdf { background: #1a1a1a; border: 1px solid var(--gold); color: var(--gold); }
-        .btn-flash { background: #f1c40f; color: #000; display: none; margin-bottom: 5px; }
-        .btn-stop { background: #c0392b; }
+        .btn-flash { background: #f1c40f; color: #000; display: none; margin-bottom: 10px; }
+        .btn-backup { background: #6c5ce7; }
+
+        .row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; align-items: center; }
+        .qty-controls { display: flex; align-items: center; gap: 12px; background: #f8f9fa; padding: 5px 10px; border-radius: 20px; }
+        .btn-qty { width: 28px; height: 28px; border-radius: 50%; background: var(--dark); color: white; border: none; font-weight: bold; }
+
+        nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #eee; height: 75px; z-index: 1000; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); }
+        nav button { flex: 1; background: none; color: #95a5a6; border-top: 4px solid transparent; font-size: 10px; text-transform: uppercase; border-left: none; border-right: none; border-bottom: none; }
+        nav button.active-nav { color: var(--orange); border-top-color: var(--orange); }
 
         #scanner-view { background: #000; border-radius: 20px; overflow: hidden; display: none; margin-bottom: 15px; padding: 10px; }
         #reader { width: 100%; min-height: 250px; }
 
-        .row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; align-items: center; }
-        .qty-controls { display: flex; align-items: center; gap: 12px; background: #f8f9fa; padding: 5px 10px; border-radius: 20px; }
-        .btn-qty { width: 28px; height: 28px; border-radius: 50%; background: var(--dark); color: white; font-size: 18px; border: none; cursor: pointer; }
+        .history-item { border-bottom: 2px solid #eee; padding: 15px 0; }
+        .history-meta { font-size: 12px; color: #7f8c8d; }
 
-        nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #eee; height: 75px; z-index: 1000; }
-        nav button { flex: 1; background: none; color: #95a5a6; font-size: 10px; text-transform: uppercase; border: none; }
-        nav button.active-nav { color: var(--brand); border-top: 4px solid var(--brand); font-weight: bold; }
-
-        #eod-report-box { padding: 30px; background: white; width: 320px; margin: 15px auto; color: black; border: 1px solid #ddd; text-align: center; font-family: 'Times New Roman', serif; display: none; }
+        #eod-report-box { padding: 30px; background: white; width: 320px; margin: 15px auto; color: black; border: 1px solid #eee; text-align: center; font-family: 'Times New Roman', serif; display: none; }
     </style>
 </head>
 <body>
@@ -57,69 +62,80 @@
 
     <div id="page-sales" class="page active-page">
         <div class="card">
-            <h3>Customer Info (Optional)</h3>
-            <input id="c_name" placeholder="Customer / Shop Name">
-            <input id="c_address" placeholder="Address">
-            <input id="c_postcode" placeholder="Postcode">
+            <h3>Customer (Optional)</h3>
+            <input id="c_name" placeholder="Name (e.g. SULTANZ)">
+            <input id="c_addr" placeholder="Address line">
+            <input id="c_pc" placeholder="Postcode">
         </div>
-
         <div class="card">
             <h3>Checkout</h3>
             <button onclick="startScan('sell')">📷 SCAN ITEM</button>
             <input id="sell_barcode" placeholder="Enter Barcode Manually">
             <button class="btn-sec" onclick="addToCart()">ADD TO BASKET</button>
         </div>
-
         <div class="card">
             <h3>Basket</h3>
             <div id="cart-list"></div>
-            <div style="text-align:right; font-weight:800; font-size:24px; margin:20px 0;" id="cart-total">Total: £0.00</div>
-            <button style="background:var(--green)" onclick="completeTransaction()">COMPLETE TRANSACTION</button>
-            <button class="btn-pdf" onclick="downloadInvoice()">📄 DOWNLOAD PDF INVOICE</button>
+            <div style="text-align:right; font-weight:800; font-size:24px; margin:20px 0; color:var(--dark)" id="cart-total">Total: £0.00</div>
+            <button style="background:var(--green)" onclick="checkout()">COMPLETE TRANSACTION</button>
+            <button class="btn-pdf" onclick="downloadLuxuryInvoice()">📄 DOWNLOAD PDF INVOICE</button>
         </div>
     </div>
 
     <div id="page-report" class="page">
         <div class="card">
-            <h3>End of Day Report</h3>
-            <input type="date" id="r_date_input">
-            <input type="number" id="r_cash" placeholder="Cash Sales (£)">
-            <input type="number" id="r_card" placeholder="Card Sales (£)">
-            <input type="number" id="r_exp_input" placeholder="Expenses (£)">
-            <input type="number" id="r_till_input" placeholder="Till Remaining (£)">
-            <button onclick="generateEOD()">GENERATE SUMMARY</button>
+            <h3>End of Day</h3>
+            <input type="date" id="rep_date">
+            <input type="number" id="rep_cash" placeholder="Cash Sales (£)">
+            <input type="number" id="rep_card" placeholder="Card Sales (£)">
+            <input type="number" id="rep_exp" placeholder="Expenses (£)">
+            <input type="number" id="rep_till" placeholder="Till Remaining (£)">
+            <button onclick="previewReport()">GENERATE SUMMARY</button>
         </div>
-
         <div id="eod-report-box">
-            <h1 style="color:var(--brand); margin:0; font-size:35px;">BAZRO</h1>
-            <p style="font-size:12px; margin-bottom:10px;">9a commercial square, Camborne, TR14 8AT</p>
-            <div id="disp_date" style="font-weight:bold;"></div>
-            <hr>
-            <div style="display:flex; justify-content:space-between; margin:8px 0;"><span>CASH</span><span id="disp_cash"></span></div>
-            <div style="display:flex; justify-content:space-between; margin:8px 0;"><span>CARD</span><span id="disp_card"></span></div>
-            <div style="border-top:2px solid #000; padding-top:5px; font-weight:bold; font-size:20px; display:flex; justify-content:space-between;">
+             <h1 style="margin:0; font-size:40px; color: var(--red);">BAZRO</h1>
+             <div id="disp_date" style="font-size:18px; margin:10px 0;"></div>
+             <p style="font-size:12px; color:gray;">9a Commercial St, Camborne TR14 8AT</p>
+             <hr>
+             <div style="display:flex; justify-content:space-between; margin:10px 0;"><span>CASH</span><span id="disp_cash"></span></div>
+             <div style="display:flex; justify-content:space-between; margin:10px 0;"><span>CARD</span><span id="disp_card"></span></div>
+             <div style="border-top:2px solid #000; padding-top:10px; font-weight:bold; font-size:22px; display:flex; justify-content:space-between;">
                 <span>TOTAL</span><span id="disp_total"></span>
-            </div>
-            <hr style="border:0.5px dashed #ccc; margin-top:20px;">
-            <div style="text-align:left; font-size:14px; margin-top:10px;">
-                <div>Expenses: <span id="disp_exp"></span></div>
-                <div>Till Left: <span id="disp_till"></span></div>
-            </div>
+             </div>
+             <hr style="border:0.5px dashed #ccc; margin-top:20px;">
+             <div style="text-align:left; font-size:14px; color:gray;">
+                <p>Expenses: <span id="disp_exp"></span></p>
+                <p>Till Left: <span id="disp_till"></span></p>
+             </div>
+        </div>
+    </div>
+
+    <div id="page-history" class="page">
+        <div class="card">
+            <h3>Transaction History</h3>
+            <div id="history-list"></div>
+            <button class="btn-stop" style="margin-top:20px" onclick="clearHistory()">CLEAR ALL HISTORY</button>
         </div>
     </div>
 
     <div id="page-stock" class="page">
         <div class="card">
-            <h3>Product Stock</h3>
-            <button onclick="startScan('add')">📷 SCAN BARCODE</button>
+            <h3>Add Product</h3>
+            <button onclick="startScan('add')">📷 SCAN NEW PRODUCT</button>
             <input id="p_barcode" placeholder="Barcode ID">
-            <input id="p_name" placeholder="Item Name">
+            <input id="p_name" placeholder="Product Name">
             <input id="p_price" type="number" step="0.01" placeholder="Price £">
             <select id="p_vat">
-                <option value="0">VAT: 0% (Food/Standard)</option>
-                <option value="20">VAT: 20% (Containers/Non-Food)</option>
+                <option value="0">VAT: 0%</option>
+                <option value="20">VAT: 20%</option>
             </select>
-            <button onclick="saveProduct()">SAVE TO DATABASE</button>
+            <button onclick="saveProduct()">SAVE PRODUCT</button>
+        </div>
+        <div class="card">
+            <h3>Cloud Backup</h3>
+            <button class="btn-backup" onclick="exportData()">💾 EXPORT DATABASE (.JSON)</button>
+            <button class="btn-sec" onclick="document.getElementById('importFile').click()">📂 IMPORT DATABASE</button>
+            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
         </div>
     </div>
 </div>
@@ -127,201 +143,223 @@
 <nav>
     <button id="nav-sales" class="active-nav" onclick="showPage('sales')">SHOP</button>
     <button id="nav-report" onclick="showPage('report')">REPORT</button>
+    <button id="nav-history" onclick="showPage('history')">HISTORY</button>
     <button id="nav-stock" onclick="showPage('stock')">STOCK</button>
 </nav>
 
 <script>
-    let products = JSON.parse(localStorage.getItem("bazro_prods") || "{}");
-    let cart = [];
-    let html5QrCode = null;
-    let isFlashOn = false;
+let products = JSON.parse(localStorage.getItem("prods") || "{}");
+let sales = JSON.parse(localStorage.getItem("sales") || "[]");
+let cart = [];
+let html5QrCode = null;
+let isFlashOn = false;
 
-    const SHOP = {
-        name: "BAZRO",
-        addr: "9a commercial square - Camborne - TR14 8AT",
-        reg: "15649986",
-        phone: "+447534100986",
-        acc_name: "GKIDEAS LIMITED",
-        sort: "54-30-37",
-        acc_no: "39640965"
-    };
+const INFO = {
+    name: "BAZRO",
+    addr: "9a commercial square - Camborne - TR14 8AT",
+    reg: "15649986",
+    phone: "+447534100986",
+    acc_name: "GKIDEAS LIMITED",
+    sort: "54-30-37",
+    acc_no: "39640965"
+};
 
-    function showPage(p) {
-        document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
-        document.getElementById('page-'+p).classList.add('active-page');
-        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
-        document.getElementById('nav-'+p).classList.add('active-nav');
-        stopScan();
-    }
+function showPage(p) {
+    document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
+    document.getElementById('page-'+p).classList.add('active-page');
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
+    document.getElementById('nav-'+p).classList.add('active-nav');
+    if(p === 'history') renderHistory();
+    stopScan();
+}
 
-    // --- SCANNING LOGIC ---
-    async function startScan(mode) {
-        document.getElementById("scanner-view").style.display = "block";
-        html5QrCode = new Html5Qrcode("reader");
-        const config = { fps: 15, qrbox: 250 };
-        
-        try {
-            await html5QrCode.start({ facingMode: "environment" }, config, (code) => {
-                if(mode === 'sell') {
-                    addToCart(code);
-                } else {
-                    document.getElementById("p_barcode").value = code;
-                    stopScan();
-                }
-            });
-            
-            // Wait a moment for track to initialize for flash
-            setTimeout(() => {
-                const track = html5QrCode.getRunningTrackCapabilities();
-                if(track.torch) document.getElementById("flash-btn").style.display = "block";
-            }, 500);
-        } catch (err) { alert("Camera Error"); }
-    }
-
-    async function stopScan() {
-        if (html5QrCode) { await html5QrCode.stop(); html5QrCode.clear(); }
-        document.getElementById("scanner-view").style.display = "none";
-        document.getElementById("flash-btn").style.display = "none";
-        isFlashOn = false;
-    }
-
-    async function toggleFlash() {
-        isFlashOn = !isFlashOn;
-        await html5QrCode.applyVideoConstraints({ advanced: [{ torch: isFlashOn }] });
-        document.getElementById("flash-btn").innerText = isFlashOn ? "🔦 FLASH: ON" : "🔦 FLASH: OFF";
-    }
-
-    // --- SALES LOGIC ---
-    function addToCart(manualCode = null) {
-        const b = (manualCode || document.getElementById("sell_barcode").value).trim();
-        if(!products[b]) return alert("Product Not Found");
-        
-        let item = cart.find(i => i.barcode === b);
-        if(item) item.qty++;
-        else cart.push({ barcode: b, ...products[b], qty: 1 });
-        
-        renderCart();
-        document.getElementById("sell_barcode").value = "";
-    }
-
-    function renderCart() {
-        let t = 0;
-        document.getElementById("cart-list").innerHTML = cart.map(i => {
-            t += i.qty * i.price;
-            return `<div class="row">
-                <span><b>${i.name}</b><br><small>£${i.price.toFixed(2)} (${i.vat}%)</small></span>
-                <div class="qty-controls">
-                    <button class="btn-qty" onclick="updateQty('${i.barcode}', -1)">-</button>
-                    <span>${i.qty}</span>
-                    <button class="btn-qty" onclick="updateQty('${i.barcode}', 1)">+</button>
-                </div>
-                <b>£${(i.qty*i.price).toFixed(2)}</b>
-            </div>`;
-        }).join("");
-        document.getElementById("cart-total").innerText = `Total: £${t.toFixed(2)}`;
-    }
-
-    function updateQty(b, change) {
-        let item = cart.find(i => i.barcode === b);
-        item.qty += change;
-        if(item.qty <= 0) cart = cart.filter(i => i.barcode !== b);
-        renderCart();
-    }
-
-    // --- PDF INVOICE LOGIC (Sultanz Format) ---
-    function downloadInvoice() {
-        if(!cart.length) return alert("Basket Empty");
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-
-        // Header
-        doc.setFontSize(24); doc.setTextColor(231, 76, 60);
-        doc.text(SHOP.name, 15, 20);
-        doc.setFontSize(10); doc.setTextColor(0,0,0);
-        doc.text(SHOP.addr, 15, 27);
-        doc.text(`Co. Reg. No.: ${SHOP.reg} | Phone: ${SHOP.phone}`, 15, 32);
-
-        // Bill To
-        doc.setFont("helvetica", "bold"); doc.text("Bill to:", 15, 50);
-        doc.setFont("helvetica", "normal");
-        doc.text(document.getElementById("c_name").value || "Walk-in Customer", 15, 56);
-        doc.text(document.getElementById("c_address").value || "", 15, 61);
-        doc.text(document.getElementById("c_postcode").value || "", 15, 66);
-
-        // Invoice Meta
-        const invNo = "2026-" + Math.floor(100 + Math.random() * 900);
-        doc.text(`Invoice: ${invNo}`, 140, 20);
-        doc.text(`Date: ${new Date().toLocaleDateString('en-GB')}`, 140, 25);
-
-        // Table
-        const rows = cart.map(i => [i.name, i.qty, "each", i.price.toFixed(2), i.vat+"%", (i.qty*i.price).toFixed(2)]);
-        doc.autoTable({
-            startY: 75,
-            head: [['Description', 'Quantity', 'Unit', 'Price', 'VAT', 'Amount']],
-            body: rows,
-            theme: 'grid',
-            headStyles: { fillColor: [44, 62, 80] }
+// --- SCANNER ---
+async function startScan(mode) {
+    document.getElementById("scanner-view").style.display = "block";
+    html5QrCode = new Html5Qrcode("reader");
+    try {
+        await html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (code) => {
+            if(mode === 'sell') {
+                addToCart(code);
+            } else {
+                document.getElementById("p_barcode").value = code;
+                stopScan();
+            }
         });
+        setTimeout(() => {
+            const track = html5QrCode.getRunningTrackCapabilities();
+            if(track.torch) document.getElementById("flash-btn").style.display = "block";
+        }, 800);
+    } catch (e) { alert("Camera Error"); }
+}
 
-        // Totals Calculation
-        let finalY = doc.lastAutoTable.finalY + 10;
-        const subtotal = cart.reduce((a, b) => a + (b.qty * b.price), 0);
-        const vat20base = cart.filter(i => i.vat == 20).reduce((a, b) => a + (b.qty * b.price), 0);
-        const vat20val = vat20base * 0.20;
+async function stopScan() {
+    if (html5QrCode) { await html5QrCode.stop(); html5QrCode.clear(); }
+    document.getElementById("scanner-view").style.display = "none";
+    isFlashOn = false;
+    document.getElementById("flash-btn").innerText = "🔦 FLASH: OFF";
+}
 
-        doc.text(`Subtotal without VAT: £${subtotal.toFixed(2)}`, 130, finalY);
-        doc.text(`VAT 20% of ${vat20base.toFixed(2)}: £${vat20val.toFixed(2)}`, 130, finalY + 7);
-        doc.setFontSize(14); doc.setFont("helvetica", "bold");
-        doc.text(`Total Due: £${(subtotal + vat20val).toFixed(2)}`, 130, finalY + 16);
+async function toggleFlash() {
+    isFlashOn = !isFlashOn;
+    await html5QrCode.applyVideoConstraints({ advanced: [{ torch: isFlashOn }] });
+    document.getElementById("flash-btn").innerText = isFlashOn ? "🔦 FLASH: ON" : "🔦 FLASH: OFF";
+}
 
-        // Footer Bank Details
-        doc.setFontSize(10); doc.setFont("helvetica", "bold");
-        doc.text("Payment Instructions:", 15, 250);
-        doc.setFont("helvetica", "normal");
-        doc.text(`Account Name: ${SHOP.acc_name}`, 15, 256);
-        doc.text(`Sort Code: ${SHOP.sort} | Account No: ${SHOP.acc_no}`, 15, 261);
-        doc.text(`Reference: ${invNo}`, 15, 266);
+// --- SALES ---
+function addToCart(manualCode = null) {
+    const b = (manualCode || document.getElementById("sell_barcode").value).trim();
+    if(!products[b]) return alert("Product Not Found");
+    let item = cart.find(i => i.barcode === b);
+    if(item) item.qty++;
+    else cart.push({ barcode: b, name: products[b].name, price: products[b].price, vat: products[b].vat || 0, qty: 1 });
+    renderCart();
+    document.getElementById("sell_barcode").value = "";
+}
 
-        doc.save(`${invNo}_Invoice.pdf`);
-    }
+function renderCart() {
+    let t = 0;
+    document.getElementById("cart-list").innerHTML = cart.map(i => {
+        t += i.qty * i.price;
+        return `<div class="row">
+            <span><b>${i.name}</b><br><small>£${i.price.toFixed(2)}</small></span>
+            <div class="qty-controls">
+                <button class="btn-qty" onclick="updateQty('${i.barcode}', -1)">-</button>
+                <span>${i.qty}</span>
+                <button class="btn-qty" onclick="updateQty('${i.barcode}', 1)">+</button>
+            </div>
+            <b>£${(i.qty*i.price).toFixed(2)}</b>
+        </div>`;
+    }).join("");
+    document.getElementById("cart-total").innerText = `Total: £${t.toFixed(2)}`;
+}
 
-    function completeTransaction() {
-        if(!cart.length) return;
-        alert("Transaction Recorded Successfully");
-        cart = []; renderCart();
-    }
+function updateQty(b, change) {
+    let item = cart.find(i => i.barcode === b);
+    item.qty += change;
+    if(item.qty <= 0) cart = cart.filter(i => i.barcode !== b);
+    renderCart();
+}
 
-    // --- REPORT LOGIC ---
-    function generateEOD() {
-        const cash = parseFloat(document.getElementById("r_cash").value || 0);
-        const card = parseFloat(document.getElementById("r_card").value || 0);
-        const exp = parseFloat(document.getElementById("r_exp_input").value || 0);
-        const till = parseFloat(document.getElementById("r_till_input").value || 0);
-        const date = document.getElementById("r_date_input").value;
+function checkout() {
+    if(!cart.length) return;
+    sales.unshift({ date: new Date().toLocaleString(), items: [...cart] });
+    localStorage.setItem("sales", JSON.stringify(sales));
+    alert("Transaction Saved");
+    cart = []; renderCart();
+}
 
-        document.getElementById("disp_date").innerText = date ? date.split('-').reverse().join('/') : "DAILY REPORT";
-        document.getElementById("disp_cash").innerText = "£" + cash.toFixed(2);
-        document.getElementById("disp_card").innerText = "£" + card.toFixed(2);
-        document.getElementById("disp_total").innerText = "£" + (cash + card).toFixed(2);
-        document.getElementById("disp_exp").innerText = "£" + exp.toFixed(2);
-        document.getElementById("disp_till").innerText = "£" + till.toFixed(2);
-        document.getElementById("eod-report-box").style.display = "block";
-    }
+// --- PDF ---
+function downloadLuxuryInvoice() {
+    if(!cart.length) return alert("Basket is empty");
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(22); doc.setTextColor(231, 76, 60);
+    doc.text(INFO.name, 15, 20);
+    doc.setFontSize(10); doc.setTextColor(0,0,0);
+    doc.text(INFO.addr, 15, 27);
+    doc.text(`Phone: ${INFO.phone} | Co. Reg. No: ${INFO.reg}`, 15, 33);
 
-    // --- STOCK LOGIC ---
-    function saveProduct() {
-        const b = document.getElementById("p_barcode").value;
-        const n = document.getElementById("p_name").value;
-        const p = document.getElementById("p_price").value;
-        const v = document.getElementById("p_vat").value;
-        if(!b || !n || !p) return alert("Fill all info");
-        
-        products[b] = { name: n, price: parseFloat(p), vat: parseInt(v) };
-        localStorage.setItem("bazro_prods", JSON.stringify(products));
-        alert("Product Saved");
-        ["p_barcode", "p_name", "p_price"].forEach(id => document.getElementById(id).value = "");
-    }
+    // Bill To
+    doc.setFont("helvetica", "bold"); doc.text("Bill to:", 15, 50);
+    doc.setFont("helvetica", "normal");
+    doc.text(document.getElementById("c_name").value || "Valued Customer", 15, 56);
+    doc.text(document.getElementById("c_addr").value || "", 15, 62);
+    doc.text(document.getElementById("c_pc").value || "", 15, 68);
+
+    const invID = "2026-" + Math.floor(100 + Math.random() * 900);
+    doc.text(`Invoice: ${invID}`, 145, 20);
+    doc.text(`Date: ${new Date().toLocaleDateString('en-GB')}`, 145, 26);
+
+    const body = cart.map(i => [i.name, i.qty, "each", i.price.toFixed(2), i.vat+"%", (i.qty*i.price).toFixed(2)]);
+    doc.autoTable({
+        startY: 75,
+        head: [['Description', 'Quantity', 'Unit', 'Price', 'VAT', 'Amount']],
+        body: body,
+        theme: 'grid',
+        headStyles: { fillColor: [20, 30, 48] }
+    });
+
+    let finalY = doc.lastAutoTable.finalY + 10;
+    const subtotal = cart.reduce((s, i) => s + (i.qty * i.price), 0);
+    const vat20val = cart.filter(i => i.vat == 20).reduce((s, i) => s + (i.qty * i.price), 0) * 0.20;
+
+    doc.text(`Subtotal without VAT: £${subtotal.toFixed(2)}`, 130, finalY);
+    doc.text(`VAT 20%: £${vat20val.toFixed(2)}`, 130, finalY + 7);
+    doc.setFontSize(14); doc.setFont("helvetica", "bold");
+    doc.text(`Total Due: £${(subtotal + vat20val).toFixed(2)}`, 130, finalY + 16);
+
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    doc.text(`Bank Transfer: ${INFO.acc_name} | Sort: ${INFO.sort} | Acc: ${INFO.acc_no}`, 15, 270);
+
+    doc.save(`${invID}_Invoice.pdf`);
+}
+
+// --- HISTORY ---
+function renderHistory() {
+    const list = document.getElementById("history-list");
+    if(!sales.length) { list.innerHTML = "<p>No history.</p>"; return; }
+    list.innerHTML = sales.map((s, idx) => {
+        const total = s.items.reduce((a, b) => a + (b.qty * b.price), 0);
+        return `<div class="history-item">
+            <div class="history-meta">#${sales.length - idx} | ${s.date}</div>
+            <div>${s.items.map(i => i.name + " (x"+i.qty+")").join(", ")}</div>
+            <div style="text-align:right; font-weight:bold;">Total: £${total.toFixed(2)}</div>
+        </div>`;
+    }).join("");
+}
+
+function clearHistory() {
+    if(confirm("Clear everything?")) { sales = []; localStorage.setItem("sales", "[]"); renderHistory(); }
+}
+
+// --- EOD REPORT ---
+function previewReport() {
+    const cash = parseFloat(document.getElementById("rep_cash").value || 0);
+    const card = parseFloat(document.getElementById("rep_card").value || 0);
+    const exp = parseFloat(document.getElementById("rep_exp").value || 0);
+    const till = parseFloat(document.getElementById("rep_till").value || 0);
+    const date = document.getElementById("rep_date").value;
+
+    document.getElementById("disp_date").innerText = date ? date.split('-').reverse().join('/') : "REPORT";
+    document.getElementById("disp_cash").innerText = "£" + cash.toFixed(2);
+    document.getElementById("disp_card").innerText = "£" + card.toFixed(2);
+    document.getElementById("disp_total").innerText = "£" + (cash + card).toFixed(2);
+    document.getElementById("disp_exp").innerText = "£" + exp.toFixed(2);
+    document.getElementById("disp_till").innerText = "£" + till.toFixed(2);
+    document.getElementById("eod-report-box").style.display = "block";
+}
+
+// --- STOCK & BACKUP ---
+function saveProduct() {
+    const b = document.getElementById("p_barcode").value, n = document.getElementById("p_name").value, p = document.getElementById("p_price").value, v = document.getElementById("p_vat").value;
+    if(!b || !n || !p) return alert("Missing Info");
+    products[b] = { name: n, price: parseFloat(p), vat: parseInt(v) };
+    localStorage.setItem("prods", JSON.stringify(products));
+    alert("Saved!");
+    ["p_barcode", "p_name", "p_price"].forEach(id => document.getElementById(id).value = "");
+}
+
+function exportData() {
+    const blob = new Blob([JSON.stringify({products, sales})], {type: "application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "Bazro_Backup.json";
+    a.click();
+}
+
+function importData(e) {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        const data = JSON.parse(ev.target.result);
+        localStorage.setItem("prods", JSON.stringify(data.products));
+        localStorage.setItem("sales", JSON.stringify(data.sales));
+        location.reload();
+    };
+    reader.readAsText(e.target.files[0]);
+}
 </script>
-
 </body>
 </html>
