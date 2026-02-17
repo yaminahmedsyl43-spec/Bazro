@@ -43,6 +43,7 @@
     .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 14px; }
     .stock-log { background: #eee; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 12px; }
 
+    /* Receipt Format from Image */
     #eod-report-box { 
         padding: 40px; 
         background: white; 
@@ -146,7 +147,6 @@
 
         <div class="card">
             <h3>Database Backup</h3>
-            <p style="font-size:12px; color:#666">Transfer your data to another device.</p>
             <button class="btn-backup" onclick="exportData()">💾 Export Data (.json)</button>
             <button class="btn-sec" onclick="document.getElementById('importFile').click()">📂 Import Data (.json)</button>
             <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
@@ -203,20 +203,15 @@ function speak(text) {
     window.speechSynthesis.speak(msg);
 }
 
-// --- BACKUP FUNCTIONS ---
+// BACKUP TOOLS
 function exportData() {
-    const data = {
-        products: JSON.parse(localStorage.getItem("products") || "{}"),
-        sales: JSON.parse(localStorage.getItem("sales") || "[]"),
-        stockLog: JSON.parse(localStorage.getItem("stockLog") || "[]")
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const data = { products, sales, stockLog };
+    const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `Bazro_Backup_${new Date().toLocaleDateString().replace(/\//g,'-')}.json`;
+    a.download = `Bazro_Backup_${Date.now()}.json`;
     a.click();
-    notify("Database Exported!", "var(--green)");
 }
 
 function importData(event) {
@@ -226,20 +221,59 @@ function importData(event) {
     reader.onload = function(e) {
         try {
             const data = JSON.parse(e.target.result);
-            if (confirm("This will overwrite current data. Continue?")) {
+            if (confirm("Importing will replace current data. Continue?")) {
                 localStorage.setItem("products", JSON.stringify(data.products || {}));
                 localStorage.setItem("sales", JSON.stringify(data.sales || []));
                 localStorage.setItem("stockLog", JSON.stringify(data.stockLog || []));
-                location.reload(); // Reload to refresh all variables
+                location.reload();
             }
-        } catch (err) {
-            alert("Invalid JSON file.");
-        }
+        } catch (err) { alert("Invalid backup file."); }
     };
     reader.readAsText(file);
 }
-// ------------------------
 
+// INVOICE DOWNLOAD WITH MOBILE FALLBACK
+function downloadA4Invoice() {
+    const itemsToPrint = cart.length > 0 ? cart : (sales[0] ? sales[0].items : []);
+    if (!itemsToPrint.length) return notify("No items to print", "orange");
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const date = new Date().toLocaleString();
+
+    doc.setFontSize(26); doc.setTextColor(255, 81, 47); doc.setFont(undefined, 'bold');
+    doc.text("BAZRO", 105, 20, { align: 'center' });
+    doc.setFontSize(10); doc.setTextColor(80); doc.setFont(undefined, 'normal');
+    doc.text(BAZRO_ADDRESS, 105, 27, { align: 'center' });
+    doc.text(`Phone: ${BAZRO_PHONE}`, 105, 32, { align: 'center' });
+    doc.text(`Date: ${date}`, 20, 42);
+    doc.setDrawColor(200); doc.line(20, 52, 190, 52);
+    
+    let y = 60;
+    let total = 0;
+    itemsToPrint.forEach(item => {
+        const sub = item.qty * item.price;
+        total += sub;
+        doc.text(`${item.name} (x${item.qty})`, 25, y);
+        doc.text(`£${sub.toFixed(2)}`, 160, y);
+        y += 8;
+    });
+
+    doc.setFontSize(14); doc.setFont(undefined, 'bold');
+    doc.text(`GRAND TOTAL: £${total.toFixed(2)}`, 190, y + 10, { align: 'right' });
+
+    // Try direct download first, then fallback to open in new tab
+    try {
+        doc.save(`Bazro_Invoice_${Date.now()}.pdf`);
+    } catch (e) {
+        const blob = doc.output('blob');
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+    }
+    notify("Invoice Generated", "var(--green)");
+}
+
+// SCANNER & CART LOGIC
 async function startScan(mode) {
     if (html5QrCode && html5QrCode.getState() !== 1) {
         try { await html5QrCode.stop(); } catch(e) {}
@@ -254,45 +288,23 @@ async function startScan(mode) {
             if (mode === 'add') {
                 document.getElementById("p_barcode").value = code;
                 stopScan();
-                notify("Barcode Caught!", "var(--green)");
             } else {
                 handleAutoScan(code);
             }
         });
-        setTimeout(() => {
-            try {
-                const track = html5QrCode.getRunningTrackCapabilities();
-                document.getElementById("flash-btn").style.display = track.torch ? "block" : "none";
-            } catch(e) {}
-        }, 1000);
     } catch (err) { notify("Camera Error", "red"); }
 }
 
 async function stopScan() {
     if (html5QrCode) { try { await html5QrCode.stop(); html5QrCode.clear(); } catch(e) {} }
     document.getElementById("scanner-view").style.display = "none";
-    isFlashOn = false;
-}
-
-async function toggleFlash() {
-    isFlashOn = !isFlashOn;
-    try {
-        await html5QrCode.applyVideoConstraints({ advanced: [{ torch: isFlashOn }] });
-        document.getElementById("flash-btn").innerText = isFlashOn ? "🔦 Flashlight: ON" : "🔦 Flashlight: OFF";
-    } catch(e) { notify("Flash Error", "orange"); }
 }
 
 function handleAutoScan(code) {
-    if (!products[code]) {
-        speak("Item not found");
-        notify("Unknown Barcode", "#444");
-        return;
-    }
+    if (!products[code]) { speak("Item not found"); return; }
     scanPaused = true;
-    const name = products[code].name;
     addToCart(code);
-    notify(name + " Added!", "var(--green)");
-    speak(name + " added");
+    notify(products[code].name + " Added!", "var(--green)");
     setTimeout(() => { scanPaused = false; }, 2000);
 }
 
@@ -320,57 +332,7 @@ function checkout() {
     sales.unshift({ id: Date.now(), date: new Date().toLocaleString(), items: [...cart] });
     localStorage.setItem("sales", JSON.stringify(sales));
     notify("Sale Recorded", "var(--green)");
-    speak("Transaction complete");
     cart = []; renderCart();
-}
-
-function downloadA4Invoice() {
-    const itemsToPrint = cart.length > 0 ? cart : (sales[0] ? sales[0].items : []);
-    if (!itemsToPrint.length) return notify("No items to print", "orange");
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('p', 'mm', 'a4');
-    const date = new Date().toLocaleString();
-
-    doc.setFontSize(26); doc.setTextColor(255, 81, 47); doc.setFont(undefined, 'bold');
-    doc.text("BAZRO", 105, 20, { align: 'center' });
-    
-    doc.setFontSize(10); doc.setTextColor(80); doc.setFont(undefined, 'normal');
-    doc.text(BAZRO_ADDRESS, 105, 27, { align: 'center' });
-    doc.text(`Phone: ${BAZRO_PHONE}`, 105, 32, { align: 'center' });
-    
-    doc.setFontSize(10); doc.setTextColor(100);
-    doc.text(`Date: ${date}`, 20, 42);
-    doc.text(`Invoice ID: INV-${Date.now().toString().slice(-6)}`, 20, 47);
-    
-    doc.setDrawColor(200); doc.line(20, 52, 190, 52);
-    doc.setFontSize(11); doc.setTextColor(0); doc.setFont(undefined, 'bold');
-    doc.text("Item Description", 25, 59);
-    doc.text("Qty", 100, 59);
-    doc.text("Unit Price", 130, 59);
-    doc.text("Subtotal", 160, 59);
-    doc.line(20, 62, 190, 62);
-
-    let y = 70;
-    let total = 0;
-    doc.setFont(undefined, 'normal');
-    itemsToPrint.forEach(item => {
-        const sub = item.qty * item.price;
-        total += sub;
-        doc.text(item.name.substring(0, 30), 25, y);
-        doc.text(item.qty.toString(), 102, y);
-        doc.text(`£${item.price.toFixed(2)}`, 130, y);
-        doc.text(`£${sub.toFixed(2)}`, 160, y);
-        y += 8;
-        if(y > 270) { doc.addPage(); y = 20; }
-    });
-
-    doc.setDrawColor(0); doc.line(120, y, 190, y);
-    doc.setFontSize(14); doc.setFont(undefined, 'bold');
-    doc.text(`GRAND TOTAL: £${total.toFixed(2)}`, 190, y + 10, { align: 'right' });
-
-    doc.save(`Bazro_Invoice_${Date.now()}.pdf`);
-    notify("Invoice Downloaded", "var(--green)");
 }
 
 function previewReport() {
@@ -400,9 +362,7 @@ async function shareReportImage() {
     canvas.toBlob(async (blob) => {
         const file = new File([blob], "Bazro_EOD.jpg", { type: "image/jpeg" });
         if (navigator.share) {
-            try {
-                await navigator.share({ files: [file] });
-            } catch(e) { notify("Sharing failed", "red"); }
+            try { await navigator.share({ files: [file] }); } catch(e) { }
         } else {
             const link = document.createElement('a');
             link.download = 'Bazro_Report.jpg';
@@ -430,7 +390,6 @@ function addProduct() {
     if(stockLog.length > 5) stockLog.pop();
     localStorage.setItem("stockLog", JSON.stringify(stockLog));
     notify(n + " Saved", "var(--green)");
-    renderStockLog();
     ["p_barcode", "p_name", "p_price", "p_stock"].forEach(id => document.getElementById(id).value = "");
 }
 
@@ -440,6 +399,7 @@ function renderStockLog() {
 }
 
 function clearHistory() { if(confirm("Clear history?")) { sales = []; localStorage.setItem("sales", "[]"); renderHistory(); } }
+function toggleFlash() { isFlashOn = !isFlashOn; html5QrCode.applyVideoConstraints({ advanced: [{ torch: isFlashOn }] }); }
 </script>
 </body>
 </html>
