@@ -6,7 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
@@ -19,32 +18,24 @@
     .active-page { display: block; }
     
     .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 15px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.03); }
-    h3 { margin-top: 0; color: var(--dark); border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; font-size: 19px; letter-spacing: 0.5px; }
+    h3 { margin-top: 0; color: var(--dark); border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; font-size: 19px; }
     
-    input { width: 100%; padding: 14px; margin: 10px 0; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; transition: 0.3s; box-sizing: border-box; }
-    input:focus { border-color: var(--orange); outline: none; box-shadow: 0 0 8px rgba(255,81,47,0.2); }
-    
-    button { width: 100%; padding: 15px; margin: 8px 0; border-radius: 10px; border: none; background: linear-gradient(135deg, var(--orange), var(--yellow)); color: white; font-weight: bold; font-size: 16px; cursor: pointer; transition: transform 0.1s; }
-    button:active { transform: scale(0.98); }
+    input { width: 100%; padding: 14px; margin: 10px 0; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; box-sizing: border-box; }
+    button { width: 100%; padding: 15px; margin: 8px 0; border-radius: 10px; border: none; background: linear-gradient(135deg, var(--orange), var(--yellow)); color: white; font-weight: bold; font-size: 16px; cursor: pointer; }
     
     .btn-sec { background: #34495e; }
     .btn-stop { background: var(--red); }
     .btn-pdf { background: #1a1a1a; border: 1px solid var(--gold); color: var(--gold); }
-    .btn-flash { background: #f1c40f; color: #000; margin-bottom: 10px; display: none; }
-
-    .qty-controls { display: flex; align-items: center; gap: 12px; background: #f8f9fa; padding: 5px 10px; border-radius: 20px; }
-    .btn-qty { width: 28px; height: 28px; padding: 0; margin: 0; border-radius: 50%; background: var(--dark); font-size: 18px; display: flex; align-items: center; justify-content: center; }
-    .qty-val { font-weight: 800; font-size: 16px; min-width: 15px; text-align: center; }
-    
-    nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #eee; z-index: 1000; height: 75px; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); }
-    nav button { flex: 1; background: none; color: #95a5a6; border-top: 4px solid transparent; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding: 0; }
-    nav button.active-nav { color: var(--orange); border-top-color: var(--orange); }
 
     #status-msg { position: fixed; top: 90px; left: 50%; transform: translateX(-50%); padding: 12px 30px; border-radius: 50px; color: white; font-weight: 600; z-index: 9999; opacity: 0; transition: 0.4s; pointer-events: none; text-align: center; }
     
-    .row { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #f0f0f0; align-items: center; }
+    .row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
     #scanner-view { background: #000; border-radius: 20px; overflow: hidden; display: none; margin-bottom: 15px; padding: 10px; }
     #reader { width: 100%; min-height: 250px; border-radius: 15px; }
+
+    nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #eee; z-index: 1000; height: 70px; }
+    nav button { flex: 1; background: none; color: #95a5a5; border: none; font-size: 12px; font-weight: bold; }
+    nav button.active-nav { color: var(--orange); }
 </style>
 </head>
 <body>
@@ -55,7 +46,6 @@
 <div class="container">
     <div id="scanner-view">
         <div id="reader"></div>
-        <button id="flash-btn" class="btn-flash" onclick="toggleFlash()">🔦 FLASH: OFF</button>
         <button class="btn-stop" onclick="stopScan()">CLOSE CAMERA</button>
     </div>
 
@@ -69,9 +59,9 @@
         <div class="card">
             <h3>Basket</h3>
             <div id="cart-list"></div>
-            <div style="text-align:right; font-weight:800; font-size:24px; margin:20px 0; color:var(--dark)" id="cart-total">Total: £0.00</div>
+            <div style="text-align:right; font-weight:800; font-size:24px; margin:20px 0;" id="cart-total">Total: £0.00</div>
             <button style="background:var(--green)" onclick="checkout()">COMPLETE TRANSACTION</button>
-            <button class="btn-pdf" onclick="generateAndHandleInvoice()">📄 DOWNLOAD & SHARE INVOICE</button>
+            <button class="btn-pdf" onclick="downloadAndShareInvoice()">📄 DOWNLOAD & SHARE INVOICE</button>
         </div>
     </div>
 
@@ -115,21 +105,20 @@ function notify(msg, color) {
     setTimeout(() => el.style.opacity = "0", 2500);
 }
 
-// PDF GENERATION WITH RED LOGO, AUTO-DOWNLOAD, AND SHARE OPTION
-async function generateAndHandleInvoice() {
+// INVOICE LOGIC
+async function downloadAndShareInvoice() {
     const items = cart.length ? cart : (sales[0]?.items || []);
     if (!items.length) return notify("No items to process", "red");
 
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('p', 'mm', [80, 200]); // Receipt Paper Format
+    const doc = new jsPDF('p', 'mm', [80, 200]); 
 
-    // RED LOGO
+    // RED BAZRO LOGO
     doc.setTextColor(231, 76, 60); 
     doc.setFontSize(22);
     doc.setFont("helvetica", "bold");
     doc.text(INFO.name, 40, 15, { align: 'center' });
 
-    // Business Header
     doc.setTextColor(50, 50, 50);
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
@@ -137,7 +126,6 @@ async function generateAndHandleInvoice() {
     doc.text(`Tel: ${INFO.phone}`, 40, 26, { align: 'center' });
     doc.line(5, 30, 75, 30);
 
-    // Items List
     let y = 38;
     let total = 0;
     doc.setFontSize(9);
@@ -156,24 +144,21 @@ async function generateAndHandleInvoice() {
 
     const filename = `Bazro_Invoice_${Date.now().toString().slice(-5)}.pdf`;
 
-    // 1. FORCED DOWNLOAD
+    // Action 1: Download
     doc.save(filename);
-    notify("Invoice Downloaded", "var(--green)");
+    notify("Downloading Invoice...", "var(--green)");
 
-    // 2. SHARING (For Mobile)
+    // Action 2: Share (if mobile)
     if (navigator.share) {
         const pdfBlob = doc.output('blob');
         const file = new File([pdfBlob], filename, { type: 'application/pdf' });
-        
         try {
             await navigator.share({
                 files: [file],
                 title: 'Bazro Invoice',
-                text: 'Your receipt from Bazro'
+                text: 'Thank you for your purchase!'
             });
-        } catch (e) {
-            console.log("Sharing dismissed or failed");
-        }
+        } catch (e) { console.log("Share cancelled"); }
     }
 }
 
@@ -189,23 +174,20 @@ async function startScan(mode) {
             if (mode === 'add') {
                 document.getElementById("p_barcode").value = code;
                 stopScan();
-                notify("Barcode Caught!", "var(--green)");
+                notify("Barcode Captured!", "var(--green)");
             } else {
-                if (!products[code]) { 
-                    notify("Unknown Item", "red"); 
-                    return; 
-                }
+                if (!products[code]) { notify("Item Not Found", "red"); return; }
                 scanPaused = true;
                 addToCart(code);
-                notify("Item Added: " + products[code].name, "var(--green)");
-                setTimeout(() => { scanPaused = false; }, 2000); // 2 SECOND DELAY
+                notify("✔ " + products[code].name + " Added!", "var(--green)");
+                setTimeout(() => { scanPaused = false; }, 2000); // 2 SECOND WAIT
             }
         });
     } catch (err) { notify("Camera Error", "red"); }
 }
 
 function stopScan() {
-    if (html5QrCode) { html5QrCode.stop(); }
+    if (html5QrCode) html5QrCode.stop();
     document.getElementById("scanner-view").style.display = "none";
 }
 
@@ -215,10 +197,7 @@ function addToCart(manualCode = null) {
     let item = cart.find(i => i.barcode === b);
     if (item) item.qty++;
     else cart.push({ barcode: b, name: products[b].name, price: products[b].price, qty: 1 });
-    
-    // Notification for manual entry
     if(!manualCode) notify("Item Added to Basket", "var(--green)");
-    
     renderCart();
     document.getElementById("sell_barcode").value = "";
 }
@@ -227,10 +206,7 @@ function renderCart() {
     let t = 0;
     document.getElementById("cart-list").innerHTML = cart.map(i => {
         t += i.qty * i.price;
-        return `<div class="row">
-            <span>${i.name} x${i.qty}</span>
-            <span>£${(i.qty*i.price).toFixed(2)}</span>
-        </div>`;
+        return `<div class="row"><span>${i.name} x${i.qty}</span><span>£${(i.qty*i.price).toFixed(2)}</span></div>`;
     }).join("");
     document.getElementById("cart-total").innerText = `Total: £${t.toFixed(2)}`;
 }
@@ -248,7 +224,7 @@ function addProduct() {
     if(!b || !n || !p) return notify("Missing Info", "red");
     products[b] = { name: n, price: Number(p) };
     localStorage.setItem("products", JSON.stringify(products));
-    notify(n + " Saved to Stock", "var(--green)");
+    notify(n + " Saved", "var(--green)");
 }
 </script>
 </body>
