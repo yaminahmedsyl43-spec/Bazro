@@ -28,10 +28,10 @@
     nav button { flex: 1; background: none; color: #777; padding: 15px 0; margin: 0; border-radius: 0; font-size: 11px; height: 60px; }
     nav button.active-nav { color: var(--orange); font-weight: 800; border-top: 3px solid var(--orange); }
 
-    /* Updated EOD Report Box */
+    /* EOD Report Box */
     #eod-report-box { padding: 30px; background: white; border: 1px solid #000; width: 280px; margin: 10px auto; color: black; display: none; text-align: center; }
-    .eod-title { font-size: 28px; font-weight: 900; margin: 0; line-height: 1; }
-    .eod-date-sub { font-size: 20px; font-weight: 900; margin: 5px 0 15px 0; }
+    .eod-title { font-size: 30px; font-weight: 900; margin: 0; line-height: 1; letter-spacing: 1px; }
+    .eod-date-sub { font-size: 18px; font-weight: 800; margin: 5px 0 15px 0; color: #333; }
     .eod-line { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #ccc; font-size: 14px; text-align: left; }
     
     #status-msg { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 20px; color: white; font-weight: bold; z-index: 9999; opacity: 0; transition: 0.3s; pointer-events: none; }
@@ -80,7 +80,7 @@
         <div id="eod-report-box">
             <div class="eod-title">BAZRO</div>
             <div class="eod-date-sub" id="r_date"></div>
-            <p style="font-size:11px; margin-bottom:10px;">Camborne TR14 8AT</p>
+            <p style="font-size:10px; margin-bottom:10px; color: #555;">Camborne TR14 8AT</p>
             <hr>
             <div class="eod-line"><strong>Cash Sales:</strong> <span id="r_cash"></span></div>
             <div class="eod-line"><strong>Card Sales:</strong> <span id="r_card"></span></div>
@@ -92,14 +92,14 @@
         
         <div id="report-actions" style="display:none">
             <button style="background:var(--green)" onclick="shareReportImage()">📤 Share Report</button>
-            <button class="btn-sec" onclick="downloadReportImage()">💾 Download as Image</button>
+            <button class="btn-sec" onclick="downloadReportImage()">💾 Download Image</button>
         </div>
     </div>
 
     <div id="page-history" class="page">
         <div class="card">
             <h3>Recent Sales</h3>
-            <button class="btn-sec" onclick="exportData()">📤 Backup All Data</button>
+            <button class="btn-sec" onclick="exportData()">📤 Backup Data</button>
             <div id="history-list"></div>
             <button style="background:#d63031; margin-top:20px; font-size:13px;" onclick="clearAllSales()">⚠️ Password: Clear History</button>
         </div>
@@ -153,7 +153,13 @@ function notify(msg, color) {
     setTimeout(() => el.style.opacity = "0", 2000);
 }
 
-/* --- SCANNER & FLASH --- */
+/* --- VOICE ADDED HERE --- */
+function speak(text) {
+    const msg = new SpeechSynthesisUtterance(text);
+    window.speechSynthesis.speak(msg);
+}
+
+/* --- SCANNER --- */
 async function startScan(mode) {
     document.getElementById("scanner-view").style.display = "block";
     if (!qrScanner) qrScanner = new Html5Qrcode("reader");
@@ -180,23 +186,31 @@ async function stopScan() {
 }
 
 function handleAutoScan(code) {
-    if (!products[code]) return notify("Not Found", "#444");
+    if (!products[code]) {
+        notify("Not Found", "#444");
+        return;
+    }
     scanPaused = true; 
     addToCart(code);
+    speak("Item added"); // VOICE NOTIFICATION
     if(navigator.vibrate) navigator.vibrate(50);
     setTimeout(() => scanPaused = false, 1500);
 }
 
-/* --- REPORT LOGIC --- */
+/* --- REPORT FORMATTING --- */
 function previewReport() {
-    const d = document.getElementById("report_date").value;
+    const rawDate = document.getElementById("report_date").value;
+    if(!rawDate) return notify("Select Date", "red");
+
+    const [y, m, d] = rawDate.split("-");
+    const formattedDate = `${d}/${m}/${y}`;
+
     const cash = Number(document.getElementById("cash_total").value);
     const card = Number(document.getElementById("card_total").value);
     const till = Number(document.getElementById("till_cash").value);
     const exp = Number(document.getElementById("expense_total").value);
-    if(!d) return notify("Select Date", "red");
     
-    document.getElementById("r_date").innerText = d;
+    document.getElementById("r_date").innerText = formattedDate;
     document.getElementById("r_cash").innerText = "£" + cash.toFixed(2);
     document.getElementById("r_card").innerText = "£" + card.toFixed(2);
     document.getElementById("r_exp").innerText = "- £" + exp.toFixed(2);
@@ -215,10 +229,8 @@ async function shareReportImage() {
         const file = new File([blob], "Bazro_EOD.jpg", { type: "image/jpeg" });
         if (navigator.share) {
             try { await navigator.share({ files: [file], title: "Bazro EOD" }); } 
-            catch (e) { notify("Share failed, use download", "orange"); }
-        } else {
-            notify("Sharing not supported", "orange");
-        }
+            catch (e) { notify("Use download button", "orange"); }
+        } else { notify("Sharing not supported", "orange"); }
     }, "image/jpeg");
 }
 
@@ -228,7 +240,7 @@ async function downloadReportImage() {
     const imgData = canvas.toDataURL("image/jpeg");
     const link = document.createElement('a');
     link.href = imgData;
-    link.download = `Bazro_Report_${document.getElementById("report_date").value}.jpg`;
+    link.download = `Bazro_Report.jpg`;
     link.click();
 }
 
