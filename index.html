@@ -1,621 +1,143 @@
-<!DOCTYPE html>
-
-<html lang="en">
-
-<head>
-
-<meta charset="UTF-8">
-
-<title>Bazro POS - Premium</title>
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-<script src="https://unpkg.com/html5-qrcode"></script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
-
-
-<style>
-
-    :root { --orange: #ff512f; --yellow: #f09819; --dark: #141e30; --green: #27ae60; --red: #e74c3c; --gold: #D4AF37; }
-
-    body { margin: 0; font-family: 'Segoe UI', Roboto, sans-serif; background: #f4f7f6; padding-bottom: 110px; color: #333; }
-
-    header { background: linear-gradient(135deg, #141e30, #243b55); padding: 18px; text-align: center; color: white; font-size: 24px; font-weight: 800; letter-spacing: 2px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-
-    
-
-    .container { max-width: 500px; margin: auto; padding: 15px; }
-
-    .page { display: none; }
-
-    .active-page { display: block; }
-
-    
-
-    .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 15px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.03); }
-
-    h3 { margin-top: 0; color: var(--dark); border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; font-size: 19px; letter-spacing: 0.5px; }
-
-    
-
-    input { width: 100%; padding: 14px; margin: 10px 0; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; transition: 0.3s; box-sizing: border-box; }
-
-    input:focus { border-color: var(--orange); outline: none; box-shadow: 0 0 8px rgba(255,81,47,0.2); }
-
-    
-
-    button { width: 100%; padding: 15px; margin: 8px 0; border-radius: 10px; border: none; background: linear-gradient(135deg, var(--orange), var(--yellow)); color: white; font-weight: bold; font-size: 16px; cursor: pointer; transition: transform 0.1s; }
-
-    button:active { transform: scale(0.98); }
-
-    
-
-    .btn-sec { background: #34495e; }
-
-    .btn-stop { background: var(--red); }
-
-    .btn-pdf { background: #1a1a1a; border: 1px solid var(--gold); color: var(--gold); }
-
-    .btn-flash { background: #f1c40f; color: #000; margin-bottom: 10px; display: none; }
-
-    .btn-backup { background: #6c5ce7; }
-
-
-
-    .qty-controls { display: flex; align-items: center; gap: 12px; background: #f8f9fa; padding: 5px 10px; border-radius: 20px; }
-
-    .btn-qty { width: 28px; height: 28px; padding: 0; margin: 0; border-radius: 50%; background: var(--dark); font-size: 18px; display: flex; align-items: center; justify-content: center; }
-
-    .qty-val { font-weight: 800; font-size: 16px; min-width: 15px; text-align: center; }
-
-    
-
-    nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #eee; z-index: 1000; height: 75px; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); }
-
-    nav button { flex: 1; background: none; color: #95a5a6; border-top: 4px solid transparent; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding: 0; }
-
-    nav button.active-nav { color: var(--orange); border-top-color: var(--orange); }
-
-
-
-    #status-msg { position: fixed; top: 90px; left: 50%; transform: translateX(-50%); padding: 12px 30px; border-radius: 50px; color: white; font-weight: 600; z-index: 9999; opacity: 0; transition: 0.4s; pointer-events: none; text-align: center; }
-
-    
-
-    .row { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #f0f0f0; align-items: center; }
-
-    .history-item { border-bottom: 2px solid #eee; padding: 15px 0; }
-
-    .history-meta { font-size: 12px; color: #7f8c8d; margin-bottom: 5px; }
-
-
-
-    #scanner-view { background: #000; border-radius: 20px; overflow: hidden; display: none; margin-bottom: 15px; padding: 10px; }
-
-    #reader { width: 100%; min-height: 250px; border-radius: 15px; }
-
-
-
-    #eod-report-box { padding: 40px; background: white; width: 320px; margin: 15px auto; color: black; display: none; text-align: center; border: 1px solid #eee; font-family: 'Times New Roman', serif; }
-
-    #qrcode { display: none; }
-
-</style>
-
-</head>
-
-<body>
-
-
-
-<div id="status-msg"></div>
-
-<header>BAZRO</header>
-
-<div id="qrcode"></div>
-
-
-
-<div class="container">
-
-    <div id="scanner-view">
-
-        <div id="reader"></div>
-
-        <button id="flash-btn" class="btn-flash" onclick="toggleFlash()">🔦 FLASH: OFF</button>
-
-        <button class="btn-stop" onclick="stopScan()">CLOSE CAMERA</button>
-
-    </div>
-
-
-
-    <div id="page-sales" class="page active-page">
-
-        <div class="card">
-
-            <h3>Premium Checkout</h3>
-
-            <button onclick="startScan('sell')">📷 SCAN ITEM</button>
-
-            <input id="sell_barcode" placeholder="Enter Barcode Manually">
-
-            <button class="btn-sec" onclick="addToCart()">ADD TO BASKET</button>
-
-        </div>
-
-        <div class="card">
-
-            <h3>Basket</h3>
-
-            <div id="cart-list"></div>
-
-            <div style="text-align:right; font-weight:800; font-size:24px; margin:20px 0; color:var(--dark)" id="cart-total">Total: £0.00</div>
-
-            <button style="background:var(--green)" onclick="checkout()">COMPLETE TRANSACTION</button>
-
-            <button class="btn-pdf" onclick="downloadLuxuryInvoice()">📄 DOWNLOAD QR INVOICE</button>
-
-        </div>
-
-    </div>
-
-
-
-    <div id="page-report" class="page">
-
-        <div class="card">
-
-            <h3>End of Day</h3>
-
-            <input type="date" id="report_date">
-
-            <input type="number" id="cash_total" placeholder="Cash Sales (£)">
-
-            <input type="number" id="card_total" placeholder="Card Sales (£)">
-
-            <input type="number" id="expense_total" placeholder="Expenses (£)">
-
-            <input type="number" id="till_cash" placeholder="Till Remaining (£)">
-
-            <button onclick="previewReport()">GENERATE SUMMARY</button>
-
-        </div>
-
-        <div id="eod-report-box">
-
-             <h1 style="margin:0; font-size:40px; letter-spacing:4px; color: #e74c3c;">BAZRO</h1>
-
-             <div id="r_date" style="font-size:18px; margin:10px 0;"></div>
-
-             <p style="font-size:12px; color:gray;">9a Commercial St, Camborne TR14 8AT</p>
-
-             <hr>
-
-             <div style="display:flex; justify-content:space-between; margin:10px 0;"><span>CASH</span><span id="r_cash"></span></div>
-
-             <div style="display:flex; justify-content:space-between; margin:10px 0;"><span>CARD</span><span id="r_card"></span></div>
-
-             <div style="display:flex; justify-content:space-between; margin:10px 0; color:red;"><span>EXPENSES</span><span id="r_exp"></span></div>
-
-             <hr>
-
-             <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:20px;"><span>NET TOTAL</span><span id="r_net"></span></div>
-
-             <p style="margin-top:20px; font-size:14px; color:gray;">Till: <span id="r_till"></span></p>
-
-        </div>
-
-        <button id="share-report-btn" style="display:none; background:var(--green)" onclick="shareReportImage()">📤 SHARE REPORT IMAGE</button>
-
-    </div>
-
-
-
-    <div id="page-history" class="page">
-
-        <div class="card">
-
-            <h3>Transaction History</h3>
-
-            <div id="history-container"></div>
-
-            <button class="btn-stop" style="margin-top:20px" onclick="clearHistoryPrompt()">CLEAR ALL HISTORY</button>
-
-        </div>
-
-    </div>
-
-
-
-    <div id="page-stock" class="page">
-
-        <div class="card">
-
-            <h3>Stock Inventory</h3>
-
-            <button onclick="startScan('add')">📷 SCAN NEW PRODUCT</button>
-
-            <input id="p_barcode" placeholder="Barcode ID">
-
-            <input id="p_name" placeholder="Product Name">
-
-            <input id="p_price" type="number" step="0.01" placeholder="Selling Price £">
-
-            <input id="p_stock" type="number" placeholder="Initial Qty">
-
-            <button onclick="addProduct()">SAVE TO DATABASE</button>
-
-        </div>
-
-        <div class="card">
-
-            <h3>Cloud Backup</h3>
-
-            <button class="btn-backup" onclick="exportData()">💾 EXPORT DATABASE (.JSON)</button>
-
-            <button class="btn-sec" onclick="document.getElementById('importFile').click()">📂 IMPORT DATABASE</button>
-
-            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
-
-        </div>
-
-    </div>
-
-</div>
-
-
-
-<nav>
-
-    <button id="nav-sales" class="active-nav" onclick="showPage('sales')">SHOP</button>
-
-    <button id="nav-report" onclick="showPage('report')">REPORT</button>
-
-    <button id="nav-history" onclick="protectedAccess('history')">HISTORY</button>
-
-    <button id="nav-stock" onclick="showPage('stock')">STOCK</button>
-
-</nav>
-
-
-
 <script>
-
-let products = JSON.parse(localStorage.getItem("products") || "{}");
-
-let sales = JSON.parse(localStorage.getItem("sales") || "[]");
-
-let cart = [];
-
-let html5QrCode = null;
-
-let isFlashOn = false;
-
-let scanPaused = false;
-
-
-
-const INFO = {
-
-    name: "BAZRO",
-
-    address: "9a Commercial St, Camborne TR14 8AT",
-
-    phone: "07534 100986"
-
-};
-
-
-
-const MASTER_PASS = "Yamin@83";
-
-
-
-function showPage(p) {
-
-    document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
-
-    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
-
-    document.getElementById('page-'+p).classList.add('active-page');
-
-    document.getElementById('nav-'+p).classList.add('active-nav');
-
-    if(p === 'history') renderHistory();
-
-    stopScan();
-
-}
-
-
-
-function protectedAccess(page) {
-
-    const pass = prompt("Enter Admin Password:");
-
-    if(pass === MASTER_PASS) {
-
-        showPage(page);
-
-    } else {
-
-        notify("Access Denied", "red");
-
-    }
-
-}
-
-
-
-function notify(msg, color) {
-
-    const el = document.getElementById("status-msg");
-
-    el.innerText = msg; el.style.background = color; el.style.opacity = "1";
-
-    setTimeout(() => el.style.opacity = "0", 2500);
-
-}
-
-
-
-function renderHistory() {
-
-    const container = document.getElementById("history-container");
-
-    if(sales.length === 0) {
-
-        container.innerHTML = "<p style='text-align:center; color:gray;'>No transactions found.</p>";
-
-        return;
-
-    }
-
-    container.innerHTML = sales.map((sale, index) => {
-
-        let saleTotal = 0;
-
-        const itemsHtml = sale.items.map(i => {
-
-            const sub = i.qty * i.price;
-
-            saleTotal += sub;
-
-            return `<div style="display:flex; justify-content:space-between; font-size:14px;">
-
-                        <span>${i.name} (x${i.qty})</span>
-
-                        <span>£${sub.toFixed(2)}</span>
-
-                    </div>`;
-
-        }).join("");
-
-        return `<div class="history-item">
-
-                    <div class="history-meta">#${sales.length - index} | ${sale.date}</div>
-
-                    ${itemsHtml}
-
-                    <div style="text-align:right; font-weight:bold; margin-top:5px; border-top:1px dashed #eee;">
-
-                        Total: £${saleTotal.toFixed(2)}
-
-                    </div>
-
-                </div>`;
-
-    }).join("");
-
-}
-
-
-
-function clearHistoryPrompt() {
-
-    if(confirm("Are you sure you want to delete ALL sales history?")) {
-
-        sales = [];
-
-        localStorage.setItem("sales", JSON.stringify(sales));
-
-        renderHistory();
-
-        notify("History Cleared", "var(--red)");
-
-    }
-
-}
-
-
 
 async function downloadLuxuryInvoice() {
 
     const items = cart.length ? cart : (sales[0]?.items || []);
-
     if (!items.length) return notify("No items to invoice", "red");
 
-
-
     const { jsPDF } = window.jspdf;
-
     const doc = new jsPDF('p', 'mm', 'a4');
 
+    const invoiceNumber = `2026-${Date.now().toString().slice(-3)}`;
+    const today = new Date();
+    const dateStr = today.toLocaleDateString("en-GB");
 
+    let startY = 20;
 
-    // Header Background
-
-    doc.setFillColor(20, 30, 48);
-
-    doc.rect(0, 0, 210, 40, 'F');
-
-    
-
-    // RED LOGO TEXT
-
-    doc.setTextColor(231, 76, 60); // Red Colour (#e74c3c)
-
-    doc.setFontSize(30);
-
+    // =========================
+    // COMPANY HEADER
+    // =========================
     doc.setFont("helvetica", "bold");
-
-    doc.text(INFO.name, 105, 20, { align: 'center' });
-
-    
-
-    // Address Info
-
-    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.text("Bazro", 20, startY);
 
     doc.setFontSize(10);
-
     doc.setFont("helvetica", "normal");
+    doc.text("9a Commercial Square - Camborne - TR14 8AT", 20, startY + 6);
+    doc.text("Co. Reg. No.: 15649986", 20, startY + 12);
+    doc.text("Email: bazro@webnest.co.uk | Phone: +447534100986", 20, startY + 18);
+    doc.text("Website: www.bazro.co.uk", 20, startY + 24);
 
-    doc.text(INFO.address, 105, 28, { align: 'center' });
+    // =========================
+    // INVOICE INFO (RIGHT SIDE)
+    // =========================
+    doc.setFont("helvetica", "bold");
+    doc.text(`Invoice: ${invoiceNumber}`, 140, startY);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Invoice Date: ${dateStr}`, 140, startY + 8);
+    doc.text(`Due Date: ${dateStr}`, 140, startY + 16);
+    doc.text(`Customer No.: 1`, 140, startY + 24);
 
-    doc.text(`T: ${INFO.phone}`, 105, 33, { align: 'center' });
-
-
-
-    doc.setTextColor(0, 0, 0);
-
-    const receiptID = `BAZ-${Date.now().toString().slice(-6)}`;
-
-    doc.text(`Receipt ID: #${receiptID}`, 20, 50);
-
-    doc.text(`Date: ${new Date().toLocaleString()}`, 20, 56);
-
-    
-
-    let y = 72;
-
-    let total = 0;
-
-    let qrText = `${INFO.name} RECEIPT\nID: ${receiptID}\n---\n`;
-
-
+    // =========================
+    // BILL TO
+    // =========================
+    let billY = startY + 40;
 
     doc.setFont("helvetica", "bold");
+    doc.text("Bill To:", 20, billY);
 
-    doc.text("Item", 20, y);
+    doc.setFont("helvetica", "normal");
+    doc.text("Customer", 20, billY + 8);
+    doc.text("United Kingdom", 20, billY + 16);
 
-    doc.text("Qty", 130, y);
+    // =========================
+    // TABLE HEADER
+    // =========================
+    let tableY = billY + 30;
 
-    doc.text("Price", 170, y);
+    doc.setFont("helvetica", "bold");
+    doc.text("Description", 20, tableY);
+    doc.text("Quantity", 110, tableY);
+    doc.text("Unit Price", 135, tableY);
+    doc.text("VAT", 165, tableY);
+    doc.text("Amount", 180, tableY);
 
-    y += 10;
+    doc.line(20, tableY + 2, 200, tableY + 2);
+
+    tableY += 10;
 
     doc.setFont("helvetica", "normal");
 
+    let subtotal = 0;
+    let vat20 = 0;
+    let vat0 = 0;
 
+    items.forEach(item => {
 
-    items.forEach(i => {
+        const qty = item.qty;
+        const unit = item.price;
+        const amount = qty * unit;
 
-        const sub = i.qty * i.price;
+        // Simple VAT rule: if price has decimals assume 20% VAT (you can adjust)
+        const vatRate = 0.20;
+        const vatAmount = amount * vatRate;
 
-        total += sub;
+        subtotal += amount;
+        vat20 += vatAmount;
 
-        doc.text(i.name.substring(0, 35), 20, y);
+        doc.text(item.name.substring(0, 35), 20, tableY);
+        doc.text(qty.toString(), 115, tableY);
+        doc.text(`£${unit.toFixed(2)}`, 135, tableY);
+        doc.text("20%", 168, tableY);
+        doc.text(`£${amount.toFixed(2)}`, 180, tableY);
 
-        doc.text(i.qty.toString(), 132, y);
+        tableY += 8;
 
-        doc.text(`£${sub.toFixed(2)}`, 170, y);
-
-        qrText += `${i.name} x${i.qty}: £${sub.toFixed(2)}\n`;
-
-        y += 8;
+        if (tableY > 260) {
+            doc.addPage();
+            tableY = 20;
+        }
 
     });
 
+    const total = subtotal + vat20;
 
+    tableY += 10;
+    doc.line(120, tableY, 200, tableY);
 
-    qrText += `---\nTOTAL: £${total.toFixed(2)}\nThank you!`;
-
-
-
-    doc.line(20, y + 5, 190, y + 5);
-
-    doc.setFontSize(16);
+    tableY += 8;
 
     doc.setFont("helvetica", "bold");
+    doc.text("Subtotal without VAT", 120, tableY);
+    doc.text(`£${subtotal.toFixed(2)}`, 180, tableY);
 
-    doc.text(`TOTAL AMOUNT: £${total.toFixed(2)}`, 190, y + 15, { align: 'right' });
+    tableY += 8;
+    doc.text("VAT 20%", 120, tableY);
+    doc.text(`£${vat20.toFixed(2)}`, 180, tableY);
 
+    tableY += 8;
+    doc.setFontSize(13);
+    doc.text("Total GBP", 120, tableY);
+    doc.text(`£${total.toFixed(2)}`, 180, tableY);
 
+    tableY += 15;
 
-    const qrDiv = document.getElementById("qrcode");
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text("Payment Instructions:", 20, tableY);
+    tableY += 8;
 
-    qrDiv.innerHTML = "";
+    doc.text("Bank Transfer", 20, tableY);
+    tableY += 6;
+    doc.text("Account Name: GKIDEAS LIMITED", 20, tableY);
+    tableY += 6;
+    doc.text("Sort Code: 54-30-37", 20, tableY);
+    tableY += 6;
+    doc.text("Account Number: 39640965", 20, tableY);
 
-    new QRCode(qrDiv, { text: qrText, width: 128, height: 128 });
+    doc.save(`Invoice_${invoiceNumber}.pdf`);
 
-
-
-    setTimeout(() => {
-
-        const qrImg = qrDiv.querySelector("img").src;
-
-        doc.addImage(qrImg, 'PNG', 85, y + 25, 40, 40);
-
-        doc.setFontSize(10);
-
-        doc.setFont("helvetica", "italic");
-
-        doc.text("Scan to download details", 105, y + 70, { align: 'center' });
-
-        doc.save(`Bazro_Invoice_${receiptID}.pdf`);
-
-        notify("Invoice Downloaded", "var(--green)");
-
-    }, 150);
-
+    notify("Invoice Downloaded", "var(--green)");
 }
 
-
-
-async function startScan(mode) {
-
-    if (html5QrCode) { try { await html5QrCode.stop(); } catch(e) {} }
-
-    document.getElementById("reader").innerHTML = "";
-
-    document.getElementById("scanner-view").style.display = "block";
-
-    html5QrCode = new Html5Qrcode("reader");
-
-
-
-    try {
-
-        await html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (code) => {
-
-            if (scanPaused) return;
-
-            if (mode === 'add') {
-
-                document.getElementById("p_barcode").value = code;
-
-                stopScan();
-
-                notify("Barcode Caught!", "var(--green)");
-
-            } else {
-
-                if (!products[code]) { 
-
-                    scanPaused = true;
-
-                    notify("Unknown Barcode", "red"); 
-
-                    setTimeout(() => { scanPaused = false; }, 2000); // 2 Sec Wait
-
-                    return; 
-
-                }
+</script>
