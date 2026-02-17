@@ -79,7 +79,7 @@
             <div id="cart-list"></div>
             <div style="text-align:right; font-weight:800; font-size:24px; margin:20px 0; color:var(--dark)" id="cart-total">Total: £0.00</div>
             <button style="background:var(--green)" onclick="checkout()">COMPLETE TRANSACTION</button>
-            <button class="btn-pdf" onclick="downloadLuxuryInvoice()">📄 DOWNLOAD QR INVOICE</button>
+            <button class="btn-pdf" onclick="downloadLuxuryInvoice()">📄 DOWNLOAD INVOICE</button>
         </div>
     </div>
 
@@ -110,9 +110,8 @@
 
     <div id="page-history" class="page">
         <div class="card">
-            <h3>Transaction History</h3>
-            <div id="history-container">
-                </div>
+            <h3>Sales History</h3>
+            <div id="history-container"></div>
             <button class="btn-stop" style="margin-top:20px" onclick="clearHistoryPrompt()">CLEAR ALL HISTORY</button>
         </div>
     </div>
@@ -124,7 +123,6 @@
             <input id="p_barcode" placeholder="Barcode ID">
             <input id="p_name" placeholder="Product Name">
             <input id="p_price" type="number" step="0.01" placeholder="Selling Price £">
-            <input id="p_stock" type="number" placeholder="Initial Qty">
             <button onclick="addProduct()">SAVE TO DATABASE</button>
         </div>
         <div class="card">
@@ -148,16 +146,14 @@ let products = JSON.parse(localStorage.getItem("products") || "{}");
 let sales = JSON.parse(localStorage.getItem("sales") || "[]");
 let cart = [];
 let html5QrCode = null;
-let isFlashOn = false;
-let scanPaused = false;
+const MASTER_PASS = "Yamin@83";
 
+// Updated Info based on provided text
 const INFO = {
     name: "BAZRO",
     address: "9a Commercial St, Camborne TR14 8AT",
     phone: "07534 100986"
 };
-
-const MASTER_PASS = "Yamin@83";
 
 function showPage(p) {
     document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
@@ -183,154 +179,92 @@ function notify(msg, color) {
     setTimeout(() => el.style.opacity = "0", 2500);
 }
 
-// History Logic
-function renderHistory() {
-    const container = document.getElementById("history-container");
-    if(sales.length === 0) {
-        container.innerHTML = "<p style='text-align:center; color:gray;'>No transactions found.</p>";
-        return;
-    }
-
-    container.innerHTML = sales.map((sale, index) => {
-        let saleTotal = 0;
-        const itemsHtml = sale.items.map(i => {
-            const sub = i.qty * i.price;
-            saleTotal += sub;
-            return `<div style="display:flex; justify-content:space-between; font-size:14px;">
-                        <span>${i.name} (x${i.qty})</span>
-                        <span>£${sub.toFixed(2)}</span>
-                    </div>`;
-        }).join("");
-
-        return `<div class="history-item">
-                    <div class="history-meta">#${sales.length - index} | ${sale.date}</div>
-                    ${itemsHtml}
-                    <div style="text-align:right; font-weight:bold; margin-top:5px; border-top:1px dashed #eee;">
-                        Total: £${saleTotal.toFixed(2)}
-                    </div>
-                </div>`;
-    }).join("");
-}
-
-function clearHistoryPrompt() {
-    if(confirm("Are you sure you want to delete ALL sales history?")) {
-        sales = [];
-        localStorage.setItem("sales", JSON.stringify(sales));
-        renderHistory();
-        notify("History Cleared", "var(--red)");
-    }
-}
-
-// PDF INVOICE WITH QR CODE
+// UPDATED PDF INVOICE GENERATION
 async function downloadLuxuryInvoice() {
     const items = cart.length ? cart : (sales[0]?.items || []);
     if (!items.length) return notify("No items to invoice", "red");
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('p', 'mm', 'a4');
-
-    doc.setFillColor(20, 30, 48);
-    doc.rect(0, 0, 210, 40, 'F');
-    doc.setTextColor(212, 175, 55);
-    doc.setFontSize(30);
-    doc.setFont("helvetica", "bold");
-    doc.text(INFO.name, 105, 20, { align: 'center' });
-    
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(INFO.address, 105, 28, { align: 'center' });
-    doc.text(`T: ${INFO.phone}`, 105, 33, { align: 'center' });
-
-    doc.setTextColor(0, 0, 0);
+    const now = new Date().toLocaleString();
     const receiptID = `BAZ-${Date.now().toString().slice(-6)}`;
-    doc.text(`Receipt ID: #${receiptID}`, 20, 50);
-    doc.text(`Date: ${new Date().toLocaleString()}`, 20, 56);
-    
-    let y = 72;
-    let total = 0;
-    let qrText = `${INFO.name} RECEIPT\nID: ${receiptID}\n---\n`;
 
+    // PDF Header with Logo, Address, Phone, and Date on top
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(28);
+    doc.text(INFO.name, 105, 20, { align: 'center' }); // Logo/Name [cite: 2]
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(INFO.address, 105, 27, { align: 'center' }); // Address [cite: 3]
+    doc.text(`T: ${INFO.phone}`, 105, 32, { align: 'center' }); // Phone
+    doc.text(`Date: ${now}`, 105, 37, { align: 'center' }); // Date
+
+    doc.line(20, 42, 190, 42); // Horizontal line separator
+
+    // Table Content [cite: 1]
+    let y = 52;
     doc.setFont("helvetica", "bold");
     doc.text("Item", 20, y);
     doc.text("Qty", 130, y);
     doc.text("Price", 170, y);
-    y += 10;
+    
+    y += 8;
     doc.setFont("helvetica", "normal");
+    let grandTotal = 0;
 
     items.forEach(i => {
-        const sub = i.qty * i.price;
-        total += sub;
-        doc.text(i.name.substring(0, 35), 20, y);
+        const lineTotal = i.qty * i.price;
+        grandTotal += lineTotal;
+        doc.text(i.name.substring(0, 40), 20, y);
         doc.text(i.qty.toString(), 132, y);
-        doc.text(`£${sub.toFixed(2)}`, 170, y);
-        qrText += `${i.name} x${i.qty}: £${sub.toFixed(2)}\n`;
-        y += 8;
+        doc.text(`£${i.price.toFixed(2)}`, 170, y);
+        y += 7;
     });
 
-    qrText += `---\nTOTAL: £${total.toFixed(2)}\nThank you!`;
-
-    doc.line(20, y + 5, 190, y + 5);
-    doc.setFontSize(16);
+    doc.line(20, y + 2, 190, y + 2);
+    y += 12;
+    doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text(`TOTAL AMOUNT: £${total.toFixed(2)}`, 190, y + 15, { align: 'right' });
+    doc.text(`GRAND TOTAL: £${grandTotal.toFixed(2)}`, 190, y, { align: 'right' }); // [cite: 1]
 
-    const qrDiv = document.getElementById("qrcode");
-    qrDiv.innerHTML = "";
-    new QRCode(qrDiv, { text: qrText, width: 128, height: 128 });
-
-    setTimeout(() => {
-        const qrImg = qrDiv.querySelector("img").src;
-        doc.addImage(qrImg, 'PNG', 85, y + 25, 40, 40);
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "italic");
-        doc.text("Scan to download details", 105, y + 70, { align: 'center' });
-        doc.save(`Bazro_Invoice_${receiptID}.pdf`);
-        notify("Invoice Downloaded", "var(--green)");
-    }, 150);
+    doc.save(`Bazro_Invoice_${receiptID}.pdf`);
+    notify("Invoice Downloaded", "var(--green)");
 }
 
-async function startScan(mode) {
-    if (html5QrCode) { try { await html5QrCode.stop(); } catch(e) {} }
-    document.getElementById("reader").innerHTML = "";
-    document.getElementById("scanner-view").style.display = "block";
-    html5QrCode = new Html5Qrcode("reader");
-
-    try {
-        await html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (code) => {
-            if (scanPaused) return;
-            if (mode === 'add') {
-                document.getElementById("p_barcode").value = code;
-                stopScan();
-                notify("Barcode Caught!", "var(--green)");
-            } else {
-                if (!products[code]) { notify("Unknown Barcode", "red"); return; }
-                scanPaused = true;
-                addToCart(code);
-                notify(products[code].name + " Added!", "var(--green)");
-                setTimeout(() => { scanPaused = false; }, 2000); 
-            }
-        });
-        setTimeout(() => {
-            const track = html5QrCode.getRunningTrackCapabilities();
-            if(track.torch) document.getElementById("flash-btn").style.display = "block";
-        }, 1000);
-    } catch (err) { notify("Camera Error", "red"); }
+// History Logic
+function renderHistory() {
+    const container = document.getElementById("history-container");
+    if(sales.length === 0) {
+        container.innerHTML = "<p style='text-align:center; color:gray;'>No sales records.</p>";
+        return;
+    }
+    container.innerHTML = sales.map((sale, index) => {
+        let total = 0;
+        const details = sale.items.map(i => {
+            total += i.qty * i.price;
+            return `<div style="display:flex; justify-content:space-between; font-size:14px;">
+                        <span>${i.name} (x${i.qty})</span>
+                        <span>£${(i.qty * i.price).toFixed(2)}</span>
+                    </div>`;
+        }).join("");
+        return `<div class="history-item">
+                    <div class="history-meta">${sale.date}</div>
+                    ${details}
+                    <div style="text-align:right; font-weight:bold; color:var(--dark); margin-top:5px;">Total: £${total.toFixed(2)}</div>
+                </div>`;
+    }).join("");
 }
 
-async function stopScan() {
-    if (html5QrCode) { await html5QrCode.stop(); html5QrCode.clear(); }
-    document.getElementById("scanner-view").style.display = "none";
-    isFlashOn = false;
-    document.getElementById("flash-btn").innerText = "🔦 FLASH: OFF";
+function clearHistoryPrompt() {
+    if(confirm("Delete all history permanently?")) {
+        sales = [];
+        localStorage.setItem("sales", JSON.stringify(sales));
+        renderHistory();
+    }
 }
 
-async function toggleFlash() {
-    isFlashOn = !isFlashOn;
-    await html5QrCode.applyVideoConstraints({ advanced: [{ torch: isFlashOn }] });
-    document.getElementById("flash-btn").innerText = isFlashOn ? "🔦 FLASH: ON" : "🔦 FLASH: OFF";
-}
-
+// Existing Core Functions
 function addToCart(manualCode = null) {
     const b = (manualCode || document.getElementById("sell_barcode").value).trim();
     if (!products[b]) return notify("Unknown Barcode", "red");
@@ -339,14 +273,6 @@ function addToCart(manualCode = null) {
     else cart.push({ barcode: b, name: products[b].name, price: products[b].price, qty: 1 });
     renderCart();
     document.getElementById("sell_barcode").value = "";
-}
-
-function updateQty(barcode, change) {
-    let item = cart.find(i => i.barcode === barcode);
-    if (!item) return;
-    item.qty += change;
-    if (item.qty <= 0) cart = cart.filter(i => i.barcode !== barcode);
-    renderCart();
 }
 
 function renderCart() {
@@ -366,6 +292,14 @@ function renderCart() {
     document.getElementById("cart-total").innerText = `Total: £${t.toFixed(2)}`;
 }
 
+function updateQty(barcode, change) {
+    let item = cart.find(i => i.barcode === barcode);
+    if (!item) return;
+    item.qty += change;
+    if (item.qty <= 0) cart = cart.filter(i => i.barcode !== barcode);
+    renderCart();
+}
+
 function checkout() {
     if(!cart.length) return;
     sales.unshift({ date: new Date().toLocaleString(), items: [...cart] });
@@ -380,14 +314,34 @@ function addProduct() {
     products[b] = { name: n, price: Number(p) };
     localStorage.setItem("products", JSON.stringify(products));
     notify(n + " Saved", "var(--green)");
-    ["p_barcode", "p_name", "p_price", "p_stock"].forEach(id => document.getElementById(id).value = "");
+}
+
+async function startScan(mode) {
+    if (html5QrCode) { try { await html5QrCode.stop(); } catch(e) {} }
+    document.getElementById("reader").innerHTML = "";
+    document.getElementById("scanner-view").style.display = "block";
+    html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (code) => {
+        if (mode === 'add') {
+            document.getElementById("p_barcode").value = code;
+            stopScan();
+        } else {
+            addToCart(code);
+            notify("Item Added!", "var(--green)");
+        }
+    });
+}
+
+function stopScan() {
+    if (html5QrCode) { html5QrCode.stop(); }
+    document.getElementById("scanner-view").style.display = "none";
 }
 
 function exportData() {
     const blob = new Blob([JSON.stringify({products, sales})], {type: "application/json"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `Bazro_Database.json`;
+    a.download = `Bazro_DB.json`;
     a.click();
 }
 
@@ -416,14 +370,6 @@ function previewReport() {
     document.getElementById("r_till").innerText = "£" + Number(document.getElementById("till_cash").value).toFixed(2);
     document.getElementById("eod-report-box").style.display = "block";
     document.getElementById("share-report-btn").style.display = "block";
-}
-
-async function shareReportImage() {
-    const canvas = await html2canvas(document.getElementById("eod-report-box"));
-    canvas.toBlob(async (blob) => {
-        const file = new File([blob], "Bazro_Report.jpg", { type: "image/jpeg" });
-        if (navigator.share) await navigator.share({ files: [file] });
-    }, "image/jpeg");
 }
 </script>
 </body>
