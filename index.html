@@ -8,14 +8,13 @@
 
 <style>
 :root{
-  --g1:#ff416c;
-  --g2:#ff4b2b;
-  --dark:#111;
-  --card:#ffffff;
+  --g1:#ff2a2a;
+  --g2:#ff6a00;
+  --card:#fff;
 }
 body{
   margin:0;
-  font-family:system-ui, sans-serif;
+  font-family:system-ui,sans-serif;
   background:linear-gradient(135deg,#1f1c2c,#928dab);
 }
 header{
@@ -23,9 +22,7 @@ header{
   padding:16px;
   text-align:center;
 }
-header img{
-  height:50px;
-}
+header img{height:50px}
 .container{
   max-width:520px;
   margin:auto;
@@ -36,7 +33,7 @@ header img{
   padding:15px;
   border-radius:14px;
   margin-bottom:15px;
-  box-shadow:0 10px 30px rgba(0,0,0,.2);
+  box-shadow:0 10px 25px rgba(0,0,0,.25);
 }
 input,button{
   width:100%;
@@ -48,45 +45,37 @@ input,button{
 button{
   border:none;
   background:linear-gradient(135deg,var(--g1),var(--g2));
-  color:#fff;
+  color:white;
   font-weight:700;
-}
-.qty{
-  display:flex;
-  gap:8px;
-  align-items:center;
-}
-.qty button{
-  width:40px;
-  padding:8px;
 }
 .cart-item{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  padding:6px 0;
+  margin:6px 0;
+}
+.qty{
+  display:flex;
+  gap:6px;
+  align-items:center;
+}
+.qty button{
+  width:36px;
+  padding:6px;
 }
 .total{
+  text-align:right;
   font-size:18px;
   font-weight:800;
-  text-align:right;
   margin-top:10px;
-}
-a{
-  display:block;
-  text-align:center;
-  margin-top:10px;
-  text-decoration:none;
-  font-weight:700;
-  color:#ff416c;
 }
 </style>
 </head>
 
 <body>
+
 <header>
-  <!-- Place bazro-logo.png in same folder -->
-  <img src="bazro-logo.png" alt="Bazro Logo">
+  <img src="bazro-logo.png" alt="Bazro">
 </header>
 
 <div class="container">
@@ -110,155 +99,152 @@ a{
 
 <div id="cart"></div>
 <div class="total" id="total">Total: £0.00</div>
+
 <button onclick="checkout()">Checkout</button>
 <button onclick="downloadReceipt()">📥 Download Receipt</button>
-<button onclick="downloadDailyReceipts()">📦 Download Today Sales</button>
-<a href="history.html">📊 Sales History</a>
+<button onclick="downloadDaily()">📦 Download Today Sales</button>
 </div>
+
 </div>
 
 <script>
-let products=JSON.parse(localStorage.getItem("products"))||{};
-let sales=JSON.parse(localStorage.getItem("sales"))||[];
-let cart=[];
+let products = JSON.parse(localStorage.getItem("products")) || {};
+let sales = JSON.parse(localStorage.getItem("sales")) || [];
+let cart = [];
 let scanner;
-let scanMode="sell";
+let scanMode = "sell";
 
 function startScanner(mode){
-  scanMode=mode;
-  scanner=new Html5Qrcode("reader");
+  scanMode = mode;
+  scanner = new Html5Qrcode("reader");
   scanner.start({facingMode:"environment"},{fps:10,qrbox:250},code=>{
-    if(scanMode==='add') barcode.value=code; else addToCart(code);
+    if(scanMode==="add"){
+      barcode.value = code;
+    }else{
+      addToCart(code);
+    }
     scanner.stop();
   });
 }
 
 function addProduct(){
-  if(!barcode.value||!name.value||!price.value) return alert('Missing fields');
-  products[barcode.value]={name:name.value,price:+price.value,stock:+stock.value||0};
-  localStorage.setItem('products',JSON.stringify(products));
-  alert('Saved');
+  if(!barcode.value||!name.value||!price.value) return alert("Missing fields");
+  products[barcode.value] = {
+    name:name.value,
+    price:+price.value,
+    stock:+stock.value||0
+  };
+  localStorage.setItem("products",JSON.stringify(products));
+  alert("Product saved");
 }
 
 function addToCart(code=null){
-  let b=code||sellBarcode.value;
-  let p=products[b];
-  if(!p||p.stock<=0) return alert('Unavailable');
-  let i=cart.find(x=>x.barcode===b);
-  i?i.qty++:cart.push({barcode:b,name:p.name,price:p.price,qty:1});
+  let b = code || sellBarcode.value;
+  let p = products[b];
+  if(!p || p.stock<=0) return alert("Unavailable");
+
+  let item = cart.find(i=>i.barcode===b);
+  if(item){
+    item.qty++;
+  }else{
+    cart.push({barcode:b,name:p.name,price:p.price,qty:1});
+  }
   p.stock--;
-  localStorage.setItem('products',JSON.stringify(products));
+  localStorage.setItem("products",JSON.stringify(products));
   renderCart();
 }
 
-function changeQty(b,delta){
-  let i=cart.find(x=>x.barcode===b);
-  if(!i) return;
-  if(delta>0 && products[b].stock<=0) return;
-  i.qty+=delta;
-  products[b].stock-=delta;
-  if(i.qty<=0) cart=cart.filter(x=>x.barcode!==b);
-  localStorage.setItem('products',JSON.stringify(products));
+function changeQty(barcode,delta){
+  let item = cart.find(i=>i.barcode===barcode);
+  if(!item) return;
+
+  if(delta>0 && products[barcode].stock<=0) return;
+
+  item.qty += delta;
+  products[barcode].stock -= delta;
+
+  if(item.qty<=0){
+    cart = cart.filter(i=>i.barcode!==barcode);
+  }
+
+  localStorage.setItem("products",JSON.stringify(products));
   renderCart();
 }
 
 function renderCart(){
-  let t=0;
-  const cartDiv=document.getElementById("cart");
-  cartDiv.innerHTML=cart.map(i=>{
-    let l=i.price*i.qty; t+=l;
-    return `<div class='cart-item'>
-      <span><strong>${i.name}</strong><br><small>£${i.price.toFixed(2)} each</small></span>
-      <div class='qty'>
-        <button onclick="changeQty('${i.barcode}',-1)">−</button>
-        <strong>${i.qty}</strong>
-        <button onclick="changeQty('${i.barcode}',1)">+</button>
+  let total = 0;
+  const cartDiv = document.getElementById("cart");
+
+  cartDiv.innerHTML = cart.map(i=>{
+    let line = i.price * i.qty;
+    total += line;
+    return `
+      <div class="cart-item">
+        <span><strong>${i.name}</strong><br>£${i.price.toFixed(2)}</span>
+        <div class="qty">
+          <button onclick="changeQty('${i.barcode}',-1)">−</button>
+          <strong>${i.qty}</strong>
+          <button onclick="changeQty('${i.barcode}',1)">+</button>
+        </div>
+        <strong>£${line.toFixed(2)}</strong>
       </div>
-      <span><strong>£${l.toFixed(2)}</strong></span>
-    </div>`;
-  }).join('');
-  total.innerText=`Total: £${t.toFixed(2)}`;
-}</span>
-      <div class='qty'>
-        <button onclick="changeQty('${i.barcode}',-1)">−</button>
-        <strong>${i.qty}</strong>
-        <button onclick="changeQty('${i.barcode}',1)">+</button>
-      </div>
-      <span>£${l.toFixed(2)}</span>
-    </div>`;
-  }).join('');
-  total.innerText=`Total: £${t.toFixed(2)}`;
+    `;
+  }).join("");
+
+  document.getElementById("total").innerText = `Total: £${total.toFixed(2)}`;
 }
 
 function checkout(){
-  if(!cart.length) return alert('Cart empty');
-  const sale={
-    date:new Date().toLocaleString(),
-    items:JSON.parse(JSON.stringify(cart))
-  };
-  sales.push(sale);
-  localStorage.setItem('sales',JSON.stringify(sales));
-  cart=[];
+  if(!cart.length) return alert("Cart empty");
+  sales.push({date:new Date().toLocaleString(),items:JSON.parse(JSON.stringify(cart))});
+  localStorage.setItem("sales",JSON.stringify(sales));
+  cart = [];
   renderCart();
-  alert('Sale saved');
+  alert("Sale saved");
 }
 
 function downloadReceipt(){
   if(!sales.length) return;
-  const s=sales[sales.length-1];
-  let text=`BAZRO RECEIPT
-${s.date}
-----------------------
-`;
-  let total=0;
+  const s = sales[sales.length-1];
+  let total = 0;
+  let text = `BAZRO RECEIPT\n${s.date}\n----------------\n`;
   s.items.forEach(i=>{
-    let l=i.price*i.qty; total+=l;
-    text+=`${i.qty}x ${i.name}  £${l.toFixed(2)}
-`;
+    let l=i.price*i.qty;
+    total+=l;
+    text+=`${i.qty}x ${i.name} £${l.toFixed(2)}\n`;
   });
-  text+=`----------------------
-TOTAL: £${total.toFixed(2)}`;
-  downloadText(text,`receipt_${Date.now()}.txt`);
+  text+=`----------------\nTOTAL £${total.toFixed(2)}`;
+  download(text,`receipt_${Date.now()}.txt`);
 }
 
-function downloadDailyReceipts(){
-  if(!sales.length) return;
-  let today=new Date().toLocaleDateString();
-  let text=`BAZRO DAILY SALES (${today})
-=====================
-`;
-  let grand=0;
-  sales.filter(s=>s.date.includes(today)).forEach((s,idx)=>{
+function downloadDaily(){
+  let today = new Date().toLocaleDateString();
+  let text = `BAZRO DAILY SALES ${today}\n================\n`;
+  let grand = 0;
+
+  sales.filter(s=>s.date.includes(today)).forEach((s,n)=>{
     let total=0;
-    text+=`
-Sale #${idx+1} - ${s.date}
-`;
+    text+=`\nSale ${n+1} - ${s.date}\n`;
     s.items.forEach(i=>{
-      let l=i.price*i.qty; total+=l;
-      text+=`${i.qty}x ${i.name} £${l.toFixed(2)}
-`;
+      let l=i.price*i.qty;
+      total+=l;
+      text+=`${i.qty}x ${i.name} £${l.toFixed(2)}\n`;
     });
-    text+=`Subtotal: £${total.toFixed(2)}
-`;
+    text+=`Subtotal £${total.toFixed(2)}\n`;
     grand+=total;
   });
-  text+=`
-GRAND TOTAL: £${grand.toFixed(2)}`;
-  downloadText(text,`daily_sales_${today.replace(/\//g,'-')}.txt`);
+
+  text+=`\nGRAND TOTAL £${grand.toFixed(2)}`;
+  download(text,`daily_${today.replace(/\//g,'-')}.txt`);
 }
 
-function downloadText(text,filename){
-  const blob=new Blob([text],{type:'text/plain'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=filename;
+function download(text,name){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([text],{type:"text/plain"}));
+  a.download=name;
   a.click();
-});
-  localStorage.setItem('sales',JSON.stringify(sales));
-  cart=[];
-  renderCart();
-  alert('Sale saved');
 }
 </script>
+
 </body>
 </html>
