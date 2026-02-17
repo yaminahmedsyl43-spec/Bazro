@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Bazro POS - Final</title>
+<title>Bazro POS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -23,14 +23,16 @@
     .btn-pdf { background: #2980b9; }
     .btn-stop { background: var(--red); }
     .btn-flash { background: #f1c40f; color: #000; margin-bottom: 10px; }
-    .btn-clear { background: #d63031; margin-top: 20px; font-size: 13px; }
     
     nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #ddd; z-index: 1000; }
     nav button { flex: 1; background: none; color: #777; padding: 15px 0; margin: 0; border-radius: 0; font-size: 11px; height: 60px; }
     nav button.active-nav { color: var(--orange); font-weight: 800; border-top: 3px solid var(--orange); }
 
-    #eod-report-box { padding: 25px; background: white; border: 1px solid #000; width: 280px; margin: 10px auto; color: black; display: none; }
-    .eod-line { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #ccc; font-size: 14px; }
+    /* Updated EOD Report Box */
+    #eod-report-box { padding: 30px; background: white; border: 1px solid #000; width: 280px; margin: 10px auto; color: black; display: none; text-align: center; }
+    .eod-title { font-size: 28px; font-weight: 900; margin: 0; line-height: 1; }
+    .eod-date-sub { font-size: 20px; font-weight: 900; margin: 5px 0 15px 0; }
+    .eod-line { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #ccc; font-size: 14px; text-align: left; }
     
     #status-msg { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 20px; color: white; font-weight: bold; z-index: 9999; opacity: 0; transition: 0.3s; pointer-events: none; }
     #scanner-view { background: black; border-radius: 12px; overflow: hidden; display: none; margin-bottom: 15px; text-align: center; padding: 10px; }
@@ -76,10 +78,10 @@
         </div>
 
         <div id="eod-report-box">
-            <h2 style="text-align:center;margin:0">BAZRO</h2>
-            <p style="text-align:center;font-size:11px">Camborne TR14 8AT</p>
+            <div class="eod-title">BAZRO</div>
+            <div class="eod-date-sub" id="r_date"></div>
+            <p style="font-size:11px; margin-bottom:10px;">Camborne TR14 8AT</p>
             <hr>
-            <div class="eod-line"><strong>Date:</strong> <span id="r_date"></span></div>
             <div class="eod-line"><strong>Cash Sales:</strong> <span id="r_cash"></span></div>
             <div class="eod-line"><strong>Card Sales:</strong> <span id="r_card"></span></div>
             <div class="eod-line"><strong>Expenses:</strong> <span id="r_exp"></span></div>
@@ -89,7 +91,7 @@
         </div>
         
         <div id="report-actions" style="display:none">
-            <button style="background:var(--green)" onclick="shareReportImage()">📤 Share Report (WhatsApp/Other)</button>
+            <button style="background:var(--green)" onclick="shareReportImage()">📤 Share Report</button>
             <button class="btn-sec" onclick="downloadReportImage()">💾 Download as Image</button>
         </div>
     </div>
@@ -99,7 +101,7 @@
             <h3>Recent Sales</h3>
             <button class="btn-sec" onclick="exportData()">📤 Backup All Data</button>
             <div id="history-list"></div>
-            <button class="btn-clear" onclick="clearAllSales()">⚠️ Password: Clear History</button>
+            <button style="background:#d63031; margin-top:20px; font-size:13px;" onclick="clearAllSales()">⚠️ Password: Clear History</button>
         </div>
     </div>
 
@@ -185,7 +187,7 @@ function handleAutoScan(code) {
     setTimeout(() => scanPaused = false, 1500);
 }
 
-/* --- REPORT IMAGE LOGIC --- */
+/* --- REPORT LOGIC --- */
 function previewReport() {
     const d = document.getElementById("report_date").value;
     const cash = Number(document.getElementById("cash_total").value);
@@ -211,11 +213,11 @@ async function shareReportImage() {
     canvas.toBlob(async (blob) => {
         if (!blob) return;
         const file = new File([blob], "Bazro_EOD.jpg", { type: "image/jpeg" });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            try { await navigator.share({ files: [file], title: "Bazro EOD Report" }); } 
+        if (navigator.share) {
+            try { await navigator.share({ files: [file], title: "Bazro EOD" }); } 
             catch (e) { notify("Share failed, use download", "orange"); }
         } else {
-            notify("Browser sharing not supported", "orange");
+            notify("Sharing not supported", "orange");
         }
     }, "image/jpeg");
 }
@@ -230,7 +232,7 @@ async function downloadReportImage() {
     link.click();
 }
 
-/* --- CORE POS --- */
+/* --- POS CORE --- */
 function addProduct() {
     const b = document.getElementById("p_barcode").value, n = document.getElementById("p_name").value, p = document.getElementById("p_price").value, s = document.getElementById("p_stock").value || 0;
     if (!b || !n || !p) return notify("Error", "red");
@@ -284,7 +286,7 @@ function deleteSale(id) {
 function clearAllSales() {
     const p = prompt("Enter Admin Password:");
     if (p === adminPassword) {
-        if(confirm("PERMANENTLY DELETE ALL HISTORY?")) {
+        if(confirm("DELETE ALL HISTORY?")) {
             sales = []; localStorage.setItem("sales", "[]"); renderHistory(); notify("History Wiped", "red");
         }
     } else if (p !== null) { alert("Wrong Password!"); }
