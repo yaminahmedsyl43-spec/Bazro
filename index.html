@@ -36,12 +36,42 @@
     
     #status-msg { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 20px; color: white; font-weight: bold; z-index: 9999; opacity: 0; transition: 0.3s; pointer-events: none; }
     #scanner-view { background: black; border-radius: 12px; overflow: hidden; display: none; margin-bottom: 15px; text-align: center; padding: 10px; }
+
+    /* Success Tick Style */
+    .scan-success-popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.85);
+        color: white;
+        padding: 20px 40px;
+        border-radius: 15px;
+        text-align: center;
+        z-index: 10001;
+        display: none;
+        pointer-events: none;
+    }
+    .tick-icon { font-size: 50px; color: var(--green); display: block; margin-bottom: 10px; }
+    .animate-pop { animation: fadeInOut 1.2s ease-in-out forwards; }
+
+    @keyframes fadeInOut {
+        0% { opacity: 0; transform: translate(-50%, -40%); }
+        20% { opacity: 1; transform: translate(-50%, -50%); }
+        80% { opacity: 1; transform: translate(-50%, -50%); }
+        100% { opacity: 0; transform: translate(-50%, -60%); }
+    }
 </style>
 </head>
 <body>
 
 <div id="status-msg"></div>
 <header id="header-title">BAZRO SHOP</header>
+
+<div id="success-popup" class="scan-success-popup">
+    <span class="tick-icon">✔</span>
+    <span id="popup-text">Item Added</span>
+</div>
 
 <div class="container">
 
@@ -153,10 +183,15 @@ function notify(msg, color) {
     setTimeout(() => el.style.opacity = "0", 2000);
 }
 
-/* --- VOICE ADDED HERE --- */
-function speak(text) {
-    const msg = new SpeechSynthesisUtterance(text);
-    window.speechSynthesis.speak(msg);
+function showTickPopup(message) {
+    const popup = document.getElementById("success-popup");
+    const text = document.getElementById("popup-text");
+    text.innerText = message;
+    popup.style.display = "block";
+    popup.classList.remove("animate-pop");
+    void popup.offsetWidth; // Trigger reflow to restart animation
+    popup.classList.add("animate-pop");
+    setTimeout(() => { popup.style.display = "none"; }, 1200);
 }
 
 /* --- SCANNER --- */
@@ -191,8 +226,9 @@ function handleAutoScan(code) {
         return;
     }
     scanPaused = true; 
+    const pName = products[code].name;
     addToCart(code);
-    speak("Item added"); // VOICE NOTIFICATION
+    showTickPopup(pName + " added");
     if(navigator.vibrate) navigator.vibrate(50);
     setTimeout(() => scanPaused = false, 1500);
 }
@@ -201,22 +237,18 @@ function handleAutoScan(code) {
 function previewReport() {
     const rawDate = document.getElementById("report_date").value;
     if(!rawDate) return notify("Select Date", "red");
-
     const [y, m, d] = rawDate.split("-");
     const formattedDate = `${d}/${m}/${y}`;
-
     const cash = Number(document.getElementById("cash_total").value);
     const card = Number(document.getElementById("card_total").value);
     const till = Number(document.getElementById("till_cash").value);
     const exp = Number(document.getElementById("expense_total").value);
-    
     document.getElementById("r_date").innerText = formattedDate;
     document.getElementById("r_cash").innerText = "£" + cash.toFixed(2);
     document.getElementById("r_card").innerText = "£" + card.toFixed(2);
     document.getElementById("r_exp").innerText = "- £" + exp.toFixed(2);
     document.getElementById("r_till").innerText = "£" + till.toFixed(2);
     document.getElementById("r_net").innerText = "£" + (cash + card - exp).toFixed(2);
-    
     document.getElementById("eod-report-box").style.display = "block";
     document.getElementById("report-actions").style.display = "block";
 }
