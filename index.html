@@ -138,21 +138,32 @@ function addProduct(){
   alert("Product saved");
 }
 
-function addToCart(code=null){
-  let b = code || sellBarcode.value;
-  let p = products[b];
-  if(!p || p.stock<=0) return alert("Unavailable");
+function addProduct(){
+  const b = barcode.value.trim();
+  const n = name.value.trim();
+  const p = price.value;
+  const s = stock.value || 0;
 
-  let item = cart.find(i=>i.barcode===b);
-  if(item){
-    item.qty++;
-  }else{
-    cart.push({barcode:b,name:p.name,price:p.price,qty:1});
+  if(b === "" || n === "" || p === ""){
+    alert("Please enter barcode, name, and price");
+    return;
   }
-  p.stock--;
-  localStorage.setItem("products",JSON.stringify(products));
-  renderCart();
+
+  products[b] = {
+    name: n,
+    price: parseFloat(p),
+    stock: parseInt(s)
+  };
+
+  localStorage.setItem("products", JSON.stringify(products));
+  alert("Product saved");
+
+  barcode.value = "";
+  name.value = "";
+  price.value = "";
+  stock.value = "";
 }
+
 
 function changeQty(barcode,delta){
   let item = cart.find(i=>i.barcode===barcode);
@@ -248,3 +259,4 @@ function download(text,name){
 
 </body>
 </html>
+
