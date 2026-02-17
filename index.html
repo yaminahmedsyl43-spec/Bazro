@@ -5,8 +5,6 @@
 <title>Bazro POS - Pro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <script src="https://unpkg.com/html5-qrcode"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <style>
     :root { --orange: #ff512f; --yellow: #f09819; --dark: #141e30; --green: #27ae60; --red: #e74c3c; }
@@ -27,13 +25,11 @@
     nav button { flex: 1; background: none; color: #777; padding: 0; margin: 0; border-radius: 0; font-size: 11px; height: 100%; box-shadow: none; }
     nav button.active-nav { color: var(--orange); font-weight: 800; border-top: 4px solid var(--orange); }
 
-    .admin-only { display: none; }
     #eod-report-box { padding: 20px; background: white; border: 1px solid #000; width: 280px; margin: 10px auto; color: black; display: none; }
     .eod-line { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #ccc; font-size: 14px; }
     #status-msg { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 20px; color: white; z-index: 9999; opacity: 0; transition: 0.3s; pointer-events: none; }
     #scanner-view { background: black; border-radius: 12px; overflow: hidden; display: none; margin-bottom: 15px; text-align: center; padding: 10px; }
     
-    /* New Controls for Scanner */
     .scan-btns { display: flex; gap: 8px; margin-top: 10px; }
     .scan-btns button { margin: 0; flex: 1; }
 </style>
@@ -84,7 +80,7 @@
             <div class="eod-line" style="font-weight:bold"><span>NET:</span> <span id="r_net"></span></div>
         </div>
         <div class="card">
-            <h3>Saved Summaries</h3>
+            <h3>Saved Reports</h3>
             <div id="saved-reports-list" style="font-size:12px"></div>
         </div>
     </div>
@@ -110,10 +106,9 @@
 
 <nav>
     <button id="nav-sales" class="active-nav" onclick="showPage('sales')">🛒 SHOP</button>
-    <button id="nav-report" class="admin-only" onclick="showPage('report')">📊 REPORT</button>
-    <button id="nav-history" class="admin-only" onclick="showPage('history')">📜 HISTORY</button>
-    <button id="nav-stock" class="admin-only" onclick="showPage('stock')">📦 STOCK</button>
-    <button id="nav-admin" onclick="unlockAdmin()">🔑 ADMIN</button>
+    <button id="nav-report" onclick="showPage('report')">📊 REPORT</button>
+    <button id="nav-history" onclick="showPage('history')">📜 HISTORY</button>
+    <button id="nav-stock" onclick="showPage('stock')">📦 STOCK</button>
 </nav>
 
 <script>
@@ -123,16 +118,6 @@ let eodReports = JSON.parse(localStorage.getItem("eodReports") || "[]");
 let cart = [];
 let qrScanner = null;
 let isFlashOn = false;
-
-// --- SECURITY & NAVIGATION ---
-function unlockAdmin() {
-    const pass = prompt("Enter Password:");
-    if (pass === "Yamin@83") {
-        document.querySelectorAll('.admin-only').forEach(el => el.style.display = "block");
-        document.getElementById('nav-admin').style.display = "none";
-        notify("Admin Unlocked", "green");
-    } else { notify("Wrong Password", "red"); }
-}
 
 function showPage(p) {
     document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
@@ -149,7 +134,6 @@ function notify(m, c) {
     setTimeout(() => el.style.opacity = "0", 2000);
 }
 
-// --- CART & SALES ---
 function updateQty(barcode, delta) {
     let item = cart.find(i => i.barcode === barcode);
     if (item) {
@@ -198,7 +182,7 @@ function renderHistory() {
         </div>`).join("");
 }
 
-// --- SCANNER & CORRECTED FLASHLIGHT ---
+// --- DIRECT FLASH CONTROL ---
 async function startScan() {
     document.getElementById("scanner-view").style.display = "block";
     if (!qrScanner) qrScanner = new Html5Qrcode("reader");
@@ -207,20 +191,17 @@ async function startScan() {
         { facingMode: "environment" }, 
         { fps: 20, qrbox: 250 }, 
         (code) => { addToCart(code); notify("Scanned!", "green"); }
-    ).catch(err => {
-        notify("Camera Error", "red");
-        document.getElementById("scanner-view").style.display = "none";
-    });
+    ).catch(err => notify("Camera Error", "red"));
 }
 
 async function toggleFlash() {
     if (!qrScanner) return;
     try {
         const track = qrScanner.getRunningTrack();
-        if (!track) return notify("Camera starting...", "orange");
+        if (!track) return notify("Open Camera First", "orange");
 
         const capabilities = track.getCapabilities();
-        if (!capabilities.torch) return notify("No Flash on device", "red");
+        if (!capabilities.torch) return notify("No Flash Hardware", "red");
 
         isFlashOn = !isFlashOn;
         await track.applyConstraints({
@@ -231,6 +212,7 @@ async function toggleFlash() {
         document.getElementById("flash-btn").style.background = isFlashOn ? "var(--green)" : "var(--dark)";
     } catch (e) {
         notify("Flash Error", "red");
+        console.error(e);
     }
 }
 
@@ -240,12 +222,11 @@ function stopScan() {
             isFlashOn = false;
             document.getElementById("flash-btn").innerText = "🔦 Light: OFF";
             document.getElementById("flash-btn").style.background = "var(--dark)";
-        });
+        }).catch(() => {});
     }
     document.getElementById("scanner-view").style.display = "none"; 
 }
 
-// --- STOCK & REPORTS ---
 function addProduct() {
     const b = document.getElementById("p_barcode").value, n = document.getElementById("p_name").value, p = document.getElementById("p_price").value;
     if(!b || !n || !p) return notify("Fill all fields", "red");
@@ -260,11 +241,9 @@ function saveAndPreviewReport() {
     const card = Number(document.getElementById("card_total").value);
     const exp = Number(document.getElementById("expense_total").value);
     if(!d) return notify("Select Date", "red");
-
     const report = { date: d, cash, card, exp, net: (cash + card - exp) };
     eodReports.unshift(report);
     localStorage.setItem("eodReports", JSON.stringify(eodReports));
-
     document.getElementById("r_date").innerText = d;
     document.getElementById("r_cash").innerText = "£"+cash.toFixed(2);
     document.getElementById("r_card").innerText = "£"+card.toFixed(2);
