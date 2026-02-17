@@ -47,7 +47,7 @@
     <div id="page-sales" class="page active-page">
         <div id="scanner-view">
             <div id="reader"></div>
-            <button id="flash-btn" class="btn-flash" onclick="toggleFlash()">🔦 Flashlight: OFF</button>
+            <button id="flash-btn" class="btn-flash" style="display:none" onclick="toggleFlash()">🔦 Flashlight: OFF</button>
             <button class="btn-stop" onclick="stopScan()">Close Camera</button>
         </div>
         <div class="card">
@@ -157,57 +157,119 @@ function speak(text) {
     window.speechSynthesis.speak(msg);
 }
 
-/* --- FIXED SCANNER LOGIC --- */
+/* --- FIXED SCANNER --- */
 async function startScan(mode) {
+    // If scanner already running, stop it first
+    if (qrScanner && qrScanner.getState() === 2) {
+        await qrScanner.stop();
+    }
+    
     document.getElementById("scanner-view").style.display = "block";
     if (!qrScanner) qrScanner = new Html5Qrcode("reader");
+    
     try {
-        await qrScanner.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (code) => {
-            if (scanPaused) return;
-            
-            if (mode === 'add') {
-                // Logic for Stock Category
-                document.getElementById("p_barcode").value = code;
-                stopScan();
-                notify("Barcode Captured", "green");
-            } else {
-                // Logic for Sales Category
-                handleAutoScan(code);
+        await qrScanner.start(
+            { facingMode: "environment" }, 
+            { fps: 20, qrbox: 250 }, 
+            (code) => {
+                if (scanPaused) return;
+                
+                if (mode === "add") {
+                    // This is for STOCK page
+                    document.getElementById("p_barcode").value = code;
+                    stopScan(); // Close camera once barcode is captured
+                    notify("Barcode Scanned", "green");
+                } else {
+                    // This is for SALES page
+                    handleAutoScan(code);
+                }
             }
-        });
+        );
         
-        const track = qrScanner.getRunningTrackCapabilities();
-        document.getElementById("flash-btn").style.display = track.torch ? "block" : "none";
-    } catch (err) { notify("Camera Error", "red"); }
-}
+        // Flashlight check
+        setTimeout(() => {
+            try {
+                const track = qrScanner.getRunningTrackCapabilities();
+                document.getElementById("flash-btn").style.display = track.torch ? "block" : "none";
+            } catch(e) {}
+        }, 500);
 
-async function toggleFlash() {
-    isFlashOn = !isFlashOn;
-    await qrScanner.applyVideoConstraints({ advanced: [{ torch: isFlashOn }] });
-    document.getElementById("flash-btn").innerText = isFlashOn ? "🔦 Flashlight: ON" : "🔦 Flashlight: OFF";
+    } catch (err) { 
+        notify("Camera Error", "red"); 
+        console.error(err);
+    }
 }
 
 async function stopScan() {
     if (qrScanner && qrScanner.getState() === 2) { 
-        if(isFlashOn) await toggleFlash(); 
         try { await qrScanner.stop(); } catch(e){} 
     }
     document.getElementById("scanner-view").style.display = "none";
+    isFlashOn = false;
+    document.getElementById("flash-btn").innerText = "🔦 Flashlight: OFF";
 }
 
 function handleAutoScan(code) {
     if (!products[code]) {
-        notify("Not Found", "#444");
+        notify("Not in stock", "#444");
+        speak("Item not found");
         return;
     }
     scanPaused = true; 
     addToCart(code);
-    speak("Item added");
+    
+    // SPECIFIC VOICE NOTIFICATION
+    speak(products[code].name + " added"); 
+    
     if(navigator.vibrate) navigator.vibrate(50);
     setTimeout(() => scanPaused = false, 1500);
 }
 
-/* --- REMAINING FUNCTIONS (Unchanged) --- */
+/* --- LOGIC --- */
+function addProduct() {
+    const b = document.getElementById("p_barcode").value, 
+          n = document.getElementById("p_name").value, 
+          p = document.getElementById("p_price").value, 
+          s = document.getElementById("p_stock").value || 0;
+    if (!b || !n || !p) return notify("Fill all fields", "red");
+    products[b] = { name: n, price: Number(p), stock: Number(s) };
+    localStorage.setItem("products", JSON.stringify(products));
+    notify("Product Saved!", "green");
+    
+    // Clear inputs
+    document.getElementById("p_barcode").value = "";
+    document.getElementById("p_name").value = "";
+    document.getElementById("p_price").value = "";
+    document.getElementById("p_stock").value = "";
+}
+
+function addToCart(manualCode = null) {
+    const b = (manualCode || document.getElementById("sell_barcode").value).trim();
+    if (!products[b]) return notify("Product Not Found", "red");
+    let item = cart.find(i => i.barcode === b);
+    if (item) item.qty++;
+    else cart.push({ barcode: b, name: products[b].name, price: products[b].price, qty: 1 });
+    renderCart();
+    document.getElementById("sell_barcode").value = "";
+}
+
+function renderCart() {
+    let t = 0;
+    document.getElementById("cart-list").innerHTML = cart.map(i => {
+        t += i.qty * i.price;
+        return `<div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #eee"><span>${i.name} (x${i.qty})</span><span>£${(i.qty*i.price).toFixed(2)}</span></div>`;
+    }).join("");
+    document.getElementById("cart-total").innerText = `Total: £${t.toFixed(2)}`;
+}
+
+function checkout() {
+    if(!cart.length) return;
+    sales.unshift({ id: Date.now(), date: new Date().toLocaleString(), items: [...cart] });
+    localStorage.setItem("sales", JSON.stringify(sales));
+    cart = []; renderCart(); notify("Sale Complete", "green");
+}
+
+/* --- REPORTS --- */
 function previewReport() {
     const rawDate = document.getElementById("report_date").value;
     if(!rawDate) return notify("Select Date", "red");
@@ -248,45 +310,6 @@ async function downloadReportImage() {
     link.href = imgData;
     link.download = `Bazro_Report.jpg`;
     link.click();
-}
-
-function addProduct() {
-    const b = document.getElementById("p_barcode").value, n = document.getElementById("p_name").value, p = document.getElementById("p_price").value, s = document.getElementById("p_stock").value || 0;
-    if (!b || !n || !p) return notify("Error", "red");
-    products[b] = { name: n, price: Number(p), stock: Number(s) };
-    localStorage.setItem("products", JSON.stringify(products));
-    notify("Saved!", "green");
-    // Clear inputs after save
-    document.getElementById("p_barcode").value = "";
-    document.getElementById("p_name").value = "";
-    document.getElementById("p_price").value = "";
-    document.getElementById("p_stock").value = "";
-}
-
-function addToCart(manualCode = null) {
-    const b = (manualCode || document.getElementById("sell_barcode").value).trim();
-    if (!products[b]) return notify("Not in stock", "red");
-    let item = cart.find(i => i.barcode === b);
-    if (item) item.qty++;
-    else cart.push({ barcode: b, name: products[b].name, price: products[b].price, qty: 1 });
-    renderCart();
-    document.getElementById("sell_barcode").value = "";
-}
-
-function renderCart() {
-    let t = 0;
-    document.getElementById("cart-list").innerHTML = cart.map(i => {
-        t += i.qty * i.price;
-        return `<div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #eee"><span>${i.name} (x${i.qty})</span><span>£${(i.qty*i.price).toFixed(2)}</span></div>`;
-    }).join("");
-    document.getElementById("cart-total").innerText = `Total: £${t.toFixed(2)}`;
-}
-
-function checkout() {
-    if(!cart.length) return;
-    sales.unshift({ id: Date.now(), date: new Date().toLocaleString(), items: [...cart] });
-    localStorage.setItem("sales", JSON.stringify(sales));
-    cart = []; renderCart(); notify("Sale Done", "green");
 }
 
 function renderHistory() {
@@ -346,6 +369,14 @@ function importData(e) {
         location.reload();
     };
     reader.readAsText(e.target.files[0]);
+}
+
+async function toggleFlash() {
+    isFlashOn = !isFlashOn;
+    try {
+        await qrScanner.applyVideoConstraints({ advanced: [{ torch: isFlashOn }] });
+        document.getElementById("flash-btn").innerText = isFlashOn ? "🔦 Flashlight: ON" : "🔦 Flashlight: OFF";
+    } catch(e) { notify("Flash Error", "orange"); }
 }
 </script>
 </body>
