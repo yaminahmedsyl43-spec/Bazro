@@ -2,134 +2,148 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bazro POS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
 body{
   margin:0;
-  font-family:system-ui,sans-serif;
-  background:linear-gradient(135deg,#1f1c2c,#928dab);
+  font-family:Arial,Helvetica,sans-serif;
+  background:linear-gradient(135deg,#141e30,#243b55);
+  color:#222;
 }
 header{
-  background:linear-gradient(135deg,#ff2a2a,#ff6a00);
+  background:linear-gradient(135deg,#ff512f,#f09819);
   padding:16px;
   text-align:center;
+  color:white;
+  font-size:22px;
+  font-weight:800;
 }
-header img{height:50px}
 .container{max-width:520px;margin:auto;padding:15px}
 .card{
-  background:#fff;
-  padding:15px;
+  background:white;
   border-radius:14px;
+  padding:15px;
   margin-bottom:15px;
-  box-shadow:0 10px 25px rgba(0,0,0,.25);
+  box-shadow:0 10px 25px rgba(0,0,0,.2);
 }
 input,button{
   width:100%;
   padding:12px;
   margin-top:6px;
   border-radius:10px;
-  border:1px solid #ddd;
+  border:1px solid #ccc;
 }
 button{
   border:none;
-  background:linear-gradient(135deg,#ff2a2a,#ff6a00);
+  background:linear-gradient(135deg,#ff512f,#f09819);
   color:white;
   font-weight:700;
+  cursor:pointer;
 }
+button.secondary{
+  background:#444;
+}
+#reader{margin-top:10px}
 .cart-item{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  margin:6px 0;
+  margin:8px 0;
 }
 .qty{display:flex;gap:6px;align-items:center}
-.qty button{width:36px;padding:6px}
-.total{text-align:right;font-size:18px;font-weight:800;margin-top:10px}
-#reader{margin-top:10px}
+.qty button{
+  width:32px;
+  padding:6px;
+  background:#eee;
+  color:#222;
+  font-weight:800;
+}
+.total{
+  text-align:right;
+  font-size:18px;
+  font-weight:800;
+  margin-top:10px;
+}
 </style>
 </head>
 
 <body>
 
-<header>
-  <img src="bazro-logo.png" alt="Bazro">
-</header>
+<header>BAZRO POS</header>
 
 <div class="container">
 
 <!-- ADD PRODUCT -->
 <div class="card">
-<h3>Add / Update Product</h3>
+<h3>Add Product</h3>
 <div id="reader"></div>
-<button onclick="startScanner('add')">📷 Scan Barcode</button>
-<input id="barcode" placeholder="Barcode">
-<input id="name" placeholder="Product name">
-<input id="price" type="number" step="0.01" placeholder="Price">
-<input id="stock" type="number" placeholder="Stock (optional)">
+<button onclick="startScan('add')">📷 Scan Barcode</button>
+
+<input id="p_barcode" placeholder="Barcode">
+<input id="p_name" placeholder="Product name">
+<input id="p_price" type="number" step="0.01" placeholder="Price">
+<input id="p_stock" type="number" placeholder="Stock (optional)">
+
 <button onclick="addProduct()">Save Product</button>
 </div>
 
 <!-- SELL -->
 <div class="card">
-<h3>Sell Products</h3>
-<button onclick="startScanner('sell')">📷 Scan to Sell</button>
-<input id="sellBarcode" placeholder="Manual barcode">
-<button onclick="addToCart()">Add</button>
+<h3>Sell</h3>
+<button onclick="startScan('sell')">📷 Scan to Sell</button>
+
+<input id="sell_barcode" placeholder="Manual barcode">
+<button onclick="addToCart()">Add to Cart</button>
 
 <div id="cart"></div>
 <div class="total" id="total">Total: £0.00</div>
 
 <button onclick="checkout()">Checkout</button>
-<button onclick="downloadLastReceipt()">📥 Download Receipt</button>
-<button onclick="downloadDaily()">📦 Download Today Sales</button>
+<button class="secondary" onclick="downloadLast()">Download Receipt</button>
+<button class="secondary" onclick="downloadDaily()">Download Today</button>
 </div>
 
 </div>
 
 <script>
-/* ===== STORAGE ===== */
+/* ===== DATA ===== */
 let products = JSON.parse(localStorage.getItem("products") || "{}");
 let sales = JSON.parse(localStorage.getItem("sales") || "[]");
 let cart = [];
 
-/* ===== SCANNER (SAFE SINGLE INSTANCE) ===== */
-const html5QrCode = new Html5Qrcode("reader");
-let scanning = false;
-let scanMode = "sell";
+/* ===== SCANNER ===== */
+const qr = new Html5Qrcode("reader");
+let scanMode = "";
 
-function startScanner(mode){
+function startScan(mode){
   scanMode = mode;
-  if(scanning){
-    html5QrCode.stop().catch(()=>{});
-    scanning = false;
-  }
-  html5QrCode.start(
-    { facingMode:"environment" },
-    { fps:10, qrbox:250 },
+  qr.stop().catch(()=>{});
+  qr.start(
+    {facingMode:"environment"},
+    {fps:10,qrbox:250},
     code=>{
       if(scanMode==="add"){
-        barcode.value = code;
+        document.getElementById("p_barcode").value = code;
       }else{
         addToCart(code);
       }
-      html5QrCode.stop().then(()=>scanning=false);
+      qr.stop().catch(()=>{});
     }
-  ).then(()=>scanning=true)
-   .catch(()=>alert("Camera needs HTTPS or localhost"));
+  ).catch(()=>alert("Use HTTPS or localhost"));
 }
 
-/* ===== PRODUCTS ===== */
+/* ===== ADD PRODUCT (BULLETPROOF) ===== */
 function addProduct(){
-  const b = barcode.value.trim();
-  const n = name.value.trim();
-  const p = price.value.trim();
-  const s = stock.value.trim() || "0";
+  const b = document.getElementById("p_barcode").value.trim();
+  const n = document.getElementById("p_name").value.trim();
+  const p = document.getElementById("p_price").value;
+  const s = document.getElementById("p_stock").value || 0;
 
-  if(b==="" || n==="" || p===""){
-    alert("Barcode, name and price required");
+  if(b === "" || n === "" || p === ""){
+    alert("Barcode, name and price are required");
     return;
   }
 
@@ -141,51 +155,59 @@ function addProduct(){
 
   localStorage.setItem("products", JSON.stringify(products));
 
-  barcode.value="";
-  name.value="";
-  price.value="";
-  stock.value="";
+  document.getElementById("p_barcode").value="";
+  document.getElementById("p_name").value="";
+  document.getElementById("p_price").value="";
+  document.getElementById("p_stock").value="";
 
-  alert("Product saved");
+  alert("Product saved successfully");
 }
 
 /* ===== CART ===== */
 function addToCart(code=null){
-  const b = (code || sellBarcode.value).trim();
-  const p = products[b];
+  const b = (code || document.getElementById("sell_barcode").value).trim();
+  if(b==="") return;
 
-  if(!p){ alert("Product not found"); return; }
-  if(p.stock<=0){ alert("Out of stock"); return; }
+  const prod = products[b];
+  if(!prod){ alert("Product not found"); return; }
+  if(prod.stock <= 0){ alert("Out of stock"); return; }
 
   let item = cart.find(i=>i.barcode===b);
   if(item){ item.qty++; }
-  else{ cart.push({barcode:b,name:p.name,price:p.price,qty:1}); }
+  else{
+    cart.push({barcode:b,name:prod.name,price:prod.price,qty:1});
+  }
 
-  p.stock--;
+  prod.stock--;
   localStorage.setItem("products", JSON.stringify(products));
-  sellBarcode.value="";
+  document.getElementById("sell_barcode").value="";
   renderCart();
 }
 
 function changeQty(b,d){
-  let i = cart.find(x=>x.barcode===b);
-  if(!i) return;
+  let item = cart.find(i=>i.barcode===b);
+  if(!item) return;
+
   if(d>0 && products[b].stock<=0) return;
 
-  i.qty+=d;
-  products[b].stock-=d;
-  if(i.qty<=0) cart=cart.filter(x=>x.barcode!==b);
+  item.qty += d;
+  products[b].stock -= d;
+
+  if(item.qty<=0){
+    cart = cart.filter(i=>i.barcode!==b);
+  }
 
   localStorage.setItem("products", JSON.stringify(products));
   renderCart();
 }
 
 function renderCart(){
-  let total=0;
-  const cartDiv = document.getElementById("cart");
+  let total = 0;
+  const div = document.getElementById("cart");
 
-  cartDiv.innerHTML = cart.map(i=>{
-    let l=i.price*i.qty; total+=l;
+  div.innerHTML = cart.map(i=>{
+    const line = i.qty * i.price;
+    total += line;
     return `
       <div class="cart-item">
         <span><strong>${i.name}</strong><br>£${i.price.toFixed(2)}</span>
@@ -194,66 +216,70 @@ function renderCart(){
           <strong>${i.qty}</strong>
           <button onclick="changeQty('${i.barcode}',1)">+</button>
         </div>
-        <strong>£${l.toFixed(2)}</strong>
-      </div>`;
+        <strong>£${line.toFixed(2)}</strong>
+      </div>
+    `;
   }).join("");
 
-  document.getElementById("total").innerText=`Total: £${total.toFixed(2)}`;
+  document.getElementById("total").innerText = `Total: £${total.toFixed(2)}`;
 }
 
-/* ===== CHECKOUT ===== */
+/* ===== CHECKOUT & RECEIPTS ===== */
 function checkout(){
-  if(!cart.length){ alert("Cart empty"); return; }
+  if(cart.length===0){ alert("Cart empty"); return; }
 
   sales.push({
     date:new Date().toLocaleString(),
     items:JSON.parse(JSON.stringify(cart))
   });
 
-  localStorage.setItem("sales",JSON.stringify(sales));
+  localStorage.setItem("sales", JSON.stringify(sales));
   cart=[];
   renderCart();
-  alert("Sale saved");
+  alert("Sale completed");
 }
 
-/* ===== RECEIPTS ===== */
-function downloadLastReceipt(){
+function downloadLast(){
   if(!sales.length) return;
-  const s=sales[sales.length-1];
-  let total=0;
-  let text=`BAZRO RECEIPT\n${s.date}\n----------------\n`;
-  s.items.forEach(i=>{
-    let l=i.price*i.qty; total+=l;
-    text+=`${i.qty}x ${i.name} £${l.toFixed(2)}\n`;
-  });
-  text+=`----------------\nTOTAL £${total.toFixed(2)}`;
-  download(text,`receipt_${Date.now()}.txt`);
+  downloadReceipt(sales[sales.length-1],"receipt");
 }
 
 function downloadDaily(){
-  let today=new Date().toLocaleDateString();
-  let text=`BAZRO DAILY SALES ${today}\n================\n`;
-  let grand=0;
+  let today = new Date().toLocaleDateString();
+  let text = `BAZRO DAILY SALES ${today}\n\n`;
+  let grand = 0;
 
-  sales.filter(s=>s.date.includes(today)).forEach((s,n)=>{
-    let total=0;
-    text+=`\nSale ${n+1} - ${s.date}\n`;
-    s.items.forEach(i=>{
-      let l=i.price*i.qty; total+=l;
-      text+=`${i.qty}x ${i.name} £${l.toFixed(2)}\n`;
+  sales.filter(s=>s.date.includes(today)).forEach((s,i)=>{
+    let t=0;
+    text += `Sale ${i+1} - ${s.date}\n`;
+    s.items.forEach(it=>{
+      let l=it.qty*it.price;
+      t+=l;
+      text+=`${it.qty}x ${it.name} £${l.toFixed(2)}\n`;
     });
-    text+=`Subtotal £${total.toFixed(2)}\n`;
-    grand+=total;
+    text+=`Subtotal £${t.toFixed(2)}\n\n`;
+    grand+=t;
   });
 
-  text+=`\nGRAND TOTAL £${grand.toFixed(2)}`;
-  download(text,`daily_${today.replace(/\//g,'-')}.txt`);
+  text+=`GRAND TOTAL £${grand.toFixed(2)}`;
+  download(text,"daily_sales");
+}
+
+function downloadReceipt(s,name){
+  let t=0;
+  let text=`BAZRO RECEIPT\n${s.date}\n----------------\n`;
+  s.items.forEach(i=>{
+    let l=i.qty*i.price; t+=l;
+    text+=`${i.qty}x ${i.name} £${l.toFixed(2)}\n`;
+  });
+  text+=`----------------\nTOTAL £${t.toFixed(2)}`;
+  download(text,name);
 }
 
 function download(text,name){
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([text],{type:"text/plain"}));
-  a.download=name;
+  a.download=`${name}_${Date.now()}.txt`;
   a.click();
 }
 </script>
