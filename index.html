@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bazro POS</title>
+<script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
 body{
@@ -63,6 +64,7 @@ button{
   font-weight:800;
   margin-top:10px;
 }
+#reader{margin-top:10px}
 </style>
 </head>
 
@@ -74,8 +76,11 @@ button{
 
 <div class="container">
 
+<!-- ADD PRODUCT -->
 <div class="card">
-<h3>Add Product</h3>
+<h3>Add / Update Product</h3>
+<div id="reader"></div>
+<button onclick="startScanner('add')">📷 Scan Barcode</button>
 <input id="barcode" placeholder="Barcode">
 <input id="name" placeholder="Product name">
 <input id="price" type="number" placeholder="Price">
@@ -83,9 +88,11 @@ button{
 <button onclick="addProduct()">Save Product</button>
 </div>
 
+<!-- SELL -->
 <div class="card">
 <h3>Sell Products</h3>
-<input id="sellBarcode" placeholder="Barcode">
+<button onclick="startScanner('sell')">📷 Scan to Sell</button>
+<input id="sellBarcode" placeholder="Manual barcode">
 <button onclick="addToCart()">Add</button>
 
 <div id="cart"></div>
@@ -102,7 +109,31 @@ button{
 let products = JSON.parse(localStorage.getItem("products")) || {};
 let sales = JSON.parse(localStorage.getItem("sales")) || [];
 let cart = [];
+let scanner = null;
+let scanMode = "sell";
 
+/* -------- SCANNER -------- */
+function startScanner(mode){
+  scanMode = mode;
+  if(scanner){ scanner.stop().catch(()=>{}); }
+  scanner = new Html5Qrcode("reader");
+
+  scanner.start(
+    { facingMode:"environment" },
+    { fps:10, qrbox:250 },
+    code => {
+      if(scanMode === "add"){
+        document.getElementById("barcode").value = code;
+      }else{
+        addToCart(code);
+      }
+      scanner.stop();
+    },
+    err => {}
+  );
+}
+
+/* -------- ADD PRODUCT -------- */
 function addProduct(){
   const b = barcode.value.trim();
   const n = name.value.trim();
@@ -110,7 +141,7 @@ function addProduct(){
   const s = stock.value || 0;
 
   if(b === "" || n === "" || p === ""){
-    alert("Please enter barcode, name and price");
+    alert("Enter barcode, name and price");
     return;
   }
 
@@ -130,18 +161,13 @@ function addProduct(){
   alert("Product saved");
 }
 
-function addToCart(){
-  const b = sellBarcode.value.trim();
+/* -------- CART -------- */
+function addToCart(code=null){
+  const b = (code || sellBarcode.value).trim();
   const p = products[b];
 
-  if(!p){
-    alert("Product not found");
-    return;
-  }
-  if(p.stock <= 0){
-    alert("Out of stock");
-    return;
-  }
+  if(!p){ alert("Product not found"); return; }
+  if(p.stock <= 0){ alert("Out of stock"); return; }
 
   let item = cart.find(i => i.barcode === b);
   if(item){
@@ -182,7 +208,7 @@ function renderCart(){
     total += line;
     return `
       <div class="cart-item">
-        <span>${i.name}<br>£${i.price.toFixed(2)}</span>
+        <span><strong>${i.name}</strong><br>£${i.price.toFixed(2)}</span>
         <div class="qty">
           <button onclick="changeQty('${i.barcode}',-1)">−</button>
           <strong>${i.qty}</strong>
@@ -196,15 +222,13 @@ function renderCart(){
   document.getElementById("total").innerText = `Total: £${total.toFixed(2)}`;
 }
 
+/* -------- CHECKOUT -------- */
 function checkout(){
-  if(cart.length === 0){
-    alert("Cart empty");
-    return;
-  }
+  if(cart.length === 0){ alert("Cart empty"); return; }
 
   sales.push({
-    date: new Date().toLocaleString(),
-    items: JSON.parse(JSON.stringify(cart))
+    date:new Date().toLocaleString(),
+    items:JSON.parse(JSON.stringify(cart))
   });
 
   localStorage.setItem("sales", JSON.stringify(sales));
@@ -213,6 +237,7 @@ function checkout(){
   alert("Sale saved");
 }
 
+/* -------- RECEIPTS -------- */
 function downloadLastReceipt(){
   if(sales.length === 0) return;
 
@@ -227,7 +252,7 @@ function downloadLastReceipt(){
   });
 
   text += `----------------\nTOTAL £${total.toFixed(2)}`;
-  download(text, `receipt_${Date.now()}.txt`);
+  download(text,`receipt_${Date.now()}.txt`);
 }
 
 function downloadDaily(){
@@ -248,7 +273,7 @@ function downloadDaily(){
   });
 
   text += `\nGRAND TOTAL £${grand.toFixed(2)}`;
-  download(text, `daily_${today.replace(/\//g,'-')}.txt`);
+  download(text,`daily_${today.replace(/\//g,'-')}.txt`);
 }
 
 function download(text,name){
