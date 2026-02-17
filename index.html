@@ -5,7 +5,6 @@
 <title>Bazro POS - Pro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <script src="https://unpkg.com/html5-qrcode"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
     :root { --orange: #ff512f; --yellow: #f09819; --dark: #141e30; --green: #27ae60; --red: #e74c3c; }
@@ -26,7 +25,6 @@
     nav button { flex: 1; background: none; color: #777; padding: 0; margin: 0; border-radius: 0; font-size: 11px; height: 100%; box-shadow: none; }
     nav button.active-nav { color: var(--orange); font-weight: 800; border-top: 4px solid var(--orange); }
 
-    .admin-only { display: none; }
     #eod-report-box { padding: 20px; background: white; border: 1px solid #000; width: 280px; margin: 10px auto; color: black; display: none; }
     .eod-line { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #ccc; font-size: 14px; }
     #status-msg { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 20px; color: white; z-index: 9999; opacity: 0; transition: 0.3s; pointer-events: none; }
@@ -64,12 +62,12 @@
 
     <div id="page-report" class="page">
         <div class="card">
-            <h3>Daily Report Entry</h3>
+            <h3>Daily Report</h3>
             <input type="date" id="report_date">
             <input type="number" id="cash_total" placeholder="Cash (£)">
             <input type="number" id="card_total" placeholder="Card (£)">
             <input type="number" id="expense_total" placeholder="Expenses (£)">
-            <button onclick="saveAndPreviewReport()">Save & Preview Report</button>
+            <button onclick="saveAndPreviewReport()">Save & Preview</button>
         </div>
         <div id="eod-report-box">
             <div style="font-size:20px; font-weight:900; text-align:center">BAZRO EOD</div>
@@ -80,7 +78,7 @@
             <div class="eod-line" style="font-weight:bold"><span>NET:</span> <span id="r_net"></span></div>
         </div>
         <div class="card">
-            <h3>Saved Summaries</h3>
+            <h3>Saved Reports</h3>
             <div id="saved-reports-list" style="font-size:12px"></div>
         </div>
     </div>
@@ -106,10 +104,9 @@
 
 <nav>
     <button id="nav-sales" class="active-nav" onclick="showPage('sales')">🛒 SHOP</button>
-    <button id="nav-report" class="admin-only" onclick="showPage('report')">📊 REPORT</button>
-    <button id="nav-history" class="admin-only" onclick="showPage('history')">📜 HISTORY</button>
-    <button id="nav-stock" class="admin-only" onclick="showPage('stock')">📦 STOCK</button>
-    <button id="nav-admin" onclick="unlockAdmin()">🔑 ADMIN</button>
+    <button id="nav-report" onclick="showPage('report')">📊 REPORT</button>
+    <button id="nav-history" onclick="showPage('history')">📜 HISTORY</button>
+    <button id="nav-stock" onclick="showPage('stock')">📦 STOCK</button>
 </nav>
 
 <script>
@@ -119,16 +116,6 @@ let eodReports = JSON.parse(localStorage.getItem("eodReports") || "[]");
 let cart = [];
 let html5QrCode = null;
 let isTorchOn = false;
-
-// --- SECURITY ---
-function unlockAdmin() {
-    const pass = prompt("Enter Password:");
-    if (pass === "Yamin@83") {
-        document.querySelectorAll('.admin-only').forEach(el => el.style.display = "block");
-        document.getElementById('nav-admin').style.display = "none";
-        notify("Admin Unlocked", "green");
-    } else { notify("Wrong Password", "red"); }
-}
 
 function showPage(p) {
     document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
@@ -145,7 +132,6 @@ function notify(m, c) {
     setTimeout(() => el.style.opacity = "0", 2000);
 }
 
-// --- CART LOGIC ---
 function updateQty(barcode, delta) {
     let item = cart.find(i => i.barcode === barcode);
     if (item) {
@@ -179,7 +165,6 @@ function renderCart() {
     document.getElementById("cart-total").innerText = `Total: £${t.toFixed(2)}`;
 }
 
-// --- HISTORY & REPORTS ---
 function checkout() {
     if(!cart.length) return;
     sales.unshift({ id: Date.now(), date: new Date().toLocaleString(), items: [...cart], total: cart.reduce((a,b)=>a+(b.qty*b.price),0) });
@@ -221,46 +206,31 @@ function renderSavedReports() {
         </div>`).join("");
 }
 
-// --- SCANNER WITH FLASHLIGHT (TORCH) FIX ---
+// --- FLASHLIGHT FIX ---
 async function startScan() {
     document.getElementById("scanner-view").style.display = "block";
     if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
     
-    const config = { fps: 20, qrbox: { width: 250, height: 250 } };
-    
     try {
         await html5QrCode.start(
             { facingMode: "environment" }, 
-            config, 
-            (decodedText) => {
-                addToCart(decodedText);
-                notify("Scanned: " + decodedText, "green");
-            }
+            { fps: 20, qrbox: 250 }, 
+            (decodedText) => { addToCart(decodedText); notify("Scanned!", "green"); }
         );
-    } catch (err) {
-        notify("Camera Error", "red");
-        console.error(err);
-    }
+    } catch (err) { notify("Camera Error", "red"); }
 }
 
 async function toggleTorch() {
     if (!html5QrCode) return;
     const track = html5QrCode.getRunningTrack();
-    if (!track) return notify("Flash not ready", "red");
-    
-    const capabilities = track.getCapabilities();
-    if (!capabilities.torch) return notify("Device has no flash", "red");
+    if (!track || !track.getCapabilities().torch) return notify("No Flash Available", "red");
 
     isTorchOn = !isTorchOn;
     try {
-        await track.applyConstraints({
-            advanced: [{ torch: isTorchOn }]
-        });
+        await track.applyConstraints({ advanced: [{ torch: isTorchOn }] });
         document.getElementById("torch-btn").innerText = isTorchOn ? "🔦 Flashlight On" : "🔦 Flashlight Off";
         document.getElementById("torch-btn").style.background = isTorchOn ? "var(--green)" : "#444";
-    } catch (e) {
-        notify("Flash Error", "red");
-    }
+    } catch (e) { notify("Flash Error", "red"); }
 }
 
 async function stopScan() {
@@ -269,7 +239,7 @@ async function stopScan() {
             await html5QrCode.stop();
             isTorchOn = false;
             document.getElementById("torch-btn").innerText = "🔦 Flashlight Off";
-        } catch (e) { console.log(e); }
+        } catch (e) { }
     }
     document.getElementById("scanner-view").style.display = "none";
 }
