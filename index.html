@@ -77,7 +77,8 @@
       color: var(--muted);
     }
 
-    .field input {
+    .field input,
+    .field select {
       width: 100%;
       padding: 10px 11px;
       border-radius: 8px;
@@ -616,6 +617,17 @@
     .mt-8 { margin-top: 8px; }
     .mt-10 { margin-top: 10px; }
 
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .row > div {
+      flex: 1;
+      min-width: 120px;
+    }
   </style>
 </head>
 <body>
@@ -637,7 +649,7 @@
     <button class="btn-primary" id="login-btn">Login</button>
     <div class="login-footer">
       Default user: <strong>admin</strong><br />
-      Set your own password in the code (search for <code>Bazro9547</code>).
+      Set your own password in the code (search for <code>1234</code>).
     </div>
   </div>
 </div>
@@ -661,6 +673,7 @@
     <button class="tab-btn" data-screen="screen-categories">Categories</button>
     <button class="tab-btn" data-screen="screen-sales">Sales</button>
     <button class="tab-btn" data-screen="screen-reports">Reports</button>
+    <button class="tab-btn" data-screen="screen-eod">EOD</button>
     <button class="tab-btn" data-screen="screen-settings">Settings</button>
   </div>
 
@@ -679,7 +692,7 @@
         <div class="card">
           <div class="card-header">
             <h3>Products</h3>
-            <small>Tap to add to basket</small>
+            <small>Tap or scan to add</small>
           </div>
           <div id="pos-product-grid" class="product-grid"></div>
         </div>
@@ -687,7 +700,7 @@
         <div class="basket-card">
           <div class="basket-header">
             <span>Basket</span>
-            <button class="btn-small" id="open-scanner-btn">Scan</button>
+            <button class="btn-small" id="open-scanner-btn">Scan (manual)</button>
           </div>
           <div id="basket-items" class="basket-items"></div>
           <div class="basket-summary">
@@ -774,6 +787,7 @@
               <th>Items</th>
               <th>Total</th>
               <th>Payment</th>
+              <th>Invoice</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -786,9 +800,55 @@
       <div class="card">
         <div class="card-header">
           <h3>Today’s summary</h3>
-          <button class="btn-small" id="export-report-btn">Export (JSON)</button>
+          <button class="btn-small" id="export-report-btn">Export sales (JSON)</button>
         </div>
         <div id="reports-summary" style="font-size:13px;"></div>
+      </div>
+    </section>
+
+    <!-- EOD SCREEN -->
+    <section id="screen-eod" class="screen">
+      <div class="card">
+        <div class="card-header">
+          <h3>End of Day (EOD)</h3>
+          <small>Manual input, shareable JPEG</small>
+        </div>
+        <div style="font-size:13px;">
+          <div class="field">
+            <label>Date</label>
+            <input type="date" id="eod-date" />
+          </div>
+          <div class="row mt-6">
+            <div>
+              <label class="muted">Cash Sales (£)</label>
+              <input type="number" step="0.01" id="eod-cash" class="input-inline" />
+            </div>
+            <div>
+              <label class="muted">Card Sales (£)</label>
+              <input type="number" step="0.01" id="eod-card" class="input-inline" />
+            </div>
+            <div>
+              <label class="muted">Expenses (£)</label>
+              <input type="number" step="0.01" id="eod-expenses" class="input-inline" />
+            </div>
+            <div>
+              <label class="muted">Till Left (£)</label>
+              <input type="number" step="0.01" id="eod-till" class="input-inline" />
+            </div>
+          </div>
+
+          <div class="mt-8">
+            <strong>Summary row</strong>
+            <div class="row mt-4" id="eod-summary-row" style="font-size:13px;">
+              <!-- Filled by JS -->
+            </div>
+          </div>
+
+          <div class="mt-8">
+            <button class="btn-small" id="eod-generate-btn">Generate EOD JPEG</button>
+            <a id="eod-download-link" style="display:none; margin-left:8px; font-size:12px;" download="EOD-BAZRO.jpg">Download EOD JPEG</a>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -802,6 +862,12 @@
         <div style="font-size:13px;">
           <p><strong>Local data</strong></p>
           <button class="btn-small" id="reset-data-btn">Reset demo data</button>
+
+          <p class="mt-8"><strong>Export / Import full data</strong></p>
+          <button class="btn-small" id="export-data-btn">Export data (JSON)</button>
+          <button class="btn-small" id="import-data-btn">Import data (JSON)</button>
+          <input type="file" id="import-file-input" accept="application/json" style="display:none;" />
+
           <p class="mt-8"><strong>Sync endpoint</strong></p>
           <p class="muted">This demo is offline‑only, but the structure is ready for a single <code>/sync</code> endpoint.</p>
         </div>
@@ -826,6 +892,10 @@
       <span class="icon">📊</span>
       <span>Sales</span>
     </button>
+    <button data-screen="screen-eod">
+      <span class="icon">🧮</span>
+      <span>EOD</span>
+    </button>
     <button data-screen="screen-settings">
       <span class="icon">⚙️</span>
       <span>Settings</span>
@@ -847,17 +917,23 @@
 
 <script>
   /***********************
-   * SIMPLE DATA LAYER
+   * CONSTANTS
    ***********************/
   const STORAGE_KEY = "grocery_pos_data_v1";
   const SESSION_KEY = "grocery_pos_session_v1";
 
+  const STORE_NAME = "BAZRO";
+  const STORE_ADDRESS = "9a Commercial St, Camborne TR14 8AT";
+
   const DEFAULT_USER = {
     username: "admin",
     // IMPORTANT: replace this string with your real password on your machine
-    password: "Bazro9547"
+    password: "YOUR_PASSWORD_HERE"
   };
 
+  /***********************
+   * SIMPLE DATA LAYER
+   ***********************/
   const defaultData = () => ({
     categories: [
       { id: "cat-fruit", name: "Fruit", emoji: "🍎" },
@@ -875,7 +951,8 @@
       { id: "p7", name: "Chocolate Bar", emoji: "🍫", categoryId: "cat-snacks", barcode: "401", price: 0.8, stock: 90 },
       { id: "p8", name: "Crisps", emoji: "🍟", categoryId: "cat-snacks", barcode: "402", price: 1.0, stock: 70 }
     ],
-    sales: []
+    sales: [],
+    expenses: [] // reserved if you later want to track them automatically
   });
 
   function loadData() {
@@ -886,7 +963,9 @@
       return d;
     }
     try {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      if (!parsed.expenses) parsed.expenses = [];
+      return parsed;
     } catch {
       const d = defaultData();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
@@ -969,7 +1048,6 @@
     loginScreen.style.display = "flex";
   });
 
-  // Auto-login if session exists
   const existingSession = loadSession();
   if (existingSession && existingSession.username) {
     showAppForUser(existingSession.username);
@@ -1173,7 +1251,7 @@
   });
 
   /***********************
-   * PAYMENT & SALE
+   * PAYMENT & SALE + INVOICE
    ***********************/
   function openPaymentModal() {
     let subtotal = 0;
@@ -1207,7 +1285,7 @@
           const receivedInput = document.getElementById("payment-received").value;
           const received = receivedInput ? parseFloat(receivedInput) : total;
           const change = received - total;
-          recordSale(total, method);
+          const sale = recordSale(total, method);
           closeModal();
           basket = [];
           renderBasket();
@@ -1218,6 +1296,7 @@
           );
           renderSales();
           renderReports();
+          openInvoiceWindow(sale);
         }
       }
     ]);
@@ -1238,6 +1317,67 @@
     };
     data.sales.unshift(sale);
     saveData();
+    return sale;
+  }
+
+  function openInvoiceWindow(sale) {
+    const win = window.open("", "_blank", "width=400,height=600");
+    if (!win) return;
+    const date = new Date(sale.time);
+    let itemsHtml = "";
+    sale.items.forEach(i => {
+      const p = data.products.find(p => p.id === i.productId);
+      const name = p ? p.name : "Item";
+      const line = i.qty * i.price;
+      itemsHtml += `
+        <tr>
+          <td>${name}</td>
+          <td style="text-align:right;">${i.qty}</td>
+          <td style="text-align:right;">£${i.price.toFixed(2)}</td>
+          <td style="text-align:right;">£${line.toFixed(2)}</td>
+        </tr>
+      `;
+    });
+    win.document.write(`
+      <html>
+      <head>
+        <title>Invoice ${sale.id}</title>
+        <style>
+          body { font-family: system-ui, sans-serif; padding: 16px; }
+          h1 { font-size: 20px; margin: 0 0 4px 0; }
+          h2 { font-size: 14px; margin: 0 0 12px 0; }
+          table { width: 100%; border-collapse: collapse; font-size: 12px; }
+          th, td { padding: 4px 0; border-bottom: 1px solid #ddd; }
+          th { text-align: left; }
+        </style>
+      </head>
+      <body>
+        <h1>${STORE_NAME}</h1>
+        <h2>${STORE_ADDRESS}</h2>
+        <p>${date.toLocaleString()}</p>
+        <p><strong>Invoice ID:</strong> ${sale.id}</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th style="text-align:right;">Qty</th>
+              <th style="text-align:right;">Price</th>
+              <th style="text-align:right;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
+        <p style="margin-top:12px;"><strong>Total:</strong> £${sale.total.toFixed(2)}</p>
+        <p><strong>Payment:</strong> ${sale.method}</p>
+        <script>
+          window.print();
+        </script>
+      </body>
+      </html>
+    `);
+    win.document.close();
   }
 
   /***********************
@@ -1470,7 +1610,10 @@
         <td>${itemsCount}</td>
         <td>£${sale.total.toFixed(2)}</td>
         <td>${sale.method}</td>
+        <td><button class="btn-small">Invoice</button></td>
       `;
+      const btn = tr.querySelector("button");
+      btn.addEventListener("click", () => openInvoiceWindow(sale));
       salesTableBody.appendChild(tr);
     });
   }
@@ -1514,9 +1657,13 @@
   });
 
   /***********************
-   * SETTINGS
+   * SETTINGS: EXPORT / IMPORT
    ***********************/
   const resetDataBtn = document.getElementById("reset-data-btn");
+  const exportDataBtn = document.getElementById("export-data-btn");
+  const importDataBtn = document.getElementById("import-data-btn");
+  const importFileInput = document.getElementById("import-file-input");
+
   resetDataBtn.addEventListener("click", () => {
     if (!confirm("Reset to demo data? This will erase current products, categories and sales.")) return;
     data = defaultData();
@@ -1524,8 +1671,45 @@
     renderAll();
   });
 
+  exportDataBtn.addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "pos-data.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  importDataBtn.addEventListener("click", () => {
+    importFileInput.click();
+  });
+
+  importFileInput.addEventListener("change", e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const imported = JSON.parse(reader.result);
+        if (!imported.categories || !imported.products || !imported.sales) {
+          alert("Invalid data file.");
+          return;
+        }
+        data = imported;
+        if (!data.expenses) data.expenses = [];
+        saveData();
+        renderAll();
+        alert("Data imported successfully.");
+      } catch {
+        alert("Failed to parse JSON.");
+      }
+    };
+    reader.readAsText(file);
+  });
+
   /***********************
-   * SCANNER (simple)
+   * SCANNER (manual modal + automatic USB scanner)
    ***********************/
   const openScannerBtn = document.getElementById("open-scanner-btn");
 
@@ -1533,7 +1717,7 @@
     const body = `
       <div style="font-size:13px;">
         <p><strong>Barcode scanner</strong></p>
-        <p class="muted">This demo uses manual barcode entry. In a real setup, you’d connect a camera or USB scanner.</p>
+        <p class="muted">You can type or scan a barcode here.</p>
         <div class="field">
           <label>Barcode</label>
           <input id="scan-barcode" type="text" placeholder="Scan or type barcode" />
@@ -1561,6 +1745,146 @@
         }
       }
     ]);
+    setTimeout(() => {
+      const input = document.getElementById("scan-barcode");
+      if (input) input.focus();
+    }, 50);
+  });
+
+  // Automatic USB scanner support: capture fast key input and Enter
+  let scanBuffer = "";
+  let lastScanTime = 0;
+
+  document.addEventListener("keydown", e => {
+    const now = Date.now();
+    const diff = now - lastScanTime;
+    lastScanTime = now;
+
+    // Ignore if not on POS screen
+    const posScreen = document.getElementById("screen-pos");
+    if (!posScreen.classList.contains("active")) return;
+
+    if (e.key === "Enter") {
+      if (scanBuffer.length > 0) {
+        const code = scanBuffer;
+        scanBuffer = "";
+        const product = data.products.find(p => p.barcode === code);
+        if (product) {
+          addToBasket(product.id);
+        } else {
+          console.log("No product for barcode:", code);
+        }
+      }
+      return;
+    }
+
+    // If time between keys is small, treat as scanner; otherwise reset
+    if (diff > 1000) {
+      scanBuffer = "";
+    }
+    if (e.key.length === 1) {
+      scanBuffer += e.key;
+    }
+  });
+
+  /***********************
+   * EOD SCREEN
+   ***********************/
+  const eodDateInput = document.getElementById("eod-date");
+  const eodCashInput = document.getElementById("eod-cash");
+  const eodCardInput = document.getElementById("eod-card");
+  const eodExpensesInput = document.getElementById("eod-expenses");
+  const eodTillInput = document.getElementById("eod-till");
+  const eodSummaryRow = document.getElementById("eod-summary-row");
+  const eodGenerateBtn = document.getElementById("eod-generate-btn");
+  const eodDownloadLink = document.getElementById("eod-download-link");
+
+  // Default EOD date = today
+  (function initEodDate() {
+    const today = new Date().toISOString().slice(0, 10);
+    eodDateInput.value = today;
+  })();
+
+  function updateEodSummary() {
+    const cash = parseFloat(eodCashInput.value) || 0;
+    const card = parseFloat(eodCardInput.value) || 0;
+    const expenses = parseFloat(eodExpensesInput.value) || 0;
+    const till = parseFloat(eodTillInput.value) || 0;
+    const net = cash + card; // as requested: NET TOTAL = Cash + Card only
+
+    eodSummaryRow.innerHTML = `
+      <div><strong>Cash:</strong> £${cash.toFixed(2)}</div>
+      <div><strong>Card:</strong> £${card.toFixed(2)}</div>
+      <div><strong>Expenses:</strong> £${expenses.toFixed(2)}</div>
+      <div><strong>Till Left:</strong> £${till.toFixed(2)}</div>
+      <div><strong>NET TOTAL:</strong> £${net.toFixed(2)}</div>
+    `;
+  }
+
+  [eodCashInput, eodCardInput, eodExpensesInput, eodTillInput, eodDateInput].forEach(input => {
+    input.addEventListener("input", updateEodSummary);
+  });
+
+  updateEodSummary();
+
+  eodGenerateBtn.addEventListener("click", () => {
+    const cash = parseFloat(eodCashInput.value) || 0;
+    const card = parseFloat(eodCardInput.value) || 0;
+    const expenses = parseFloat(eodExpensesInput.value) || 0;
+    const till = parseFloat(eodTillInput.value) || 0;
+    const net = cash + card;
+    const dateStr = eodDateInput.value || new Date().toISOString().slice(0, 10);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 600;
+    canvas.height = 400;
+    const ctx = canvas.getContext("2d");
+
+    // Background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Header
+    ctx.fillStyle = "#e53935"; // red
+    ctx.font = "bold 28px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText(STORE_NAME, canvas.width / 2, 50);
+
+    ctx.fillStyle = "#000000";
+    ctx.font = "14px system-ui";
+    ctx.fillText(dateStr, canvas.width / 2, 80);
+    ctx.fillText(STORE_ADDRESS, canvas.width / 2, 100);
+
+    // Line
+    ctx.strokeStyle = "#cccccc";
+    ctx.beginPath();
+    ctx.moveTo(40, 120);
+    ctx.lineTo(canvas.width - 40, 120);
+    ctx.stroke();
+
+    // Row labels and values
+    ctx.textAlign = "left";
+    ctx.font = "16px system-ui";
+    const startY = 170;
+    const lineGap = 30;
+
+    ctx.fillText("Cash:", 60, startY);
+    ctx.fillText("Card:", 60, startY + lineGap);
+    ctx.fillText("Expenses:", 60, startY + lineGap * 2);
+    ctx.fillText("Till Left:", 60, startY + lineGap * 3);
+    ctx.fillText("NET TOTAL:", 60, startY + lineGap * 4);
+
+    ctx.textAlign = "right";
+    ctx.fillText("£" + cash.toFixed(2), canvas.width - 60, startY);
+    ctx.fillText("£" + card.toFixed(2), canvas.width - 60, startY + lineGap);
+    ctx.fillText("£" + expenses.toFixed(2), canvas.width - 60, startY + lineGap * 2);
+    ctx.fillText("£" + till.toFixed(2), canvas.width - 60, startY + lineGap * 3);
+    ctx.fillText("£" + net.toFixed(2), canvas.width - 60, startY + lineGap * 4);
+
+    const dataUrl = canvas.toDataURL("image/jpeg");
+    eodDownloadLink.href = dataUrl;
+    eodDownloadLink.style.display = "inline";
+    alert("EOD image generated. Click 'Download EOD JPEG' to save.");
   });
 
   /***********************
@@ -1574,13 +1898,12 @@
     renderCategoriesTable();
     renderSales();
     renderReports();
+    updateEodSummary();
   }
 
   if (!existingSession) {
-    // when not auto-logged in, still prepare UI so it's ready after login
     renderAll();
   }
 </script>
 </body>
 </html>
-
