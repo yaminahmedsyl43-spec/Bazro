@@ -1,330 +1,557 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bazro POS - Inventory & Scanner</title>
-    
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Bazro POS</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap');
 
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap');
+:root {
+  --bg:#0a0a0f; --surface:#111118; --surface2:#1a1a24; --border:#2a2a3a;
+  --accent:#00e5a0; --accent2:#7c5cfc; --text:#e8e8f0; --text2:#8888aa;
+  --danger:#ff4444; --warning:#ffb020; --radius:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+#app{display:flex;height:100vh;overflow:hidden}
 
-        :root {
-            --bg: #0a0a0f;
-            --surface: #111118;
-            --surface2: #1a1a24;
-            --border: #2a2a3a;
-            --accent: #00e5a0;
-            --accent2: #7c5cfc;
-            --text: #e8e8f0;
-            --text2: #8888aa;
-            --danger: #ff4444;
-            --success: #00e5a0;
-            --warning: #ffb020;
-            --radius: 12px;
-        }
+/* ── SIDEBAR ── */
+#sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.logo{padding:22px 20px 18px;border-bottom:1px solid var(--border)}
+.logo h1{font-size:26px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-1px}
+.logo span{font-family:'Space Mono',monospace;font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:2px}
+nav{flex:1;padding:10px 0}
+.nav-btn{width:100%;background:none;border:none;color:var(--text2);font-family:'Syne',sans-serif;font-size:14px;font-weight:600;padding:12px 20px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .2s;border-left:3px solid transparent}
+.nav-btn:hover{color:var(--text);background:var(--surface2)}
+.nav-btn.active{color:var(--accent);background:rgba(0,229,160,.08);border-left-color:var(--accent)}
+.nav-btn .icon{font-size:18px;width:20px;text-align:center}
+.sidebar-footer{padding:14px 20px;border-top:1px solid var(--border);font-family:'Space Mono',monospace;font-size:10px;color:var(--text2)}
+#clock{font-size:18px;color:var(--text);font-weight:700;margin-bottom:3px}
 
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+/* ── MAIN ── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.page{display:none;flex:1;overflow:hidden}
+.page.active{display:flex}
 
-        body {
-            font-family: 'Syne', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            height: 100vh;
-            overflow: hidden;
-        }
+/* ══ CHECKOUT ══ */
+#page-checkout{flex-direction:row}
+#products-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border)}
+.panel-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--surface)}
+.search-box{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;color:var(--text);font-family:'Syne',sans-serif;font-size:14px;outline:none;transition:border-color .2s}
+.search-box:focus{border-color:var(--accent)}
+.search-box::placeholder{color:var(--text2)}
+.btn-scan{background:var(--accent2);border:none;border-radius:var(--radius);padding:10px 14px;color:#fff;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;white-space:nowrap}
+.btn-scan:hover{background:#9a7aff;transform:translateY(-1px)}
+.categories{display:flex;gap:8px;padding:10px 18px;border-bottom:1px solid var(--border);background:var(--surface);overflow-x:auto;flex-shrink:0}
+.cat-btn{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 13px;color:var(--text2);font-family:'Syne',sans-serif;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .2s}
+.cat-btn.active,.cat-btn:hover{background:var(--accent);color:#000;border-color:var(--accent)}
+#product-grid{flex:1;overflow-y:auto;padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:11px;align-content:start}
+.product-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;gap:7px;position:relative}
+.product-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,229,160,.1)}
+.product-card.low-stock{border-color:var(--warning)}
+.product-card.out-stock{opacity:.5;pointer-events:none}
+.product-emoji{font-size:26px}
+.product-name{font-size:12px;font-weight:700;line-height:1.3}
+.product-sku{font-family:'Space Mono',monospace;font-size:10px;color:var(--text2)}
+.product-price{font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--accent)}
+.product-stock{font-family:'Space Mono',monospace;font-size:10px;padding:2px 6px;border-radius:4px;display:inline-block}
+.stock-ok{background:rgba(0,229,160,.1);color:var(--accent)}
+.stock-low{background:rgba(255,176,32,.1);color:var(--warning)}
+.stock-out{background:rgba(255,68,68,.1);color:var(--danger)}
 
-        /* ─── LAYOUT ─────────────────────────────────────── */
-        #app { display: flex; height: 100vh; overflow: hidden; }
+/* ── BASKET ── */
+#basket-panel{width:330px;display:flex;flex-direction:column;background:var(--surface);flex-shrink:0}
+#basket-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+#basket-header h2{font-size:17px;font-weight:800}
+.badge{background:var(--accent);color:#000;font-size:11px;font-weight:700;border-radius:20px;padding:2px 8px}
+#basket-items{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:7px}
+.basket-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px;display:flex;align-items:center;gap:9px;animation:slideIn .2s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
+.basket-item-info{flex:1;min-width:0}
+.basket-item-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.basket-item-price{font-family:'Space Mono',monospace;font-size:11px;color:var(--text2)}
+.qty-control{display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2px}
+.qty-btn{background:none;border:none;color:var(--text);font-size:15px;width:22px;height:22px;cursor:pointer;border-radius:5px;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.qty-btn:hover{background:var(--border)}
+.qty-num{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;min-width:18px;text-align:center}
+.basket-item-total{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:var(--accent);min-width:48px;text-align:right}
+.del-btn{background:none;border:none;color:var(--text2);cursor:pointer;font-size:15px;transition:color .15s;padding:3px}
+.del-btn:hover{color:var(--danger)}
+#basket-footer{padding:14px 18px;border-top:1px solid var(--border)}
+.totals{margin-bottom:12px;display:flex;flex-direction:column;gap:5px}
+.total-row{display:flex;justify-content:space-between;font-size:13px;color:var(--text2)}
+.total-row.grand{font-size:20px;font-weight:800;color:var(--text);font-family:'Space Mono',monospace}
+.total-row.grand span:last-child{color:var(--accent)}
+.discount-row{display:flex;gap:8px;margin-bottom:10px;align-items:center}
+.discount-row input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-family:'Space Mono',monospace;font-size:12px;outline:none}
+.discount-row input:focus{border-color:var(--accent2)}
+.btn{width:100%;padding:13px;border:none;border-radius:var(--radius);font-family:'Syne',sans-serif;font-weight:800;font-size:15px;cursor:pointer;transition:all .2s;letter-spacing:.5px}
+.btn-primary{background:var(--accent);color:#000}
+.btn-primary:hover{background:#00ffb3;transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,229,160,.3)}
+.btn-danger{background:var(--danger);color:#fff;font-size:13px;padding:9px;margin-top:7px}
+.btn-danger:hover{background:#ff6666}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:13px;padding:9px}
+.btn-secondary:hover{border-color:var(--accent2);color:var(--accent2)}
 
-        #sidebar {
-            width: 220px;
-            background: var(--surface);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-        }
+/* ══ INVENTORY ══ */
+#page-inventory{flex-direction:column}
+.page-toolbar{padding:14px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--surface);flex-shrink:0;flex-wrap:wrap}
+.page-toolbar h2{font-size:19px;font-weight:800}
+.toolbar-spacer{flex:1}
+.btn-sm{background:var(--accent2);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.btn-sm:hover{opacity:.9}
+.btn-sm.secondary{background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+.btn-sm.secondary:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm.danger{background:var(--danger)}
+.btn-sm.green{background:var(--accent);color:#000}
+.btn-sm.green:hover{background:#00ffb3}
+#inventory-table-wrap{flex:1;overflow:auto;padding:14px 22px}
+table{width:100%;border-collapse:collapse}
+th{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text2);padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:1}
+td{padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;vertical-align:middle}
+tr:hover td{background:var(--surface2)}
+.stock-pill{font-family:'Space Mono',monospace;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:700}
 
-        .logo { padding: 24px 20px; border-bottom: 1px solid var(--border); }
-        .logo h1 {
-            font-size: 28px; font-weight: 800;
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
+/* ── STOCK UPDATE QUICK ROW ── */
+.stock-adj{display:flex;align-items:center;gap:5px}
+.stock-adj input{width:58px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 7px;color:var(--text);font-family:'Space Mono',monospace;font-size:12px;outline:none;text-align:center}
+.stock-adj input:focus{border-color:var(--accent)}
+.sadj-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text2);cursor:pointer;font-size:13px;transition:all .15s}
+.sadj-btn:hover{border-color:var(--accent);color:var(--accent)}
 
-        nav { flex: 1; padding: 12px 0; }
-        .nav-btn {
-            width: 100%; background: none; border: none; color: var(--text2);
-            font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 600;
-            padding: 12px 20px; text-align: left; cursor: pointer;
-            display: flex; align-items: center; gap: 12px; border-left: 3px solid transparent;
-        }
-        .nav-btn.active { color: var(--accent); background: rgba(0,229,160,0.08); border-left-color: var(--accent); }
+/* ══ HISTORY ══ */
+#page-history{flex-direction:column}
+#history-list{flex:1;overflow-y:auto;padding:14px 22px;display:flex;flex-direction:column;gap:9px}
+.sale-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;cursor:pointer;transition:all .2s;display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:14px}
+.sale-card:hover{border-color:var(--accent2)}
+.sale-id{font-family:'Space Mono',monospace;font-size:11px;color:var(--text2)}
+.sale-info h3{font-size:14px;font-weight:700}
+.sale-info p{font-size:12px;color:var(--text2)}
+.sale-amount{font-family:'Space Mono',monospace;font-size:17px;font-weight:700;color:var(--accent)}
+.pay-badge{font-family:'Space Mono',monospace;font-size:10px;padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
 
-        /* ─── MAIN CONTENT ───────────────────────────────── */
-        #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .page { display: none; flex: 1; overflow: hidden; }
-        .page.active { display: flex; }
+/* ══ REPORTS ══ */
+#page-reports{flex-direction:column}
+#reports-content{flex:1;overflow-y:auto;padding:22px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:22px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px}
+.stat-card .label{font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:7px}
+.stat-card .value{font-family:'Space Mono',monospace;font-size:26px;font-weight:700;color:var(--accent)}
+.stat-card .sub{font-size:12px;color:var(--text2);margin-top:4px}
 
-        /* Checkout Page */
-        #products-panel { flex: 1; display: flex; flex-direction: column; border-right: 1px solid var(--border); }
-        .panel-header { padding: 16px; border-bottom: 1px solid var(--border); display: flex; gap: 12px; background: var(--surface); }
-        .search-box { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 16px; color: var(--text); outline: none; }
-        
-        .btn-scan { background: var(--accent2); border: none; border-radius: var(--radius); padding: 10px 16px; color: white; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+/* ══ SETTINGS ══ */
+#page-settings{flex-direction:column}
+#settings-content{flex:1;overflow-y:auto;padding:22px;display:flex;flex-direction:column;gap:18px}
+.settings-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px}
+.settings-section h3{font-size:15px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.form-row{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.form-row label{font-size:12px;color:var(--text2);font-weight:600}
+.form-row input,.form-row select{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 13px;color:var(--text);font-family:'Syne',sans-serif;font-size:14px;outline:none}
+.form-row input:focus,.form-row select:focus{border-color:var(--accent)}
 
-        #product-grid { flex: 1; overflow-y: auto; padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
-        .product-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; transition: 0.2s; }
-        .product-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+/* ══ SCANNER MODAL ══ */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(5px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px;width:92%;max-width:460px;max-height:92vh;overflow-y:auto;animation:scaleIn .2s ease}
+@keyframes scaleIn{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+.modal h2{font-size:20px;font-weight:800;margin-bottom:18px}
+.modal-close{float:right;background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer}
+.modal-close:hover{color:var(--text)}
 
-        #basket-panel { width: 340px; background: var(--surface); display: flex; flex-direction: column; }
-        #basket-items { flex: 1; overflow-y: auto; padding: 12px; }
-        #basket-footer { padding: 16px; border-top: 1px solid var(--border); }
+/* CAMERA */
+#video-wrap{position:relative;border-radius:12px;overflow:hidden;background:#000;margin-bottom:14px;aspect-ratio:4/3}
+#scanner-video{width:100%;display:block;object-fit:cover}
+.scan-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.scan-frame{width:220px;height:130px;border:2px solid var(--accent);border-radius:8px;box-shadow:0 0 0 999px rgba(0,0,0,.45);position:relative}
+.scan-line{position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);box-shadow:0 0 10px var(--accent);animation:scanAnim 2s ease-in-out infinite}
+@keyframes scanAnim{0%,100%{top:0}50%{top:calc(100% - 2px)}}
+.scanner-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.ctl-btn{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px;color:var(--text);font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px}
+.ctl-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+.ctl-btn.torch-on{background:rgba(255,176,32,.12);border-color:var(--warning);color:var(--warning)}
+.ctl-btn.torch-on:hover{background:rgba(255,176,32,.22)}
+#scanner-status{font-family:'Space Mono',monospace;font-size:12px;color:var(--text2);text-align:center;padding:8px;min-height:34px;border-radius:8px;background:var(--surface2);margin-bottom:8px}
+.manual-barcode-row{display:flex;gap:8px;margin-top:8px}
+.manual-barcode-row input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 13px;color:var(--text);font-family:'Space Mono',monospace;font-size:13px;outline:none}
+.manual-barcode-row input:focus{border-color:var(--accent)}
+.manual-barcode-row button{background:var(--accent);border:none;border-radius:8px;padding:9px 14px;color:#000;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer}
 
-        /* ─── MODALS ─────────────────────────────────────── */
-        .modal-overlay {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8);
-            z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px);
-        }
-        .modal-overlay.open { display: flex; }
-        .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; width: 90%; max-width: 480px; }
-        
-        /* Scanner Specific */
-        #reader { width: 100% !important; border: none !important; border-radius: 12px; overflow: hidden; }
-        #reader__dashboard_section_csr_button { background: var(--accent) !important; color: black !important; font-weight: bold !important; border-radius: 8px !important; }
+/* FOUND ITEM PANEL inside scanner */
+#scan-found{background:rgba(0,229,160,.07);border:1px solid rgba(0,229,160,.25);border-radius:12px;padding:14px;margin-top:10px;display:none}
+#scan-found h3{font-size:15px;font-weight:800;margin-bottom:10px;color:var(--accent)}
+.scan-found-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.sfg-item label{font-size:11px;color:var(--text2);font-weight:600;display:block;margin-bottom:3px}
+.sfg-item input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text);font-family:'Space Mono',monospace;font-size:13px;outline:none}
+.sfg-item input:focus{border-color:var(--accent)}
+.sfg-item.full{grid-column:1/-1}
+.scan-found-actions{display:flex;gap:8px}
+.scan-found-actions button{flex:1;padding:10px;border:none;border-radius:9px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:all .2s}
+.sfa-save{background:var(--accent);color:#000}
+.sfa-save:hover{background:#00ffb3}
+.sfa-cancel{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.sfa-cancel:hover{border-color:var(--danger);color:var(--danger)}
 
-        /* Numpad Styling */
-        .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
-        .numpad-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 15px; color: var(--text); font-family: 'Space Mono', monospace; font-size: 20px; font-weight: 700; cursor: pointer; }
-        .numpad-btn:active { background: var(--accent2); }
+/* PAYMENT MODAL */
+.payment-methods{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.pay-method{background:var(--surface2);border:2px solid var(--border);border-radius:10px;padding:13px 8px;text-align:center;cursor:pointer;transition:all .2s;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--text2)}
+.pay-method .pay-icon{font-size:22px;display:block;margin-bottom:5px}
+.pay-method:hover,.pay-method.selected{border-color:var(--accent);color:var(--accent);background:rgba(0,229,160,.05)}
+.amount-due{font-family:'Space Mono',monospace;text-align:center;margin-bottom:18px}
+.amount-due .label{font-size:12px;color:var(--text2);margin-bottom:4px}
+.amount-due .amount{font-size:34px;font-weight:700;color:var(--accent)}
+.cash-input label{font-size:12px;color:var(--text2);display:block;margin-bottom:6px;font-weight:600}
+.cash-input input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'Space Mono',monospace;font-size:20px;text-align:center;outline:none}
+.cash-input input:focus{border-color:var(--accent)}
+.change-display{background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);border-radius:10px;padding:11px;text-align:center;margin:12px 0}
+.change-display .label{font-size:11px;color:var(--text2)}
+.change-display .amount{font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:var(--accent)}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}
+.numpad-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px;color:var(--text);font-family:'Space Mono',monospace;font-size:16px;font-weight:700;cursor:pointer;transition:all .15s}
+.numpad-btn:hover{background:var(--border)}
+.numpad-btn.del{color:var(--danger)}
+.numpad-btn.ok{background:var(--accent);color:#000;border-color:var(--accent)}
 
-        .btn-primary { width: 100%; padding: 14px; background: var(--accent); color: #000; border: none; border-radius: var(--radius); font-weight: 800; cursor: pointer; margin-top: 10px; }
+/* RECEIPT */
+#receipt-content{background:#fff;color:#000;padding:22px;border-radius:10px;font-family:'Space Mono',monospace;font-size:12px;margin-bottom:14px;max-height:380px;overflow-y:auto}
+.receipt-header{text-align:center;margin-bottom:14px}
+.receipt-header h2{font-size:20px;font-weight:700}
+.receipt-divider{border:none;border-top:1px dashed #999;margin:9px 0}
+.receipt-row{display:flex;justify-content:space-between;gap:8px}
+.receipt-total{font-size:14px;font-weight:700}
+#qr-receipt{display:flex;justify-content:center;margin:10px 0}
 
-        /* Responsive Mobile Fixes */
-        @media (max-width: 768px) {
-            #sidebar { width: 70px; }
-            .logo h1, .nav-btn span:last-child { display: none; }
-            #basket-panel { display: none; } /* On mobile, basket is usually a separate view or modal */
-        }
-    </style>
+/* ITEM MODAL */
+.item-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.item-form-grid .full{grid-column:1/-1}
+
+/* TOAST */
+#toast-container{position:fixed;bottom:22px;right:22px;z-index:999;display:flex;flex-direction:column;gap:7px}
+.toast{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 16px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:9px;animation:slideUp .3s ease;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.toast.success{border-color:var(--accent)}
+.toast.error{border-color:var(--danger)}
+.toast.warning{border-color:var(--warning)}
+
+/* EMPTY */
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text2);gap:10px;padding:36px;text-align:center}
+.empty-state .icon{font-size:44px}
+.empty-state p{font-size:15px;font-weight:600}
+.empty-state span{font-size:13px}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* SCAN MODE BADGE on inventory toolbar */
+.scan-mode-badge{background:rgba(0,229,160,.12);border:1px solid rgba(0,229,160,.3);border-radius:8px;padding:6px 12px;font-family:'Space Mono',monospace;font-size:11px;color:var(--accent);display:flex;align-items:center;gap:6px}
+.scan-pulse{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+
+@media(max-width:768px){
+  #sidebar{width:58px}
+  .logo span,nav .nav-btn span{display:none}
+  .nav-btn{justify-content:center;padding:13px}
+  #basket-panel{width:260px}
+  .item-form-grid{grid-template-columns:1fr}
+  .item-form-grid .full{grid-column:1}
+}
+</style>
 </head>
 <body>
-
 <div id="app">
-    <aside id="sidebar">
-        <div class="logo"><h1>Bazro</h1></div>
-        <nav>
-            <button class="nav-btn active" onclick="showPage('checkout')">🛒 <span>Checkout</span></button>
-            <button class="nav-btn" onclick="showPage('inventory')">📦 <span>Inventory</span></button>
-            <button class="nav-btn" onclick="showPage('settings')">⚙️ <span>Settings</span></button>
-        </nav>
+
+<!-- ══ SIDEBAR ══ -->
+<aside id="sidebar">
+  <div class="logo">
+    <h1>Bazro</h1>
+    <span>Point of Sale</span>
+  </div>
+  <nav>
+    <button class="nav-btn active" onclick="showPage('checkout')"><span class="icon">🛒</span><span>Checkout</span></button>
+    <button class="nav-btn" onclick="showPage('inventory')"><span class="icon">📦</span><span>Inventory</span></button>
+    <button class="nav-btn" onclick="showPage('history')"><span class="icon">📋</span><span>Sales History</span></button>
+    <button class="nav-btn" onclick="showPage('reports')"><span class="icon">📊</span><span>Reports</span></button>
+    <button class="nav-btn" onclick="showPage('settings')"><span class="icon">⚙️</span><span>Settings</span></button>
+  </nav>
+  <div class="sidebar-footer">
+    <div id="clock">--:--</div>
+    <div id="today-date"></div>
+  </div>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<main id="main">
+
+  <!-- ── CHECKOUT ── -->
+  <section id="page-checkout" class="page active">
+    <div id="products-panel">
+      <div class="panel-header">
+        <input class="search-box" id="search-input" placeholder="🔍  Search or type barcode…" oninput="filterProducts()">
+        <button class="btn-scan" onclick="openScanner('checkout')">📷 Scan</button>
+      </div>
+      <div class="categories" id="categories"></div>
+      <div id="product-grid"></div>
+    </div>
+    <aside id="basket-panel">
+      <div id="basket-header">
+        <h2>🛒 Basket</h2>
+        <span class="badge" id="basket-count">0</span>
+      </div>
+      <div id="basket-items"></div>
+      <div id="basket-footer">
+        <div class="discount-row">
+          <input type="number" id="discount-input" placeholder="Discount %" min="0" max="100" oninput="renderBasket()">
+          <button class="btn-sm secondary" onclick="document.getElementById('discount-input').value='';renderBasket()">✕</button>
+        </div>
+        <div class="totals">
+          <div class="total-row"><span>Subtotal</span><span id="t-subtotal">£0.00</span></div>
+          <div class="total-row" id="t-discount-row" style="color:var(--warning);display:none"><span>Discount</span><span id="t-discount">-£0.00</span></div>
+          <div class="total-row"><span>Tax (<span id="t-taxlabel">20</span>%)</span><span id="t-tax">£0.00</span></div>
+          <div class="total-row grand"><span>Total</span><span id="t-total">£0.00</span></div>
+        </div>
+        <button class="btn btn-primary" onclick="openPayment()">Pay Now</button>
+        <button class="btn btn-danger" onclick="clearBasket()">🗑 Clear Basket</button>
+      </div>
     </aside>
+  </section>
 
-    <main id="main">
-        <section id="page-checkout" class="page active">
-            <div id="products-panel">
-                <div class="panel-header">
-                    <input class="search-box" id="search-input" placeholder="Search products..." oninput="renderProducts()">
-                    <button class="btn-scan" onclick="openScanner('checkout')">📷 Scan</button>
-                </div>
-                <div id="product-grid"></div>
-            </div>
-            <aside id="basket-panel">
-                <div style="padding:16px; border-bottom:1px solid var(--border)"><h2>Basket</h2></div>
-                <div id="basket-items"></div>
-                <div id="basket-footer">
-                    <div style="display:flex; justify-content:space-between; font-size: 20px; font-weight:800; margin-bottom:10px;">
-                        <span>Total</span><span id="basket-total">£0.00</span>
-                    </div>
-                    <button class="btn-primary" onclick="openPayment()">Pay Now</button>
-                </div>
-            </aside>
-        </section>
+  <!-- ── INVENTORY ── -->
+  <section id="page-inventory" class="page">
+    <div class="page-toolbar">
+      <h2>📦 Inventory</h2>
+      <input class="search-box" id="inv-search" placeholder="Search products…" style="max-width:240px" oninput="renderInventory()">
+      <div id="inv-scan-badge" style="display:none" class="scan-mode-badge"><span class="scan-pulse"></span> Scanner Active</div>
+      <div class="toolbar-spacer"></div>
+      <button class="btn-sm green" onclick="openScanner('inventory')" title="Scan barcode to find or add product">📷 Scan Stock</button>
+      <button class="btn-sm secondary" onclick="exportData()">⬇ Export</button>
+      <label class="btn-sm secondary" style="cursor:pointer">⬆ Import<input type="file" accept=".json" style="display:none" onchange="importData(event)"></label>
+      <button class="btn-sm" onclick="openItemModal()">+ Add Item</button>
+    </div>
+    <div id="inventory-table-wrap">
+      <table id="inventory-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Barcode / SKU</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Cost</th>
+            <th>Stock</th>
+            <th>Adjust Stock</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="inv-body"></tbody>
+      </table>
+    </div>
+  </section>
 
-        <section id="page-inventory" class="page">
-            <div class="panel-header" style="width:100%">
-                <h2>Inventory</h2>
-                <button class="btn-scan" onclick="openScanner('inventory')">📷 Find Item</button>
-                <button class="btn-scan" style="background:var(--accent)" onclick="openItemModal()">+ Add Item</button>
-            </div>
-            <div style="padding:20px; overflow-y:auto; width:100%">
-                <table style="width:100%; border-collapse: collapse;">
-                    <thead style="text-align:left; color:var(--text2); font-size:12px;">
-                        <tr><th>ITEM</th><th>SKU</th><th>STOCK</th><th>PRICE</th></tr>
-                    </thead>
-                    <tbody id="inventory-list"></tbody>
-                </table>
-            </div>
-        </section>
-    </main>
+  <!-- ── HISTORY ── -->
+  <section id="page-history" class="page">
+    <div class="page-toolbar">
+      <h2>📋 Sales History</h2>
+      <input class="search-box" id="hist-search" placeholder="Search by ID or amount…" style="max-width:240px" oninput="renderHistory()">
+      <div class="toolbar-spacer"></div>
+      <select id="hist-filter" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'Syne',sans-serif;outline:none" onchange="renderHistory()">
+        <option value="all">All Time</option>
+        <option value="today">Today</option>
+        <option value="week">This Week</option>
+        <option value="month">This Month</option>
+      </select>
+    </div>
+    <div id="history-list"></div>
+  </section>
+
+  <!-- ── REPORTS ── -->
+  <section id="page-reports" class="page">
+    <div class="page-toolbar">
+      <h2>📊 End-of-Day Report</h2>
+      <div class="toolbar-spacer"></div>
+      <button class="btn-sm" onclick="exportReport()">⬇ Export PDF</button>
+    </div>
+    <div id="reports-content"></div>
+  </section>
+
+  <!-- ── SETTINGS ── -->
+  <section id="page-settings" class="page">
+    <div class="page-toolbar">
+      <h2>⚙️ Settings</h2>
+      <div class="toolbar-spacer"></div>
+      <button class="btn-sm" onclick="saveSettings()">💾 Save</button>
+    </div>
+    <div id="settings-content">
+      <div class="settings-section">
+        <h3>🏪 Store Information</h3>
+        <div class="form-row"><label>Store Name</label><input id="s-name" placeholder="Bazro Store"></div>
+        <div class="form-row"><label>Address</label><input id="s-address" placeholder="123 High Street, London"></div>
+        <div class="form-row"><label>Phone</label><input id="s-phone" placeholder="+44 20 1234 5678"></div>
+        <div class="form-row"><label>Email</label><input id="s-email" placeholder="hello@bazro.com"></div>
+        <div class="form-row"><label>VAT Number</label><input id="s-vat" placeholder="GB123456789"></div>
+        <div class="form-row"><label>Receipt Footer</label><input id="s-footer" placeholder="Thank you for shopping with us!"></div>
+      </div>
+      <div class="settings-section">
+        <h3>💱 Localisation</h3>
+        <div class="form-row"><label>Currency Symbol</label><input id="s-currency" placeholder="£" style="max-width:90px"></div>
+        <div class="form-row"><label>Tax Rate (%)</label><input id="s-tax" type="number" placeholder="20" style="max-width:110px"></div>
+      </div>
+      <div class="settings-section">
+        <h3>🗄 Database</h3>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn-sm" onclick="exportData()">⬇ Export Backup (JSON)</button>
+          <label class="btn-sm" style="cursor:pointer">⬆ Import Backup<input type="file" accept=".json" style="display:none" onchange="importData(event)"></label>
+          <button class="btn-sm danger" onclick="clearAllData()">⚠ Reset All Data</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
 </div>
 
+<!-- ══════════════════════════════════════════════
+     UNIFIED SCANNER MODAL (Checkout + Inventory)
+═══════════════════════════════════════════════ -->
 <div class="modal-overlay" id="scanner-modal">
-    <div class="modal">
-        <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-            <h3>Barcode Scanner</h3>
-            <button onclick="closeScanner()" style="background:none; border:none; color:var(--text2); font-size:20px; cursor:pointer;">✕</button>
-        </div>
-        <div id="reader"></div>
-        <p style="text-align:center; margin-top:15px; color:var(--text2);">Place barcode inside the area</p>
+  <div class="modal" style="max-width:480px">
+    <button class="modal-close" onclick="closeScanner()">✕</button>
+    <h2 id="scanner-title">📷 Barcode Scanner</h2>
+
+    <div id="video-wrap">
+      <video id="scanner-video" autoplay playsinline muted></video>
+      <div class="scan-overlay">
+        <div class="scan-frame"><div class="scan-line"></div></div>
+      </div>
     </div>
+
+    <div id="scanner-status">Point camera at a barcode…</div>
+
+    <div class="scanner-controls">
+      <button class="ctl-btn" id="torch-btn" onclick="toggleTorch()">🔦 Flashlight</button>
+      <button class="ctl-btn" onclick="cycleCamera()">🔄 Flip Camera</button>
+    </div>
+
+    <div class="manual-barcode-row">
+      <input id="manual-bc-input" placeholder="Or type barcode manually…" onkeydown="if(event.key==='Enter') handleManualBarcode()">
+      <button onclick="handleManualBarcode()">Go</button>
+    </div>
+
+    <!-- Found / New product panel (inventory mode) -->
+    <div id="scan-found">
+      <h3 id="scan-found-title">✅ Product Found</h3>
+      <div class="scan-found-grid">
+        <div class="sfg-item full"><label>Product Name</label><input id="sf-name" placeholder="e.g. Organic Milk 1L"></div>
+        <div class="sfg-item"><label>Price (£)</label><input id="sf-price" type="number" step="0.01" placeholder="0.00"></div>
+        <div class="sfg-item"><label>Cost Price (£)</label><input id="sf-cost" type="number" step="0.01" placeholder="0.00"></div>
+        <div class="sfg-item"><label>Stock Qty</label><input id="sf-stock" type="number" placeholder="0"></div>
+        <div class="sfg-item"><label>Low Stock Alert</label><input id="sf-lowstock" type="number" placeholder="5"></div>
+        <div class="sfg-item"><label>Category</label><input id="sf-category" placeholder="e.g. Dairy"></div>
+        <div class="sfg-item"><label>Emoji Icon</label><input id="sf-emoji" placeholder="🥛" maxlength="4"></div>
+      </div>
+      <div class="scan-found-actions">
+        <button class="sfa-save" onclick="saveScanProduct()">💾 Save to Inventory</button>
+        <button class="sfa-cancel" onclick="dismissScanFound()">Cancel</button>
+      </div>
+    </div>
+  </div>
 </div>
 
+<!-- ══ PAYMENT MODAL ══ -->
 <div class="modal-overlay" id="payment-modal">
-    <div class="modal">
-        <h3>Cash Payment</h3>
-        <h1 id="pay-amount-display" style="text-align:center; color:var(--accent); font-size:40px; margin:20px 0;">£0.00</h1>
-        <input type="number" id="cash-tendered" placeholder="0.00" style="width:100%; background:var(--surface2); border:1px solid var(--border); padding:15px; color:white; font-size:24px; text-align:center; border-radius:8px;">
-        
-        <div class="numpad">
-            <button class="numpad-btn" onclick="appendNum('7')">7</button><button class="numpad-btn" onclick="appendNum('8')">8</button><button class="numpad-btn" onclick="appendNum('9')">9</button>
-            <button class="numpad-btn" onclick="appendNum('4')">4</button><button class="numpad-btn" onclick="appendNum('5')">5</button><button class="numpad-btn" onclick="appendNum('6')">6</button>
-            <button class="numpad-btn" onclick="appendNum('1')">1</button><button class="numpad-btn" onclick="appendNum('2')">2</button><button class="numpad-btn" onclick="appendNum('3')">3</button>
-            <button class="numpad-btn" onclick="appendNum('0')">0</button><button class="numpad-btn" onclick="appendNum('.')">.</button><button class="numpad-btn" style="color:var(--danger)" onclick="document.getElementById('cash-tendered').value=''">C</button>
-        </div>
-        <button class="btn-primary" onclick="completeSale()">Confirm Transaction</button>
-        <button class="btn-primary" style="background:var(--surface2); color:white;" onclick="closePayment()">Cancel</button>
+  <div class="modal">
+    <button class="modal-close" onclick="closePayment()">✕</button>
+    <h2>💳 Payment</h2>
+    <div class="amount-due"><div class="label">Amount Due</div><div class="amount" id="pay-amount">£0.00</div></div>
+    <div class="payment-methods">
+      <div class="pay-method selected" onclick="selectPayment(this,'cash')"><span class="pay-icon">💵</span>Cash</div>
+      <div class="pay-method" onclick="selectPayment(this,'card')"><span class="pay-icon">💳</span>Card</div>
+      <div class="pay-method" onclick="selectPayment(this,'contactless')"><span class="pay-icon">📱</span>Contactless</div>
     </div>
+    <div class="cash-input" id="cash-section">
+      <label>Cash Tendered</label>
+      <input type="number" id="cash-tendered" placeholder="0.00" oninput="calcChange()">
+      <div class="numpad">
+        <button class="numpad-btn" onclick="numpad('5')">£5</button>
+        <button class="numpad-btn" onclick="numpad('10')">£10</button>
+        <button class="numpad-btn" onclick="numpad('20')">£20</button>
+        <button class="numpad-btn" onclick="numpad('50')">£50</button>
+        <button class="numpad-btn ok" onclick="numpad('exact')">Exact</button>
+        <button class="numpad-btn del" onclick="numpad('del')">⌫</button>
+      </div>
+    </div>
+    <div class="change-display" id="change-section" style="display:none">
+      <div class="label">Change to give</div>
+      <div class="amount" id="change-amount">£0.00</div>
+    </div>
+    <button class="btn btn-primary" onclick="completeSale()" style="margin-top:14px">✓ Complete Sale</button>
+  </div>
 </div>
 
+<!-- ══ RECEIPT MODAL ══ -->
+<div class="modal-overlay" id="receipt-modal">
+  <div class="modal" style="max-width:500px">
+    <button class="modal-close" onclick="closeReceipt()">✕</button>
+    <h2>🧾 Receipt</h2>
+    <div id="receipt-content"></div>
+    <div id="qr-receipt"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="downloadPDF()" style="flex:1">⬇ Download PDF</button>
+      <button class="btn btn-secondary" onclick="closeReceipt()" style="flex:1">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ITEM MODAL ══ -->
+<div class="modal-overlay" id="item-modal">
+  <div class="modal" style="max-width:520px">
+    <button class="modal-close" onclick="closeItemModal()">✕</button>
+    <h2 id="item-modal-title">➕ Add Item</h2>
+    <input type="hidden" id="item-id">
+    <div class="item-form-grid">
+      <div class="form-row full"><label>Product Name *</label><input id="item-name" placeholder="e.g. Organic Milk 1L"></div>
+      <div class="form-row"><label>Price (£) *</label><input id="item-price" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="form-row"><label>Cost Price (£)</label><input id="item-cost" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="form-row"><label>Stock Qty *</label><input id="item-stock" type="number" placeholder="0"></div>
+      <div class="form-row"><label>Low Stock Alert</label><input id="item-lowstock" type="number" placeholder="5"></div>
+      <div class="form-row"><label>Category</label><input id="item-category" placeholder="e.g. Dairy"></div>
+      <div class="form-row"><label>Barcode / SKU</label><input id="item-barcode" placeholder="e.g. 5012345678900"></div>
+      <div class="form-row"><label>Emoji Icon</label><input id="item-emoji" placeholder="🥛" maxlength="4"></div>
+      <div class="form-row full"><label>Description</label><input id="item-desc" placeholder="Optional"></div>
+    </div>
+    <button class="btn btn-primary" onclick="saveItem()" style="margin-top:16px">💾 Save Item</button>
+  </div>
+</div>
+
+<!-- ══ SALE DETAIL MODAL ══ -->
+<div class="modal-overlay" id="sale-modal">
+  <div class="modal" style="max-width:500px">
+    <button class="modal-close" onclick="document.getElementById('sale-modal').classList.remove('open')">✕</button>
+    <h2>🧾 Sale Detail</h2>
+    <div id="sale-detail-content"></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-primary" onclick="redownloadReceipt()" style="flex:1">⬇ Receipt PDF</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('sale-modal').classList.remove('open')" style="flex:1">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- ══════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════ -->
 <script>
-    // --- APP STATE ---
-    let inventory = JSON.parse(localStorage.getItem('bazro_inv')) || [
-        { id: 1, name: "Energy Drink", sku: "123456", price: 2.50, stock: 24 },
-        { id: 2, name: "Organic Bread", sku: "987654", price: 1.20, stock: 10 }
-    ];
-    let basket = [];
-    let html5QrCode = null;
-    let currentScanMode = 'checkout';
+// ═══════════════ DATA ═══════════════
+let db = { products:[], sales:[], settings:{} };
+let basket = [];
+let currentPayMethod = 'cash';
+let activeCategory = 'All';
+let currentSaleId = null;
 
-    // --- NAVIGATION ---
-    function showPage(id) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('page-' + id).classList.add('active');
-        event.currentTarget.classList.add('active');
-        if(id === 'inventory') renderInventory();
-    }
-
-    // --- SCANNER LOGIC ---
-    function openScanner(mode) {
-        currentScanMode = mode;
-        document.getElementById('scanner-modal').classList.add('open');
-        
-        html5QrCode = new Html5Qrcode("reader");
-        const config = { fps: 10, qrbox: { width: 250, height: 150 } };
-
-        html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
-            handleScanResult(decodedText);
-            closeScanner();
-        }).catch(err => {
-            alert("Camera Error: Please ensure you are on HTTPS and have given camera permissions.");
-            closeScanner();
-        });
-    }
-
-    function closeScanner() {
-        if (html5QrCode) {
-            html5QrCode.stop().then(() => {
-                document.getElementById('scanner-modal').classList.remove('open');
-            }).catch(() => {
-                document.getElementById('scanner-modal').classList.remove('open');
-            });
-        } else {
-            document.getElementById('scanner-modal').classList.remove('open');
-        }
-    }
-
-    function handleScanResult(sku) {
-        const item = inventory.find(i => i.sku === sku);
-        if (!item) {
-            alert("Item with SKU " + sku + " not found!");
-            return;
-        }
-
-        if (currentScanMode === 'checkout') {
-            addToBasket(item);
-        } else {
-            alert(`Found: ${item.name} | Stock: ${item.stock}`);
-            // Logic to open edit modal can go here
-        }
-    }
-
-    // --- POS LOGIC ---
-    function renderProducts() {
-        const query = document.getElementById('search-input').value.toLowerCase();
-        const grid = document.getElementById('product-grid');
-        grid.innerHTML = inventory
-            .filter(i => i.name.toLowerCase().includes(query))
-            .map(item => `
-                <div class="product-card" onclick='addToBasket(${JSON.stringify(item)})'>
-                    <div style="font-size:30px; margin-bottom:10px;">📦</div>
-                    <strong>${item.name}</strong><br>
-                    <small style="color:var(--accent)">£${item.price.toFixed(2)}</small>
-                </div>
-            `).join('');
-    }
-
-    function addToBasket(item) {
-        basket.push(item);
-        renderBasket();
-    }
-
-    function renderBasket() {
-        const container = document.getElementById('basket-items');
-        let total = 0;
-        container.innerHTML = basket.map((item, idx) => {
-            total += item.price;
-            return `
-                <div style="display:flex; justify-content:space-between; background:var(--surface2); padding:10px; border-radius:8px; margin-bottom:8px;">
-                    <span>${item.name}</span>
-                    <strong>£${item.price.toFixed(2)}</strong>
-                </div>
-            `;
-        }).join('');
-        document.getElementById('basket-total').innerText = `£${total.toFixed(2)}`;
-    }
-
-    function openPayment() {
-        if (basket.length === 0) return alert("Basket is empty!");
-        document.getElementById('pay-amount-display').innerText = document.getElementById('basket-total').innerText;
-        document.getElementById('payment-modal').classList.add('open');
-    }
-
-    function closePayment() {
-        document.getElementById('payment-modal').classList.remove('open');
-    }
-
-    function appendNum(n) {
-        document.getElementById('cash-tendered').value += n;
-    }
-
-    function completeSale() {
-        alert("Sale Complete! Printing receipt...");
-        basket = [];
-        renderBasket();
-        closePayment();
-    }
-
-    function renderInventory() {
-        const list = document.getElementById('inventory-list');
-        list.innerHTML = inventory.map(item => `
-            <tr style="border-bottom: 1px solid var(--border);">
-                <td style="padding:12px 0;">${item.name}</td>
-                <td><code>${item.sku}</code></td>
-                <td>${item.stock}</td>
-                <td style="color:var(--accent)">£${item.price.toFixed(2)}</td>
-            </tr>
-        `).join('');
-    }
-
-    // Init
-    renderProducts();
-</script>
-
-</body>
-</html>
+// Scanner state
+let scannerStream = null;
+let scannerMode = 'checkout'; // 'checkout' | 'inventory'
+let tor
