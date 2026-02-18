@@ -644,12 +644,12 @@
     </div>
     <div class="field">
       <label>Password</label>
-      <input type="password" id="login-password" placeholder="Your password" />
+      <input type="password" id="login-password" placeholder="123" />
     </div>
     <button class="btn-primary" id="login-btn">Login</button>
     <div class="login-footer">
       Default user: <strong>admin</strong><br />
-      Set your own password in the code (search for <code>1234</code>).
+      Set your own password in the code (search for <code>YOUR_PASSWORD_HERE</code>).
     </div>
   </div>
 </div>
@@ -1810,7 +1810,7 @@
     const card = parseFloat(eodCardInput.value) || 0;
     const expenses = parseFloat(eodExpensesInput.value) || 0;
     const till = parseFloat(eodTillInput.value) || 0;
-    const net = cash + card; // as requested: NET TOTAL = Cash + Card only
+    const net = cash + card; // NET TOTAL = Cash + Card only
 
     eodSummaryRow.innerHTML = `
       <div><strong>Cash:</strong> £${cash.toFixed(2)}</div>
