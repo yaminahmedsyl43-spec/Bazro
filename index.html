@@ -2,1376 +2,1584 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Bazro POS</title>
+  <title>Grocery POS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- Styles -->
   <style>
+    :root {
+      --green: #1aa34a;
+      --green-dark: #0c7a33;
+      --green-soft: #e5f7eb;
+      --bg: #f5f7fa;
+      --text: #222;
+      --muted: #777;
+      --danger: #e53935;
+      --border: #dde2eb;
+      --radius: 10px;
+      --shadow-soft: 0 4px 12px rgba(0,0,0,0.06);
+    }
+
     * {
       box-sizing: border-box;
-      margin: 0;
-      padding: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     body {
-      background: #f4f4f4;
-      color: #222;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    /* Login screen */
+    #login-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      padding: 16px;
+    }
+
+    .login-card {
+      background: #fff;
+      padding: 24px 20px;
+      border-radius: 16px;
+      box-shadow: var(--shadow-soft);
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .login-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      text-align: center;
+    }
+
+    .login-subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 4px;
+      color: var(--muted);
+    }
+
+    .field input {
+      width: 100%;
+      padding: 10px 11px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 11px;
+      border-radius: 999px;
+      border: none;
+      background: var(--green);
+      color: #fff;
+      font-weight: 600;
+      font-size: 15px;
+      box-shadow: 0 6px 14px rgba(26,163,74,0.35);
+    }
+
+    .btn-primary:active {
+      transform: translateY(1px);
+      box-shadow: 0 3px 8px rgba(26,163,74,0.35);
+    }
+
+    .login-footer {
+      margin-top: 12px;
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .login-error {
+      color: var(--danger);
+      font-size: 12px;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    /* App layout */
+    #app {
+      display: none;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
     .app-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.75rem 1rem;
-      background: #111827;
-      color: #fff;
-    }
-
-    .store-title {
-      font-weight: 600;
-    }
-
-    .header-actions button {
-      margin-left: 0.5rem;
-    }
-
-    .app-main {
-      display: flex;
-      flex-direction: column;
-      height: calc(100vh - 48px);
-    }
-
-    .bottom-nav {
-      display: flex;
-      border-bottom: 1px solid #ddd;
       background: #fff;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
 
-    .nav-btn {
-      flex: 1;
-      padding: 0.5rem;
+    .app-title {
+      font-weight: 700;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .app-title span.logo {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      background: var(--green-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .app-user {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .app-user button {
+      margin-top: 2px;
       border: none;
       background: transparent;
-      font-size: 0.9rem;
+      color: var(--green-dark);
+      font-size: 11px;
+      text-decoration: underline;
+      padding: 0;
     }
 
-    .nav-btn.active {
-      border-bottom: 3px solid #2563eb;
+    /* Tabs */
+    .tab-bar {
+      display: flex;
+      overflow-x: auto;
+      background: #fff;
+      padding: 6px 8px;
+      gap: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab-btn {
+      flex: 1;
+      min-width: 80px;
+      padding: 7px 8px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      background: transparent;
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      background: var(--green-soft);
+      color: var(--green-dark);
+      border-color: var(--green);
       font-weight: 600;
     }
 
-    .view {
+    /* Main content */
+    .app-main {
       flex: 1;
-      overflow-y: auto;
-      padding: 0.75rem;
+      padding: 10px;
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto 60px auto;
+    }
+
+    .screen {
       display: none;
     }
 
-    .view.active {
+    .screen.active {
       display: block;
     }
 
-    .search-bar {
+    /* Category bar */
+    .category-bar {
       display: flex;
-      gap: 0.5rem;
-      margin-bottom: 0.5rem;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      margin-bottom: 8px;
     }
 
-    .search-bar input {
-      flex: 1;
-    }
-
-    .category-filters {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.25rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .category-filters button {
-      padding: 0.25rem 0.5rem;
+    .category-pill {
       border-radius: 999px;
-      border: 1px solid #ddd;
+      border: 1px solid var(--border);
       background: #fff;
-      font-size: 0.75rem;
+      padding: 6px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      white-space: nowrap;
     }
 
-    .category-filters button.active {
-      background: #2563eb;
+    .category-pill.active {
+      background: var(--green);
       color: #fff;
-      border-color: #2563eb;
+      border-color: var(--green-dark);
+    }
+
+    .category-pill span.emoji {
+      font-size: 16px;
+    }
+
+    /* Product grid */
+    .products-layout {
+      display: grid;
+      grid-template-columns: 2fr 1.2fr;
+      gap: 10px;
+    }
+
+    @media (max-width: 800px) {
+      .products-layout {
+        grid-template-columns: 1fr;
+      }
     }
 
     .product-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.4rem;
-      margin-bottom: 0.75rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    @media (max-width: 600px) {
+      .product-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
 
     .product-card {
       background: #fff;
-      border-radius: 0.5rem;
-      padding: 0.4rem;
-      text-align: center;
-      font-size: 0.8rem;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      border-radius: 12px;
+      padding: 8px;
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      border: 1px solid transparent;
     }
 
-    .product-card-emoji {
-      font-size: 1.4rem;
+    .product-card:hover {
+      border-color: var(--green-soft);
     }
 
-    .product-card-name {
-      margin-top: 0.25rem;
+    .product-emoji {
+      font-size: 24px;
     }
 
-    .product-card-price {
-      margin-top: 0.15rem;
+    .product-name {
+      font-size: 13px;
       font-weight: 600;
     }
 
-    .basket-panel {
+    .product-meta {
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .product-price {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--green-dark);
+    }
+
+    .product-add-btn {
+      margin-top: 4px;
+      border-radius: 999px;
+      border: none;
+      background: var(--green-soft);
+      color: var(--green-dark);
+      font-size: 12px;
+      padding: 5px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    /* Basket */
+    .basket-card {
       background: #fff;
-      border-radius: 0.75rem 0.75rem 0 0;
-      padding: 0.75rem;
-      box-shadow: 0 -2px 6px rgba(0,0,0,0.08);
-      position: sticky;
-      bottom: 0;
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
-    #basketItems {
-      max-height: 140px;
-      overflow-y: auto;
-      margin-bottom: 0.5rem;
-    }
-
-    .basket-item {
+    .basket-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 0.25rem;
-      font-size: 0.85rem;
+      font-size: 13px;
+      font-weight: 600;
     }
 
-    .basket-item-controls {
-      display: flex;
+    .basket-items {
+      max-height: 260px;
+      overflow-y: auto;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 4px 0;
+    }
+
+    .basket-row {
+      display: grid;
+      grid-template-columns: 1.5fr 0.8fr 0.8fr 0.4fr;
+      gap: 4px;
       align-items: center;
-      gap: 0.25rem;
+      font-size: 12px;
+      padding: 4px 0;
     }
 
-    .basket-item-controls button {
-      width: 24px;
-      height: 24px;
+    .basket-row span.name {
+      font-weight: 500;
+    }
+
+    .basket-row input {
+      width: 100%;
+      padding: 3px 4px;
+      font-size: 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    .basket-row button {
+      border-radius: 999px;
+      border: none;
+      background: #fbe9e7;
+      color: var(--danger);
+      font-size: 11px;
+      padding: 3px 6px;
     }
 
     .basket-summary {
-      font-size: 0.85rem;
-      margin-bottom: 0.5rem;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
 
-    .basket-summary > div {
+    .basket-summary-row {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 0.15rem;
     }
 
-    .payment-methods {
+    .basket-total {
+      font-size: 16px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .basket-actions {
       display: flex;
-      gap: 0.25rem;
-      margin-bottom: 0.5rem;
+      gap: 6px;
+      margin-top: 6px;
     }
 
-    .pay-btn {
+    .btn-secondary {
       flex: 1;
-      padding: 0.4rem;
       border-radius: 999px;
-      border: 1px solid #ddd;
-      background: #f9fafb;
-      font-size: 0.8rem;
+      border: 1px solid var(--border);
+      background: #fff;
+      font-size: 12px;
+      padding: 7px;
     }
 
-    .pay-btn.active {
-      background: #16a34a;
-      color: #fff;
-      border-color: #16a34a;
-    }
-
-    .cash-panel {
-      font-size: 0.85rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .cash-display {
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-      margin-bottom: 0.25rem;
-    }
-
-    .primary-btn {
-      width: 100%;
-      padding: 0.6rem;
+    .btn-pay {
+      flex: 1.2;
       border-radius: 999px;
       border: none;
-      background: #2563eb;
+      background: var(--green);
       color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 7px;
+    }
+
+    /* Generic cards / tables */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: var(--shadow-soft);
+      margin-bottom: 10px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .card-header h3 {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .card-header small {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .btn-small {
+      border-radius: 999px;
+      border: none;
+      background: var(--green-soft);
+      color: var(--green-dark);
+      font-size: 11px;
+      padding: 4px 8px;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .table th,
+    .table td {
+      padding: 6px 4px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+
+    .table th {
+      font-size: 11px;
+      color: var(--muted);
       font-weight: 600;
     }
 
-    .danger-btn {
-      padding: 0.4rem 0.75rem;
-      border-radius: 999px;
-      border: none;
-      background: #dc2626;
-      color: #fff;
-    }
-
-    .inventory-header,
-    .sales-header,
-    .reports-header {
-      display: flex;
-      justify-content: space-between;
+    .pill {
+      display: inline-flex;
       align-items: center;
-      margin-bottom: 0.5rem;
+      gap: 4px;
+      border-radius: 999px;
+      padding: 2px 7px;
+      font-size: 11px;
+      background: var(--green-soft);
+      color: var(--green-dark);
     }
 
-    #inventoryList .inventory-item {
-      background: #fff;
-      padding: 0.5rem;
-      border-radius: 0.5rem;
-      margin-bottom: 0.4rem;
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.85rem;
+    .muted {
+      color: var(--muted);
     }
 
-    #salesList .sale-item {
-      background: #fff;
-      padding: 0.5rem;
-      border-radius: 0.5rem;
-      margin-bottom: 0.4rem;
-      font-size: 0.85rem;
+    .input-inline {
+      padding: 4px 6px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-size: 12px;
     }
 
-    #reportSummary {
-      background: #fff;
-      padding: 0.5rem;
-      border-radius: 0.5rem;
-      font-size: 0.85rem;
-    }
-
-    .modal {
+    /* Modal */
+    .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.4);
-      display: flex;
-      justify-content: center;
+      background: rgba(0,0,0,0.35);
+      display: none;
       align-items: center;
+      justify-content: center;
       z-index: 50;
     }
 
-    .modal.hidden {
-      display: none;
-    }
-
-    .modal-content {
+    .modal {
       background: #fff;
-      border-radius: 0.75rem;
-      padding: 0.75rem;
-      width: 95%;
-      max-width: 420px;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-
-    .modal-content h3 {
-      margin-bottom: 0.5rem;
-    }
-
-    .modal-content label {
-      display: block;
-      font-size: 0.8rem;
-      margin-bottom: 0.25rem;
-    }
-
-    .modal-content input,
-    .modal-content textarea,
-    .modal-content select {
+      border-radius: 14px;
+      padding: 14px;
       width: 100%;
-      margin-bottom: 0.4rem;
+      max-width: 420px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
     }
 
-    .modal-actions {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 0.5rem;
-    }
-
-    .scanner-modal {
-      padding: 0;
-    }
-
-    .scanner-header {
+    .modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0.5rem 0.75rem;
-      border-bottom: 1px solid #eee;
+      margin-bottom: 8px;
     }
 
-    .scanner-video-wrapper {
-      position: relative;
-      background: #000;
+    .modal-header h3 {
+      margin: 0;
+      font-size: 15px;
     }
 
-    #scannerVideo {
-      width: 100%;
-      max-height: 260px;
-      object-fit: cover;
+    .modal-body {
+      font-size: 13px;
     }
 
-    .scan-frame {
-      position: absolute;
-      inset: 15%;
-      border: 2px solid rgba(255,255,255,0.7);
-      border-radius: 0.75rem;
-      overflow: hidden;
+    .modal-footer {
+      margin-top: 10px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
     }
 
-    .scan-line {
-      position: absolute;
-      top: 0;
+    .btn-ghost {
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #fff;
+      font-size: 12px;
+      padding: 6px 10px;
+    }
+
+    .btn-solid {
+      border-radius: 999px;
+      border: none;
+      background: var(--green);
+      color: #fff;
+      font-size: 12px;
+      padding: 6px 12px;
+      font-weight: 600;
+    }
+
+    /* Bottom nav (mobile) */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
       left: 0;
       right: 0;
-      height: 2px;
-      background: rgba(56,189,248,0.9);
-      animation: scan 1.4s linear infinite;
-    }
-
-    @keyframes scan {
-      0% { transform: translateY(0); }
-      100% { transform: translateY(100%); }
-    }
-
-    .scanner-controls {
-      padding: 0.5rem 0.75rem 0.75rem;
-    }
-
-    .manual-barcode {
+      background: #fff;
+      border-top: 1px solid var(--border);
       display: flex;
-      gap: 0.25rem;
-      margin-top: 0.5rem;
+      justify-content: space-around;
+      padding: 6px 0 4px 0;
+      z-index: 20;
     }
 
-    .import-export-section {
-      margin-bottom: 0.5rem;
+    .bottom-nav button {
+      border: none;
+      background: transparent;
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      flex: 1;
     }
 
-    #importJsonArea,
-    #exportJsonArea {
-      width: 100%;
-      min-height: 80px;
-      font-size: 0.75rem;
+    .bottom-nav button span.icon {
+      font-size: 16px;
     }
+
+    .bottom-nav button.active {
+      color: var(--green-dark);
+      font-weight: 600;
+    }
+
+    /* Small helpers */
+    .flex {
+      display: flex;
+    }
+
+    .flex-gap {
+      gap: 6px;
+    }
+
+    .flex-between {
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .mt-4 { margin-top: 4px; }
+    .mt-6 { margin-top: 6px; }
+    .mt-8 { margin-top: 8px; }
+    .mt-10 { margin-top: 10px; }
+
   </style>
-
-  <!-- jsPDF for PDF receipts & reports -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <!-- QRCode generator -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-title">Grocery POS</div>
+    <div class="login-subtitle">Sign in to start selling</div>
+    <div id="login-error" class="login-error" style="display:none;"></div>
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="login-username" placeholder="admin" />
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="Your password" />
+    </div>
+    <button class="btn-primary" id="login-btn">Login</button>
+    <div class="login-footer">
+      Default user: <strong>admin</strong><br />
+      Set your own password in the code (search for <code>Bazro9547</code>).
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none;">
   <header class="app-header">
-    <div class="store-title" id="storeTitle">Bazro POS</div>
-    <div class="header-actions">
-      <button id="importExportBtn">Import/Export</button>
-      <button id="settingsBtn">⚙️</button>
+    <div class="app-title">
+      <span class="logo">🥬</span>
+      <span>Grocery POS</span>
+    </div>
+    <div class="app-user">
+      <div id="current-user-label">Logged in</div>
+      <button id="logout-btn">Logout</button>
     </div>
   </header>
 
+  <div class="tab-bar">
+    <button class="tab-btn active" data-screen="screen-pos">POS</button>
+    <button class="tab-btn" data-screen="screen-products">Products</button>
+    <button class="tab-btn" data-screen="screen-categories">Categories</button>
+    <button class="tab-btn" data-screen="screen-sales">Sales</button>
+    <button class="tab-btn" data-screen="screen-reports">Reports</button>
+    <button class="tab-btn" data-screen="screen-settings">Settings</button>
+  </div>
+
   <main class="app-main">
-    <nav class="bottom-nav">
-      <button data-view="checkout" class="nav-btn active">Checkout</button>
-      <button data-view="inventory" class="nav-btn">Inventory</button>
-      <button data-view="sales" class="nav-btn">Sales</button>
-      <button data-view="reports" class="nav-btn">Reports</button>
-    </nav>
-
-    <!-- Checkout View -->
-    <section id="view-checkout" class="view active">
-      <div class="checkout-top">
-        <div class="search-bar">
-          <input type="text" id="productSearch" placeholder="Search by name or barcode" />
-          <button id="scanBarcodeBtn">📷</button>
+    <!-- POS SCREEN -->
+    <section id="screen-pos" class="screen active">
+      <div class="card">
+        <div class="card-header">
+          <h3>Categories</h3>
+          <small>Tap to filter products</small>
         </div>
-        <div class="category-filters" id="categoryFilters"></div>
+        <div id="pos-category-bar" class="category-bar"></div>
       </div>
 
-      <div class="product-grid" id="productGrid"></div>
-
-      <div class="basket-panel">
-        <h3>Basket</h3>
-        <div id="basketItems"></div>
-        <div class="basket-summary">
-          <div>Subtotal: <span id="subtotalDisplay">£0.00</span></div>
-          <div>Discount (%): <input type="number" id="discountPercent" value="0" min="0" max="100" /></div>
-          <div>Tax: <span id="taxDisplay">£0.00</span></div>
-          <div>Total: <span id="totalDisplay">£0.00</span></div>
-        </div>
-        <div class="payment-methods">
-          <button data-method="cash" class="pay-btn active">Cash</button>
-          <button data-method="card" class="pay-btn">Card</button>
-          <button data-method="contactless" class="pay-btn">Contactless</button>
-        </div>
-
-        <div id="cashPanel" class="cash-panel">
-          <div class="cash-display">
-            <label>Cash given:</label>
-            <input type="number" id="cashGiven" step="0.01" />
-            <button id="cashQuick5">+5</button>
-            <button id="cashQuick10">+10</button>
-            <button id="cashQuick20">+20</button>
+      <div class="products-layout">
+        <div class="card">
+          <div class="card-header">
+            <h3>Products</h3>
+            <small>Tap to add to basket</small>
           </div>
-          <div>Change: <span id="changeDisplay">0.00</span></div>
+          <div id="pos-product-grid" class="product-grid"></div>
         </div>
 
-        <button id="completeSaleBtn" class="primary-btn">Complete Sale</button>
+        <div class="basket-card">
+          <div class="basket-header">
+            <span>Basket</span>
+            <button class="btn-small" id="open-scanner-btn">Scan</button>
+          </div>
+          <div id="basket-items" class="basket-items"></div>
+          <div class="basket-summary">
+            <div class="basket-summary-row">
+              <span class="muted">Subtotal</span>
+              <span id="basket-subtotal">£0.00</span>
+            </div>
+            <div class="basket-summary-row">
+              <span class="muted">Tax (0%)</span>
+              <span id="basket-tax">£0.00</span>
+            </div>
+            <div class="basket-summary-row">
+              <span class="muted">Discount</span>
+              <span id="basket-discount">£0.00</span>
+            </div>
+            <div class="basket-total">
+              <span>Total</span>
+              <span style="float:right;" id="basket-total">£0.00</span>
+            </div>
+          </div>
+          <div class="basket-actions">
+            <button class="btn-secondary" id="clear-basket-btn">Clear</button>
+            <button class="btn-pay" id="checkout-btn">Pay</button>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- Inventory View -->
-    <section id="view-inventory" class="view">
-      <div class="inventory-header">
-        <h2>Inventory</h2>
-        <button id="addProductBtn" class="primary-btn">+ Add Product</button>
+    <!-- PRODUCTS SCREEN -->
+    <section id="screen-products" class="screen">
+      <div class="card">
+        <div class="card-header">
+          <h3>Products</h3>
+          <button class="btn-small" id="add-product-btn">+ Add product</button>
+        </div>
+        <table class="table" id="products-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Category</th>
+              <th>Barcode</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
-      <div id="inventoryList"></div>
     </section>
 
-    <!-- Sales History View -->
-    <section id="view-sales" class="view">
-      <div class="sales-header">
-        <h2>Sales History</h2>
-        <select id="salesFilter">
-          <option value="today">Today</option>
-          <option value="week">This Week</option>
-          <option value="month">This Month</option>
-          <option value="all">All</option>
-        </select>
+    <!-- CATEGORIES SCREEN -->
+    <section id="screen-categories" class="screen">
+      <div class="card">
+        <div class="card-header">
+          <h3>Categories</h3>
+          <button class="btn-small" id="add-category-btn">+ Add category</button>
+        </div>
+        <table class="table" id="categories-table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Emoji</th>
+              <th>Products</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
-      <div id="salesList"></div>
     </section>
 
-    <!-- Reports View -->
-    <section id="view-reports" class="view">
-      <div class="reports-header">
-        <h2>End-of-day Report</h2>
-        <button id="generateReportBtn" class="primary-btn">Generate PDF</button>
+    <!-- SALES SCREEN -->
+    <section id="screen-sales" class="screen">
+      <div class="card">
+        <div class="card-header">
+          <h3>Sales history</h3>
+          <small>Recent transactions</small>
+        </div>
+        <table class="table" id="sales-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Payment</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
-      <div id="reportSummary"></div>
+    </section>
+
+    <!-- REPORTS SCREEN -->
+    <section id="screen-reports" class="screen">
+      <div class="card">
+        <div class="card-header">
+          <h3>Today’s summary</h3>
+          <button class="btn-small" id="export-report-btn">Export (JSON)</button>
+        </div>
+        <div id="reports-summary" style="font-size:13px;"></div>
+      </div>
+    </section>
+
+    <!-- SETTINGS SCREEN -->
+    <section id="screen-settings" class="screen">
+      <div class="card">
+        <div class="card-header">
+          <h3>Settings</h3>
+          <small>Local data & sync</small>
+        </div>
+        <div style="font-size:13px;">
+          <p><strong>Local data</strong></p>
+          <button class="btn-small" id="reset-data-btn">Reset demo data</button>
+          <p class="mt-8"><strong>Sync endpoint</strong></p>
+          <p class="muted">This demo is offline‑only, but the structure is ready for a single <code>/sync</code> endpoint.</p>
+        </div>
+      </div>
     </section>
   </main>
 
-  <!-- Barcode Scanner Modal -->
-  <div id="scannerModal" class="modal hidden">
-    <div class="modal-content scanner-modal">
-      <div class="scanner-header">
-        <span>Scan Barcode</span>
-        <button id="closeScannerBtn">✕</button>
-      </div>
-      <div class="scanner-video-wrapper">
-        <video id="scannerVideo" autoplay playsinline></video>
-        <div class="scan-frame">
-          <div class="scan-line"></div>
-        </div>
-      </div>
-      <div class="scanner-controls">
-        <button id="toggleFlashBtn">🔦 Flash</button>
-        <div class="manual-barcode">
-          <input type="text" id="manualBarcodeInput" placeholder="Enter barcode manually" />
-          <button id="manualBarcodeSubmit">OK</button>
-        </div>
-      </div>
+  <nav class="bottom-nav">
+    <button class="active" data-screen="screen-pos">
+      <span class="icon">🧾</span>
+      <span>POS</span>
+    </button>
+    <button data-screen="screen-products">
+      <span class="icon">📦</span>
+      <span>Products</span>
+    </button>
+    <button data-screen="screen-categories">
+      <span class="icon">🗂️</span>
+      <span>Categories</span>
+    </button>
+    <button data-screen="screen-sales">
+      <span class="icon">📊</span>
+      <span>Sales</span>
+    </button>
+    <button data-screen="screen-settings">
+      <span class="icon">⚙️</span>
+      <span>Settings</span>
+    </button>
+  </nav>
+</div>
+
+<!-- MODAL (generic) -->
+<div id="modal-backdrop" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Modal</h3>
+      <button class="btn-ghost" id="modal-close-btn">✕</button>
     </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
   </div>
+</div>
 
-  <!-- Product Form Modal -->
-  <div id="productModal" class="modal hidden">
-    <div class="modal-content">
-      <h3 id="productModalTitle">Add Product</h3>
-      <form id="productForm">
-        <input type="hidden" id="productId" />
-        <label>Name <input type="text" id="productName" required /></label>
-        <label>Emoji <input type="text" id="productEmoji" maxlength="2" /></label>
-        <label>Category <input type="text" id="productCategory" /></label>
-        <label>Price <input type="number" id="productPrice" step="0.01" required /></label>
-        <label>Cost Price <input type="number" id="productCostPrice" step="0.01" /></label>
-        <label>Stock Level <input type="number" id="productStock" /></label>
-        <label>Low-stock Alert <input type="number" id="productLowStock" /></label>
-        <label>Barcode <input type="text" id="productBarcode" /></label>
-        <div class="modal-actions">
-          <button type="button" id="deleteProductBtn" class="danger-btn hidden">Delete</button>
-          <button type="submit" class="primary-btn">Save</button>
-        </div>
-      </form>
-    </div>
-  </div>
+<script>
+  /***********************
+   * SIMPLE DATA LAYER
+   ***********************/
+  const STORAGE_KEY = "grocery_pos_data_v1";
+  const SESSION_KEY = "grocery_pos_session_v1";
 
-  <!-- Settings Modal -->
-  <div id="settingsModal" class="modal hidden">
-    <div class="modal-content">
-      <h3>Settings</h3>
-      <form id="settingsForm">
-        <label>Store Name <input type="text" id="storeName" /></label>
-        <label>Address <textarea id="storeAddress"></textarea></label>
-        <label>VAT Number <input type="text" id="vatNumber" /></label>
-        <label>Currency Symbol <input type="text" id="currencySymbol" value="£" /></label>
-        <label>Tax Rate (%) <input type="number" id="taxRate" step="0.01" value="20" /></label>
-        <label>Receipt Footer <textarea id="receiptFooter"></textarea></label>
-        <div class="modal-actions">
-          <button type="submit" class="primary-btn">Save</button>
-        </div>
-      </form>
-    </div>
-  </div>
+  const DEFAULT_USER = {
+    username: "admin",
+    // IMPORTANT: replace this string with your real password on your machine
+    password: "YOUR_PASSWORD_HERE"
+  };
 
-  <!-- Import/Export Modal -->
-  <div id="importExportModal" class="modal hidden">
-    <div class="modal-content">
-      <h3>Import / Export</h3>
-      <div class="import-export-section">
-        <button id="exportJsonBtn" class="primary-btn">Export JSON</button>
-        <textarea id="exportJsonArea" readonly placeholder="Exported JSON will appear here"></textarea>
-      </div>
-      <div class="import-export-section">
-        <textarea id="importJsonArea" placeholder="Paste JSON here to import"></textarea>
-        <button id="importJsonBtn">Import JSON</button>
-      </div>
-      <button id="resetDefaultsBtn" class="danger-btn">Reset to defaults</button>
-    </div>
-  </div>
+  const defaultData = () => ({
+    categories: [
+      { id: "cat-fruit", name: "Fruit", emoji: "🍎" },
+      { id: "cat-veg", name: "Vegetables", emoji: "🥬" },
+      { id: "cat-drinks", name: "Drinks", emoji: "🥤" },
+      { id: "cat-snacks", name: "Snacks", emoji: "🍪" }
+    ],
+    products: [
+      { id: "p1", name: "Apple", emoji: "🍎", categoryId: "cat-fruit", barcode: "111", price: 0.5, stock: 100 },
+      { id: "p2", name: "Banana", emoji: "🍌", categoryId: "cat-fruit", barcode: "112", price: 0.35, stock: 120 },
+      { id: "p3", name: "Tomato", emoji: "🍅", categoryId: "cat-veg", barcode: "201", price: 0.4, stock: 80 },
+      { id: "p4", name: "Lettuce", emoji: "🥬", categoryId: "cat-veg", barcode: "202", price: 0.9, stock: 40 },
+      { id: "p5", name: "Cola Can", emoji: "🥤", categoryId: "cat-drinks", barcode: "301", price: 1.2, stock: 60 },
+      { id: "p6", name: "Water 500ml", emoji: "💧", categoryId: "cat-drinks", barcode: "302", price: 0.7, stock: 100 },
+      { id: "p7", name: "Chocolate Bar", emoji: "🍫", categoryId: "cat-snacks", barcode: "401", price: 0.8, stock: 90 },
+      { id: "p8", name: "Crisps", emoji: "🍟", categoryId: "cat-snacks", barcode: "402", price: 1.0, stock: 70 }
+    ],
+    sales: []
+  });
 
-  <!-- App Logic -->
-  <script>
-    const DB_KEY = "bazro_pos_db_v1";
+  function loadData() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      const d = defaultData();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+      return d;
+    }
+    try {
+      return JSON.parse(raw);
+    } catch {
+      const d = defaultData();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+      return d;
+    }
+  }
 
-    const defaultDB = {
-      settings: {
-        storeName: "Bazro",
-        address: "Your address here",
-        vatNumber: "",
-        currencySymbol: "£",
-        taxRate: 20,
-        receiptFooter: "Thank you for shopping at Bazro!"
-      },
-      products: [
-        {
-          id: "p1",
-          name: "Apple",
-          emoji: "🍎",
-          category: "Fruit",
-          price: 0.5,
-          costPrice: 0.2,
-          stock: 100,
-          lowStock: 10,
-          barcode: "111111"
-        },
-        {
-          id: "p2",
-          name: "Banana",
-          emoji: "🍌",
-          category: "Fruit",
-          price: 0.4,
-          costPrice: 0.15,
-          stock: 80,
-          lowStock: 10,
-          barcode: "222222"
-        }
-      ],
-      sales: []
-    };
+  function saveData() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
 
-    let db = loadDB();
-    let currentView = "checkout";
-    let currentCategory = "All";
-    let basket = [];
-    let currentPaymentMethod = "cash";
-    let currentSaleId = null;
+  let data = loadData();
 
-    let scannerStream = null;
-    let scannerTrack = null;
-    let scannerTorchOn = false;
+  /***********************
+   * SESSION
+   ***********************/
+  function loadSession() {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
 
-    document.addEventListener("DOMContentLoaded", () => {
-      initNav();
-      renderSettingsHeader();
-      renderProducts();
-      renderBasket();
-      renderInventory();
-      renderSales();
-      renderReportSummary();
+  function saveSession(session) {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  }
 
-      initCheckoutEvents();
-      initInventoryEvents();
-      initSalesEvents();
-      initReportEvents();
-      initSettingsEvents();
-      initImportExportEvents();
-      initScannerEvents();
+  function clearSession() {
+    localStorage.removeItem(SESSION_KEY);
+  }
+
+  /***********************
+   * LOGIN LOGIC
+   ***********************/
+  const loginScreen = document.getElementById("login-screen");
+  const app = document.getElementById("app");
+  const loginBtn = document.getElementById("login-btn");
+  const loginError = document.getElementById("login-error");
+  const loginUsername = document.getElementById("login-username");
+  const loginPassword = document.getElementById("login-password");
+  const currentUserLabel = document.getElementById("current-user-label");
+  const logoutBtn = document.getElementById("logout-btn");
+
+  function showAppForUser(username) {
+    loginScreen.style.display = "none";
+    app.style.display = "flex";
+    currentUserLabel.textContent = "Logged in as " + username;
+    renderAll();
+  }
+
+  function handleLogin() {
+    const u = loginUsername.value.trim();
+    const p = loginPassword.value;
+    if (!u || !p) {
+      loginError.textContent = "Enter username and password.";
+      loginError.style.display = "block";
+      return;
+    }
+    if (u === DEFAULT_USER.username && p === DEFAULT_USER.password) {
+      loginError.style.display = "none";
+      saveSession({ username: u });
+      showAppForUser(u);
+    } else {
+      loginError.textContent = "Invalid username or password.";
+      loginError.style.display = "block";
+    }
+  }
+
+  loginBtn.addEventListener("click", handleLogin);
+  loginPassword.addEventListener("keydown", e => {
+    if (e.key === "Enter") handleLogin();
+  });
+
+  logoutBtn.addEventListener("click", () => {
+    clearSession();
+    app.style.display = "none";
+    loginScreen.style.display = "flex";
+  });
+
+  // Auto-login if session exists
+  const existingSession = loadSession();
+  if (existingSession && existingSession.username) {
+    showAppForUser(existingSession.username);
+  }
+
+  /***********************
+   * NAVIGATION
+   ***********************/
+  const tabButtons = document.querySelectorAll(".tab-bar .tab-btn");
+  const screens = document.querySelectorAll(".screen");
+  const bottomNavButtons = document.querySelectorAll(".bottom-nav button");
+
+  function setActiveScreen(id) {
+    screens.forEach(s => s.classList.toggle("active", s.id === id));
+    tabButtons.forEach(b => b.classList.toggle("active", b.dataset.screen === id));
+    bottomNavButtons.forEach(b => b.classList.toggle("active", b.dataset.screen === id));
+  }
+
+  tabButtons.forEach(btn => {
+    btn.addEventListener("click", () => setActiveScreen(btn.dataset.screen));
+  });
+
+  bottomNavButtons.forEach(btn => {
+    btn.addEventListener("click", () => setActiveScreen(btn.dataset.screen));
+  });
+
+  /***********************
+   * POS: CATEGORIES & PRODUCTS
+   ***********************/
+  const posCategoryBar = document.getElementById("pos-category-bar");
+  const posProductGrid = document.getElementById("pos-product-grid");
+
+  let activeCategoryId = "all";
+
+  function renderCategoryBar() {
+    posCategoryBar.innerHTML = "";
+    const allBtn = document.createElement("button");
+    allBtn.className = "category-pill" + (activeCategoryId === "all" ? " active" : "");
+    allBtn.innerHTML = `<span class="emoji">⭐</span><span>All</span>`;
+    allBtn.addEventListener("click", () => {
+      activeCategoryId = "all";
+      renderCategoryBar();
+      renderProductGrid();
     });
+    posCategoryBar.appendChild(allBtn);
 
-    function loadDB() {
-      try {
-        const raw = localStorage.getItem(DB_KEY);
-        if (!raw) return structuredClone(defaultDB);
-        return JSON.parse(raw);
-      } catch {
-        return structuredClone(defaultDB);
-      }
-    }
-
-    function saveDB() {
-      localStorage.setItem(DB_KEY, JSON.stringify(db));
-    }
-
-    function initNav() {
-      document.querySelectorAll(".nav-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
-          btn.classList.add("active");
-          const view = btn.dataset.view;
-          currentView = view;
-          document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-          document.getElementById(\`view-\${view}\").classList.add("active");
-          if (view === "inventory") renderInventory();
-          if (view === "sales") renderSales();
-          if (view === "reports") renderReportSummary();
-        });
+    data.categories.forEach(cat => {
+      const btn = document.createElement("button");
+      btn.className = "category-pill" + (activeCategoryId === cat.id ? " active" : "");
+      btn.innerHTML = `<span class="emoji">${cat.emoji}</span><span>${cat.name}</span>`;
+      btn.addEventListener("click", () => {
+        activeCategoryId = cat.id;
+        renderCategoryBar();
+        renderProductGrid();
       });
+      posCategoryBar.appendChild(btn);
+    });
+  }
+
+  function renderProductGrid() {
+    posProductGrid.innerHTML = "";
+    const products = data.products.filter(p => activeCategoryId === "all" || p.categoryId === activeCategoryId);
+    products.forEach(p => {
+      const card = document.createElement("div");
+      card.className = "product-card";
+      card.innerHTML = `
+        <div class="product-emoji">${p.emoji || "🛒"}</div>
+        <div class="product-name">${p.name}</div>
+        <div class="product-meta">
+          <span class="muted">Stock: ${p.stock}</span>
+          <span class="muted">#${p.barcode || "-"}</span>
+        </div>
+        <div class="product-price">£${p.price.toFixed(2)}</div>
+      `;
+      const btn = document.createElement("button");
+      btn.className = "product-add-btn";
+      btn.innerHTML = `<span>+ Add</span>`;
+      btn.addEventListener("click", () => addToBasket(p.id));
+      card.appendChild(btn);
+      posProductGrid.appendChild(card);
+    });
+  }
+
+  /***********************
+   * BASKET
+   ***********************/
+  const basketItemsEl = document.getElementById("basket-items");
+  const basketSubtotalEl = document.getElementById("basket-subtotal");
+  const basketTaxEl = document.getElementById("basket-tax");
+  const basketDiscountEl = document.getElementById("basket-discount");
+  const basketTotalEl = document.getElementById("basket-total");
+  const clearBasketBtn = document.getElementById("clear-basket-btn");
+  const checkoutBtn = document.getElementById("checkout-btn");
+
+  let basket = []; // { productId, qty, price }
+
+  function addToBasket(productId) {
+    const existing = basket.find(i => i.productId === productId);
+    if (existing) {
+      existing.qty += 1;
+    } else {
+      const p = data.products.find(p => p.id === productId);
+      if (!p) return;
+      basket.push({ productId, qty: 1, price: p.price });
     }
+    renderBasket();
+  }
 
-    function renderSettingsHeader() {
-      document.getElementById("storeTitle").textContent = db.settings.storeName || "Bazro POS";
+  function removeFromBasket(productId) {
+    basket = basket.filter(i => i.productId !== productId);
+    renderBasket();
+  }
+
+  function updateBasketQty(productId, qty) {
+    const item = basket.find(i => i.productId === productId);
+    if (!item) return;
+    const n = parseInt(qty, 10);
+    if (isNaN(n) || n <= 0) {
+      removeFromBasket(productId);
+    } else {
+      item.qty = n;
     }
+    renderBasket();
+  }
 
-    function getFilteredProducts() {
-      const search = document.getElementById("productSearch").value.trim().toLowerCase();
-      return db.products.filter(p => {
-        const matchesCategory = currentCategory === "All" || p.category === currentCategory;
-        const matchesSearch =
-          !search ||
-          p.name.toLowerCase().includes(search) ||
-          (p.barcode && p.barcode.toLowerCase().includes(search));
-        return matchesCategory && matchesSearch;
-      });
+  function renderBasket() {
+    basketItemsEl.innerHTML = "";
+    let subtotal = 0;
+    basket.forEach(item => {
+      const p = data.products.find(p => p.id === item.productId);
+      if (!p) return;
+      const line = item.qty * item.price;
+      subtotal += line;
+      const row = document.createElement("div");
+      row.className = "basket-row";
+      row.innerHTML = `
+        <span class="name">${p.name}</span>
+        <input type="number" min="1" value="${item.qty}" />
+        <span>£${line.toFixed(2)}</span>
+      `;
+      const removeBtn = document.createElement("button");
+      removeBtn.textContent = "✕";
+      removeBtn.addEventListener("click", () => removeFromBasket(item.productId));
+      row.appendChild(removeBtn);
+      const qtyInput = row.querySelector("input");
+      qtyInput.addEventListener("change", e => updateBasketQty(item.productId, e.target.value));
+      basketItemsEl.appendChild(row);
+    });
+    const tax = 0;
+    const discount = 0;
+    const total = subtotal + tax - discount;
+    basketSubtotalEl.textContent = "£" + subtotal.toFixed(2);
+    basketTaxEl.textContent = "£" + tax.toFixed(2);
+    basketDiscountEl.textContent = "£" + discount.toFixed(2);
+    basketTotalEl.textContent = "£" + total.toFixed(2);
+  }
+
+  clearBasketBtn.addEventListener("click", () => {
+    basket = [];
+    renderBasket();
+  });
+
+  checkoutBtn.addEventListener("click", () => {
+    if (basket.length === 0) {
+      alert("Basket is empty.");
+      return;
     }
-
-    function renderCategoryFilters() {
-      const container = document.getElementById("categoryFilters");
-      container.innerHTML = "";
-      const categories = ["All", ...new Set(db.products.map(p => p.category).filter(Boolean))];
-      categories.forEach(cat => {
-        const btn = document.createElement("button");
-        btn.textContent = cat || "Uncategorised";
-        if (cat === currentCategory) btn.classList.add("active");
-        btn.addEventListener("click", () => {
-          currentCategory = cat;
-          renderCategoryFilters();
-          renderProducts();
-        });
-        container.appendChild(btn);
-      });
-    }
-
-    function renderProducts() {
-      renderCategoryFilters();
-      const grid = document.getElementById("productGrid");
-      grid.innerHTML = "";
-      const products = getFilteredProducts();
-      products.forEach(p => {
-        const card = document.createElement("div");
-        card.className = "product-card";
-        card.innerHTML = \`
-          <div class="product-card-emoji">\${p.emoji || "📦"}</div>
-          <div class="product-card-name">\${p.name}</div>
-          <div class="product-card-price">\${db.settings.currencySymbol}\${p.price.toFixed(2)}</div>
-        \`;
-        card.addEventListener("click", () => addToBasket(p.id));
-        grid.appendChild(card);
-      });
-    }
-
-    function addToBasket(productId) {
-      const existing = basket.find(b => b.productId === productId);
-      if (existing) {
-        existing.qty += 1;
-      } else {
-        basket.push({ productId, qty: 1 });
-      }
-      renderBasket();
-    }
-
-    function updateBasketQty(productId, delta) {
-      const item = basket.find(b => b.productId === productId);
-      if (!item) return;
-      item.qty += delta;
-      if (item.qty <= 0) {
-        basket = basket.filter(b => b.productId !== productId);
-      }
-      renderBasket();
-    }
-
-    function renderBasket() {
-      const container = document.getElementById("basketItems");
-      container.innerHTML = "";
-      let subtotal = 0;
-      basket.forEach(item => {
-        const product = db.products.find(p => p.id === item.productId);
-        if (!product) return;
-        const lineTotal = product.price * item.qty;
-        subtotal += lineTotal;
-        const row = document.createElement("div");
-        row.className = "basket-item";
-        row.innerHTML = \`
-          <div>\${product.name} x \${item.qty}</div>
-          <div class="basket-item-controls">
-            <button data-action="dec">-</button>
-            <button data-action="inc">+</button>
-            <span>\${db.settings.currencySymbol}\${lineTotal.toFixed(2)}</span>
-          </div>
-        \`;
-        const [decBtn, incBtn] = row.querySelectorAll("button");
-        decBtn.addEventListener("click", () => updateBasketQty(product.id, -1));
-        incBtn.addEventListener("click", () => updateBasketQty(product.id, 1));
-        container.appendChild(row);
-      });
-
-      const discountPercent = parseFloat(document.getElementById("discountPercent").value || "0");
-      const discountAmount = subtotal * (discountPercent / 100);
-      const taxable = subtotal - discountAmount;
-      const taxRate = db.settings.taxRate || 0;
-      const tax = taxable * (taxRate / 100);
-      const total = taxable + tax;
-
-      document.getElementById("subtotalDisplay").textContent = formatMoney(subtotal);
-      document.getElementById("taxDisplay").textContent = formatMoney(tax);
-      document.getElementById("totalDisplay").textContent = formatMoney(total);
-
-      updateChangeDisplay();
-    }
-
-    function formatMoney(value) {
-      return db.settings.currencySymbol + (isNaN(value) ? "0.00" : value.toFixed(2));
-    }
-
-    function initCheckoutEvents() {
-      document.getElementById("productSearch").addEventListener("input", renderProducts);
-      document.getElementById("discountPercent").addEventListener("input", renderBasket);
-
-      document.querySelectorAll(".pay-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          document.querySelectorAll(".pay-btn").forEach(b => b.classList.remove("active"));
-          btn.classList.add("active");
-          currentPaymentMethod = btn.dataset.method;
-          document.getElementById("cashPanel").style.display =
-            currentPaymentMethod === "cash" ? "block" : "none";
-        });
-      });
-
-      document.getElementById("cashGiven").addEventListener("input", updateChangeDisplay);
-      document.getElementById("cashQuick5").addEventListener("click", () => addCashQuick(5));
-      document.getElementById("cashQuick10").addEventListener("click", () => addCashQuick(10));
-      document.getElementById("cashQuick20").addEventListener("click", () => addCashQuick(20));
-
-      document.getElementById("completeSaleBtn").addEventListener("click", completeSale);
-      document.getElementById("scanBarcodeBtn").addEventListener("click", openScannerModal);
-    }
-
-    function addCashQuick(amount) {
-      const input = document.getElementById("cashGiven");
-      const current = parseFloat(input.value || "0");
-      input.value = (current + amount).toFixed(2);
-      updateChangeDisplay();
-    }
-
-    function updateChangeDisplay() {
-      const totalText = document.getElementById("totalDisplay").textContent.replace(db.settings.currencySymbol, "");
-      const total = parseFloat(totalText) || 0;
-      const cashGiven = parseFloat(document.getElementById("cashGiven").value || "0");
-      const change = Math.max(0, cashGiven - total);
-      document.getElementById("changeDisplay").textContent = change.toFixed(2);
-    }
-
-    function completeSale() {
-      if (basket.length === 0) {
-        alert("Basket is empty.");
-        return;
-      }
-
-      const discountPercent = parseFloat(document.getElementById("discountPercent").value || "0");
-      const subtotal = basket.reduce((sum, item) => {
-        const product = db.products.find(p => p.id === item.productId);
-        return sum + (product ? product.price * item.qty : 0);
-      }, 0);
-      const discountAmount = subtotal * (discountPercent / 100);
-      const taxable = subtotal - discountAmount;
-      const taxRate = db.settings.taxRate || 0;
-      const tax = taxable * (taxRate / 100);
-      const total = taxable + tax;
-
-      if (currentPaymentMethod === "cash") {
-        const cashGiven = parseFloat(document.getElementById("cashGiven").value || "0");
-        if (cashGiven < total) {
-          if (!confirm("Cash given is less than total. Continue?")) return;
-        }
-      }
-
-      const saleId = "S" + Date.now();
-      currentSaleId = saleId;
-
-      basket.forEach(item => {
-        const product = db.products.find(p => p.id === item.productId);
-        if (product && typeof product.stock === "number") {
-          product.stock = Math.max(0, product.stock - item.qty);
-        }
-      });
-
-      const sale = {
-        id: saleId,
-        timestamp: Date.now(),
-        items: basket.map(item => {
-          const product = db.products.find(p => p.id === item.productId);
-          return {
-            productId: item.productId,
-            name: product ? product.name : "",
-            price: product ? product.price : 0,
-            qty: item.qty
-          };
-        }),
-        subtotal,
-        discountPercent,
-        discountAmount,
-        tax,
-        total,
-        paymentMethod: currentPaymentMethod
-      };
-
-      db.sales.push(sale);
-      saveDB();
-
-      basket = [];
-      document.getElementById("discountPercent").value = 0;
-      document.getElementById("cashGiven").value = "";
-      renderBasket();
-      renderInventory();
-      renderSales();
-      renderReportSummary();
-
-      generateReceiptPDF(sale);
-      alert("Sale completed and receipt generated.");
-    }
-
-    function generateReceiptPDF(sale) {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-
-      const s = db.settings;
-      let y = 10;
-
-      doc.setFontSize(14);
-      doc.text(s.storeName || "Bazro", 10, y);
-      y += 6;
-      doc.setFontSize(10);
-      if (s.address) {
-        const lines = doc.splitTextToSize(s.address, 180);
-        lines.forEach(line => {
-          doc.text(line, 10, y);
-          y += 4;
-        });
-      }
-      if (s.vatNumber) {
-        doc.text(\`VAT: \${s.vatNumber}\`, 10, y);
-        y += 5;
-      }
-
-      doc.text(\`Sale ID: \${sale.id}\`, 10, y);
-      y += 5;
-      doc.text(\`Date: \${new Date(sale.timestamp).toLocaleString()}\`, 10, y);
-      y += 6;
-
-      doc.text("Items:", 10, y);
-      y += 4;
-
-      sale.items.forEach(item => {
-        const line = \`\${item.name} x\${item.qty} @ \${s.currencySymbol}\${item.price.toFixed(2)}\`;
-        doc.text(line, 10, y);
-        doc.text(\`\${s.currencySymbol}\${(item.price * item.qty).toFixed(2)}\`, 170, y, { align: "right" });
-        y += 4;
-      });
-
-      y += 2;
-      doc.text(\`Subtotal: \${s.currencySymbol}\${sale.subtotal.toFixed(2)}\`, 10, y);
-      y += 4;
-      doc.text(\`Discount (\${sale.discountPercent}%): -\${s.currencySymbol}\${sale.discountAmount.toFixed(2)}\`, 10, y);
-      y += 4;
-      doc.text(\`Tax (\${s.taxRate}%): \${s.currencySymbol}\${sale.tax.toFixed(2)}\`, 10, y);
-      y += 4;
-      doc.setFontSize(12);
-      doc.text(\`Total: \${s.currencySymbol}\${sale.total.toFixed(2)}\`, 10, y);
-      y += 6;
-      doc.setFontSize(10);
-      doc.text(\`Payment: \${sale.paymentMethod}\`, 10, y);
-      y += 8;
-
-      if (s.receiptFooter) {
-        const lines = doc.splitTextToSize(s.receiptFooter, 180);
-        lines.forEach(line => {
-          doc.text(line, 10, y);
-          y += 4;
-        });
-      }
-
-      const qrDiv = document.createElement("div");
-      new QRCode(qrDiv, {
-        text: sale.id,
-        width: 80,
-        height: 80
-      });
-      const img = qrDiv.querySelector("img");
-      if (img) {
-        const qrData = img.src;
-        doc.addImage(qrData, "PNG", 150, 10, 40, 40);
-      }
-
-      doc.save(\`receipt_\${sale.id}.pdf\`);
-    }
-
-    function renderInventory() {
-      const list = document.getElementById("inventoryList");
-      list.innerHTML = "";
-      db.products.forEach(p => {
-        const item = document.createElement("div");
-        item.className = "inventory-item";
-        const lowStock = typeof p.lowStock === "number" && typeof p.stock === "number" && p.stock <= p.lowStock;
-        item.innerHTML = \`
-          <div>
-            <div>\${p.emoji || "📦"} \${p.name}</div>
-            <div style="font-size:0.75rem;color:#555;">
-              \${p.category || "Uncategorised"} • Stock: \${p.stock ?? "-"} • £\${p.price.toFixed(2)}
-            </div>
-            \${lowStock ? '<div style="color:#dc2626;font-size:0.75rem;">Low stock alert</div>' : ""}
-          </div>
-          <button>Edit</button>
-        \`;
-        item.querySelector("button").addEventListener("click", () => openProductModal(p.id));
-        list.appendChild(item);
-      });
-    }
-
-    function initInventoryEvents() {
-      document.getElementById("addProductBtn").addEventListener("click", () => openProductModal(null));
-      document.getElementById("productForm").addEventListener("submit", saveProductFromForm);
-      document.getElementById("deleteProductBtn").addEventListener("click", deleteProductFromForm);
-    }
-
-    function openProductModal(productId) {
-      const modal = document.getElementById("productModal");
-      const title = document.getElementById("productModalTitle");
-      const deleteBtn = document.getElementById("deleteProductBtn");
-
-      if (productId) {
-        const p = db.products.find(p => p.id === productId);
-        if (!p) return;
-        title.textContent = "Edit Product";
-        deleteBtn.classList.remove("hidden");
-        document.getElementById("productId").value = p.id;
-        document.getElementById("productName").value = p.name;
-        document.getElementById("productEmoji").value = p.emoji || "";
-        document.getElementById("productCategory").value = p.category || "";
-        document.getElementById("productPrice").value = p.price;
-        document.getElementById("productCostPrice").value = p.costPrice ?? "";
-        document.getElementById("productStock").value = p.stock ?? "";
-        document.getElementById("productLowStock").value = p.lowStock ?? "";
-        document.getElementById("productBarcode").value = p.barcode || "";
-      } else {
-        title.textContent = "Add Product";
-        deleteBtn.classList.add("hidden");
-        document.getElementById("productForm").reset();
-        document.getElementById("productId").value = "";
-      }
-
-      modal.classList.remove("hidden");
-      modal.addEventListener("click", e => {
-        if (e.target === modal) modal.classList.add("hidden");
-      }, { once: true });
-    }
-
-    function saveProductFromForm(e) {
-      e.preventDefault();
-      const id = document.getElementById("productId").value || "p" + Date.now();
-      const existingIndex = db.products.findIndex(p => p.id === id);
-      const product = {
-        id,
-        name: document.getElementById("productName").value.trim(),
-        emoji: document.getElementById("productEmoji").value.trim(),
-        category: document.getElementById("productCategory").value.trim(),
-        price: parseFloat(document.getElementById("productPrice").value || "0"),
-        costPrice: parseFloat(document.getElementById("productCostPrice").value || "0"),
-        stock: parseInt(document.getElementById("productStock").value || "0", 10),
-        lowStock: parseInt(document.getElementById("productLowStock").value || "0", 10),
-        barcode: document.getElementById("productBarcode").value.trim()
-      };
-
-      if (!product.name) {
-        alert("Name is required");
-        return;
-      }
-
-      if (existingIndex >= 0) {
-        db.products[existingIndex] = product;
-      } else {
-        db.products.push(product);
-      }
-      saveDB();
-      renderProducts();
-      renderInventory();
-      document.getElementById("productModal").classList.add("hidden");
-    }
-
-    function deleteProductFromForm() {
-      const id = document.getElementById("productId").value;
-      if (!id) return;
-      if (!confirm("Delete this product?")) return;
-      db.products = db.products.filter(p => p.id !== id);
-      saveDB();
-      renderProducts();
-      renderInventory();
-      document.getElementById("productModal").classList.add("hidden");
-    }
-
-    function initSalesEvents() {
-      document.getElementById("salesFilter").addEventListener("change", renderSales);
-    }
-
-    function renderSales() {
-      const filter = document.getElementById("salesFilter").value;
-      const list = document.getElementById("salesList");
-      list.innerHTML = "";
-
-      const now = new Date();
-      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-      const startOfWeek = startOfToday - (now.getDay() || 7) * 24 * 60 * 60 * 1000;
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-
-      const filtered = db.sales.filter(sale => {
-        const t = sale.timestamp;
-        if (filter === "today") return t >= startOfToday;
-        if (filter === "week") return t >= startOfWeek;
-        if (filter === "month") return t >= startOfMonth;
-        return true;
-      });
-
-      filtered.sort((a, b) => b.timestamp - a.timestamp);
-
-      filtered.forEach(sale => {
-        const item = document.createElement("div");
-        item.className = "sale-item";
-        item.innerHTML = \`
-          <div><strong>\${sale.id}</strong></div>
-          <div style="font-size:0.75rem;color:#555;">\${new Date(sale.timestamp).toLocaleString()}</div>
-          <div style="font-size:0.8rem;">Total: \${db.settings.currencySymbol}\${sale.total.toFixed(2)} • \${sale.paymentMethod}</div>
-          <button style="margin-top:0.25rem;">View</button>
-        \`;
-        item.querySelector("button").addEventListener("click", () => viewSaleDetails(sale));
-        list.appendChild(item);
-      });
-    }
-
-    function viewSaleDetails(sale) {
-      const lines = sale.items.map(i => \`\${i.name} x\${i.qty} = \${db.settings.currencySymbol}\${(i.price * i.qty).toFixed(2)}\`).join("\\n");
-      const msg =
-        \`Sale ID: \${sale.id}\\n\` +
-        \`Date: \${new Date(sale.timestamp).toLocaleString()}\\n\` +
-        \`Items:\\n\${lines}\\n\\n\` +
-        \`Subtotal: \${db.settings.currencySymbol}\${sale.subtotal.toFixed(2)}\\n\` +
-        \`Discount: \${db.settings.currencySymbol}\${sale.discountAmount.toFixed(2)}\\n\` +
-        \`Tax: \${db.settings.currencySymbol}\${sale.tax.toFixed(2)}\\n\` +
-        \`Total: \${db.settings.currencySymbol}\${sale.total.toFixed(2)}\\n\` +
-        \`Payment: \${sale.paymentMethod}\\n\\n\` +
-        \`Re-download receipt?\`;
-      if (confirm(msg)) {
-        generateReceiptPDF(sale);
-      }
-    }
-
-    function initReportEvents() {
-      document.getElementById("generateReportBtn").addEventListener("click", generateReportPDF);
-    }
-
-    function computeTodaySales() {
-      const now = new Date();
-      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-      const todaySales = db.sales.filter(s => s.timestamp >= startOfToday);
-      const revenue = todaySales.reduce((sum, s) => sum + s.total, 0);
-      const byProduct = {};
-      const byPayment = {};
-
-      todaySales.forEach(sale => {
-        byPayment[sale.paymentMethod] = (byPayment[sale.paymentMethod] || 0) + sale.total;
-        sale.items.forEach(i => {
-          byProduct[i.name] = (byProduct[i.name] || 0) + i.qty;
-        });
-      });
-
-      const topProducts = Object.entries(byProduct)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5);
-
-      const lowStock = db.products.filter(p => typeof p.lowStock === "number" && typeof p.stock === "number" && p.stock <= p.lowStock);
-
-      return { todaySales, revenue, byPayment, topProducts, lowStock };
-    }
-
-    function renderReportSummary() {
-      const summary = document.getElementById("reportSummary");
-      const { revenue, byPayment, topProducts, lowStock } = computeTodaySales();
-      const s = db.settings;
-
-      let html = "";
-      html += \`<div>Total revenue today: <strong>\${s.currencySymbol}\${revenue.toFixed(2)}</strong></div>\`;
-      html += \`<div style="margin-top:0.25rem;">Payment breakdown:</div>\`;
-      html += \`<ul style="margin-left:1rem;font-size:0.8rem;">\`;
-      Object.entries(byPayment).forEach(([method, amount]) => {
-        html += \`<li>\${method}: \${s.currencySymbol}\${amount.toFixed(2)}</li>\`;
-      });
-      html += \`</ul>\`;
-
-      html += \`<div style="margin-top:0.25rem;">Top products:</div>\`;
-      html += \`<ul style="margin-left:1rem;font-size:0.8rem;">\`;
-      topProducts.forEach(([name, qty]) => {
-        html += \`<li>\${name}: \${qty}</li>\`;
-      });
-      html += \`</ul>\`;
-
-      html += \`<div style="margin-top:0.25rem;">Stock alerts:</div>\`;
-      if (lowStock.length === 0) {
-        html += \`<div style="font-size:0.8rem;">No low-stock items.</div>\`;
-      } else {
-        html += \`<ul style="margin-left:1rem;font-size:0.8rem;">\`;
-        lowStock.forEach(p => {
-          html += \`<li>\${p.name} — Stock: \${p.stock}</li>\`;
-        });
-        html += \`</ul>\`;
-      }
-
-      summary.innerHTML = html;
-    }
-
-    function generateReportPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const { revenue, byPayment, topProducts, lowStock } = computeTodaySales();
-      const s = db.settings;
-      let y = 10;
-
-      doc.setFontSize(14);
-      doc.text(\`\${s.storeName || "Bazro"} — End-of-day Report\`, 10, y);
-      y += 6;
-      doc.setFontSize(10);
-      doc.text(\`Date: \${new Date().toLocaleDateString()}\`, 10, y);
-      y += 8;
-
-      doc.text(\`Total revenue: \${s.currencySymbol}\${revenue.toFixed(2)}\`, 10, y);
-      y += 6;
-
-      doc.text("Payment breakdown:", 10, y);
-      y += 4;
-      Object.entries(byPayment).forEach(([method, amount]) => {
-        doc.text(\`- \${method}: \${s.currencySymbol}\${amount.toFixed(2)}\`, 12, y);
-        y += 4;
-      });
-
-      y += 4;
-      doc.text("Top products:", 10, y);
-      y += 4;
-      topProducts.forEach(([name, qty]) => {
-        doc.text(\`- \${name}: \${qty}\`, 12, y);
-        y += 4;
-      });
-
-      y += 4;
-      doc.text("Stock alerts:", 10, y);
-      y += 4;
-      if (lowStock.length === 0) {
-        doc.text("- None", 12, y);
-      } else {
-        lowStock.forEach(p => {
-          doc.text(\`- \${p.name}: stock \${p.stock}\`, 12, y);
-          y += 4;
-        });
-      }
-
-      doc.save(\`report_\${new Date().toISOString().slice(0,10)}.pdf\`);
-    }
-
-    function initSettingsEvents() {
-      document.getElementById("settingsBtn").addEventListener("click", openSettingsModal);
-      document.getElementById("settingsForm").addEventListener("submit", saveSettingsFromForm);
-    }
-
-    function openSettingsModal() {
-      const s = db.settings;
-      document.getElementById("storeName").value = s.storeName || "";
-      document.getElementById("storeAddress").value = s.address || "";
-      document.getElementById("vatNumber").value = s.vatNumber || "";
-      document.getElementById("currencySymbol").value = s.currencySymbol || "£";
-      document.getElementById("taxRate").value = s.taxRate ?? 20;
-      document.getElementById("receiptFooter").value = s.receiptFooter || "";
-
-      const modal = document.getElementById("settingsModal");
-      modal.classList.remove("hidden");
-      modal.addEventListener("click", e => {
-        if (e.target === modal) modal.classList.add("hidden");
-      }, { once: true });
-    }
-
-    function saveSettingsFromForm(e) {
-      e.preventDefault();
-      db.settings.storeName = document.getElementById("storeName").value.trim() || "Bazro";
-      db.settings.address = document.getElementById("storeAddress").value.trim();
-      db.settings.vatNumber = document.getElementById("vatNumber").value.trim();
-      db.settings.currencySymbol = document.getElementById("currencySymbol").value || "£";
-      db.settings.taxRate = parseFloat(document.getElementById("taxRate").value || "0");
-      db.settings.receiptFooter = document.getElementById("receiptFooter").value.trim();
-      saveDB();
-      renderSettingsHeader();
-      renderBasket();
-      document.getElementById("settingsModal").classList.add("hidden");
-    }
-
-    function initImportExportEvents() {
-      document.getElementById("importExportBtn").addEventListener("click", () => {
-        document.getElementById("exportJsonArea").value = "";
-        document.getElementById("importJsonArea").value = "";
-        const modal = document.getElementById("importExportModal");
-        modal.classList.remove("hidden");
-        modal.addEventListener("click", e => {
-          if (e.target === modal) modal.classList.add("hidden");
-        }, { once: true });
-      });
-
-      document.getElementById("exportJsonBtn").addEventListener("click", () => {
-        document.getElementById("exportJsonArea").value = JSON.stringify(db, null, 2);
-      });
-
-      document.getElementById("importJsonBtn").addEventListener("click", () => {
-        const text = document.getElementById("importJsonArea").value.trim();
-        if (!text) return;
-        try {
-          const imported = JSON.parse(text);
-          db = imported;
-          saveDB();
-          renderSettingsHeader();
-          renderProducts();
+    openPaymentModal();
+  });
+
+  /***********************
+   * MODAL
+   ***********************/
+  const modalBackdrop = document.getElementById("modal-backdrop");
+  const modalTitle = document.getElementById("modal-title");
+  const modalBody = document.getElementById("modal-body");
+  const modalFooter = document.getElementById("modal-footer");
+  const modalCloseBtn = document.getElementById("modal-close-btn");
+
+  function openModal(title, bodyHtml, footerButtons = []) {
+    modalTitle.textContent = title;
+    modalBody.innerHTML = bodyHtml;
+    modalFooter.innerHTML = "";
+    footerButtons.forEach(btn => {
+      const b = document.createElement("button");
+      b.textContent = btn.label;
+      b.className = btn.primary ? "btn-solid" : "btn-ghost";
+      b.addEventListener("click", btn.onClick);
+      modalFooter.appendChild(b);
+    });
+    modalBackdrop.style.display = "flex";
+  }
+
+  function closeModal() {
+    modalBackdrop.style.display = "none";
+  }
+
+  modalCloseBtn.addEventListener("click", closeModal);
+  modalBackdrop.addEventListener("click", e => {
+    if (e.target === modalBackdrop) closeModal();
+  });
+
+  /***********************
+   * PAYMENT & SALE
+   ***********************/
+  function openPaymentModal() {
+    let subtotal = 0;
+    basket.forEach(i => {
+      const p = data.products.find(p => p.id === i.productId);
+      if (!p) return;
+      subtotal += i.qty * i.price;
+    });
+    const total = subtotal;
+    const body = `
+      <div style="font-size:13px;">
+        <p><strong>Total: £${total.toFixed(2)}</strong></p>
+        <p>Payment method:</p>
+        <select id="payment-method" class="input-inline">
+          <option value="cash">Cash</option>
+          <option value="card">Card</option>
+        </select>
+        <div class="mt-6">
+          <label class="muted">Amount received (for cash)</label><br/>
+          <input id="payment-received" type="number" step="0.01" class="input-inline" placeholder="${total.toFixed(2)}" />
+        </div>
+      </div>
+    `;
+    openModal("Complete payment", body, [
+      { label: "Cancel", primary: false, onClick: closeModal },
+      {
+        label: "Confirm sale",
+        primary: true,
+        onClick: () => {
+          const method = document.getElementById("payment-method").value;
+          const receivedInput = document.getElementById("payment-received").value;
+          const received = receivedInput ? parseFloat(receivedInput) : total;
+          const change = received - total;
+          recordSale(total, method);
+          closeModal();
+          basket = [];
           renderBasket();
-          renderInventory();
+          alert(
+            method === "cash"
+              ? `Sale completed.\nTotal: £${total.toFixed(2)}\nReceived: £${received.toFixed(2)}\nChange: £${change.toFixed(2)}`
+              : `Sale completed.\nTotal: £${total.toFixed(2)}\nPayment: Card`
+          );
           renderSales();
-          renderReportSummary();
-          alert("Import successful.");
-        } catch {
-          alert("Invalid JSON.");
-        }
-      });
-
-      document.getElementById("resetDefaultsBtn").addEventListener("click", () => {
-        if (!confirm("Reset to defaults? This will erase current data.")) return;
-        db = structuredClone(defaultDB);
-        saveDB();
-        renderSettingsHeader();
-        renderProducts();
-        renderBasket();
-        renderInventory();
-        renderSales();
-        renderReportSummary();
-        alert("Reset complete.");
-      });
-    }
-
-    function initScannerEvents() {
-      document.getElementById("closeScannerBtn").addEventListener("click", closeScannerModal);
-      document.getElementById("manualBarcodeSubmit").addEventListener("click", () => {
-        const code = document.getElementById("manualBarcodeInput").value.trim();
-        if (!code) return;
-        handleBarcodeDetected(code);
-      });
-      document.getElementById("toggleFlashBtn").addEventListener("click", toggleFlashlight);
-    }
-
-    async function openScannerModal() {
-      const modal = document.getElementById("scannerModal");
-      modal.classList.remove("hidden");
-      modal.addEventListener("click", e => {
-        if (e.target === modal) closeScannerModal();
-      }, { once: true });
-
-      const video = document.getElementById("scannerVideo");
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" }
-        });
-        scannerStream = stream;
-        video.srcObject = stream;
-        const tracks = stream.getVideoTracks();
-        scannerTrack = tracks[0] || null;
-      } catch (err) {
-        alert("Camera not available. Use manual barcode entry.");
-      }
-    }
-
-    function closeScannerModal() {
-      const modal = document.getElementById("scannerModal");
-      modal.classList.add("hidden");
-      if (scannerStream) {
-        scannerStream.getTracks().forEach(t => t.stop());
-        scannerStream = null;
-        scannerTrack = null;
-        scannerTorchOn = false;
-      }
-    }
-
-    async function toggleFlashlight() {
-      if (!scannerTrack) {
-        alert("Flashlight not supported on this device.");
-        return;
-      }
-      try {
-        const capabilities = scannerTrack.getCapabilities();
-        if (!capabilities.torch) {
-          alert("Torch not supported.");
-          return;
-        }
-        scannerTorchOn = !scannerTorchOn;
-        await scannerTrack.applyConstraints({ advanced: [{ torch: scannerTorchOn }] });
-      } catch {
-        alert("Unable to toggle torch.");
-      }
-    }
-
-    function handleBarcodeDetected(code) {
-      const product = db.products.find(p => p.barcode === code);
-      if (product) {
-        addToBasket(product.id);
-        closeScannerModal();
-      } else {
-        if (confirm(\`No product with barcode \${code}. Add to inventory?\`)) {
-          closeScannerModal();
-          openProductModal(null);
-          document.getElementById("productBarcode").value = code;
+          renderReports();
         }
       }
+    ]);
+  }
+
+  function recordSale(total, method) {
+    const now = new Date();
+    const sale = {
+      id: "sale-" + now.getTime(),
+      time: now.toISOString(),
+      items: basket.map(i => ({
+        productId: i.productId,
+        qty: i.qty,
+        price: i.price
+      })),
+      total,
+      method
+    };
+    data.sales.unshift(sale);
+    saveData();
+  }
+
+  /***********************
+   * PRODUCTS SCREEN
+   ***********************/
+  const productsTableBody = document.querySelector("#products-table tbody");
+  const addProductBtn = document.getElementById("add-product-btn");
+
+  function renderProductsTable() {
+    productsTableBody.innerHTML = "";
+    data.products.forEach(p => {
+      const cat = data.categories.find(c => c.id === p.categoryId);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${p.emoji || "🛒"} ${p.name}</td>
+        <td>${cat ? cat.name : "-"}</td>
+        <td>${p.barcode || "-"}</td>
+        <td>£${p.price.toFixed(2)}</td>
+        <td>${p.stock}</td>
+        <td><button class="btn-small">Edit</button></td>
+      `;
+      const editBtn = tr.querySelector("button");
+      editBtn.addEventListener("click", () => openProductModal(p));
+      productsTableBody.appendChild(tr);
+    });
+  }
+
+  function openProductModal(product) {
+    const isEdit = !!product;
+    const catOptions = data.categories
+      .map(c => `<option value="${c.id}" ${product && product.categoryId === c.id ? "selected" : ""}>${c.emoji} ${c.name}</option>`)
+      .join("");
+    const body = `
+      <div style="font-size:13px;">
+        <div class="field">
+          <label>Name</label>
+          <input id="prod-name" type="text" value="${product ? product.name : ""}" />
+        </div>
+        <div class="field">
+          <label>Emoji</label>
+          <input id="prod-emoji" type="text" value="${product ? (product.emoji || "") : ""}" placeholder="🍎" />
+        </div>
+        <div class="field">
+          <label>Category</label>
+          <select id="prod-category" class="input-inline">
+            ${catOptions}
+          </select>
+        </div>
+        <div class="field">
+          <label>Barcode</label>
+          <input id="prod-barcode" type="text" value="${product ? (product.barcode || "") : ""}" />
+        </div>
+        <div class="field">
+          <label>Price (£)</label>
+          <input id="prod-price" type="number" step="0.01" value="${product ? product.price : 1}" />
+        </div>
+        <div class="field">
+          <label>Stock</label>
+          <input id="prod-stock" type="number" value="${product ? product.stock : 0}" />
+        </div>
+      </div>
+    `;
+    const buttons = [
+      { label: "Cancel", primary: false, onClick: closeModal },
+      {
+        label: isEdit ? "Save" : "Add",
+        primary: true,
+        onClick: () => {
+          const name = document.getElementById("prod-name").value.trim();
+          const emoji = document.getElementById("prod-emoji").value.trim() || "🛒";
+          const categoryId = document.getElementById("prod-category").value;
+          const barcode = document.getElementById("prod-barcode").value.trim();
+          const price = parseFloat(document.getElementById("prod-price").value) || 0;
+          const stock = parseInt(document.getElementById("prod-stock").value, 10) || 0;
+          if (!name || !categoryId) {
+            alert("Name and category are required.");
+            return;
+          }
+          if (isEdit) {
+            product.name = name;
+            product.emoji = emoji;
+            product.categoryId = categoryId;
+            product.barcode = barcode;
+            product.price = price;
+            product.stock = stock;
+          } else {
+            data.products.push({
+              id: "p-" + Date.now(),
+              name,
+              emoji,
+              categoryId,
+              barcode,
+              price,
+              stock
+            });
+          }
+          saveData();
+          closeModal();
+          renderProductsTable();
+          renderProductGrid();
+        }
+      }
+    ];
+    if (isEdit) {
+      buttons.splice(1, 0, {
+        label: "Delete",
+        primary: false,
+        onClick: () => {
+          if (confirm("Delete this product?")) {
+            data.products = data.products.filter(p => p !== product);
+            saveData();
+            closeModal();
+            renderProductsTable();
+            renderProductGrid();
+          }
+        }
+      });
     }
-  </script>
+    openModal(isEdit ? "Edit product" : "Add product", body, buttons);
+  }
+
+  addProductBtn.addEventListener("click", () => openProductModal(null));
+
+  /***********************
+   * CATEGORIES SCREEN
+   ***********************/
+  const categoriesTableBody = document.querySelector("#categories-table tbody");
+  const addCategoryBtn = document.getElementById("add-category-btn");
+
+  function renderCategoriesTable() {
+    categoriesTableBody.innerHTML = "";
+    data.categories.forEach(c => {
+      const count = data.products.filter(p => p.categoryId === c.id).length;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${c.name}</td>
+        <td>${c.emoji}</td>
+        <td>${count}</td>
+        <td><button class="btn-small">Edit</button></td>
+      `;
+      const editBtn = tr.querySelector("button");
+      editBtn.addEventListener("click", () => openCategoryModal(c));
+      categoriesTableBody.appendChild(tr);
+    });
+  }
+
+  function openCategoryModal(category) {
+    const isEdit = !!category;
+    const body = `
+      <div style="font-size:13px;">
+        <div class="field">
+          <label>Name</label>
+          <input id="cat-name" type="text" value="${category ? category.name : ""}" />
+        </div>
+        <div class="field">
+          <label>Emoji</label>
+          <input id="cat-emoji" type="text" value="${category ? category.emoji : ""}" placeholder="🍎" />
+        </div>
+      </div>
+    `;
+    const buttons = [
+      { label: "Cancel", primary: false, onClick: closeModal },
+      {
+        label: isEdit ? "Save" : "Add",
+        primary: true,
+        onClick: () => {
+          const name = document.getElementById("cat-name").value.trim();
+          const emoji = document.getElementById("cat-emoji").value.trim() || "🛒";
+          if (!name) {
+            alert("Name is required.");
+            return;
+          }
+          if (isEdit) {
+            category.name = name;
+            category.emoji = emoji;
+          } else {
+            data.categories.push({
+              id: "cat-" + Date.now(),
+              name,
+              emoji
+            });
+          }
+          saveData();
+          closeModal();
+          renderCategoriesTable();
+          renderCategoryBar();
+          renderProductGrid();
+        }
+      }
+    ];
+    if (isEdit) {
+      buttons.splice(1, 0, {
+        label: "Delete",
+        primary: false,
+        onClick: () => {
+          const count = data.products.filter(p => p.categoryId === category.id).length;
+          if (count > 0) {
+            alert("Cannot delete category with products.");
+            return;
+          }
+          if (confirm("Delete this category?")) {
+            data.categories = data.categories.filter(c => c !== category);
+            saveData();
+            closeModal();
+            renderCategoriesTable();
+            renderCategoryBar();
+            renderProductGrid();
+          }
+        }
+      });
+    }
+    openModal(isEdit ? "Edit category" : "Add category", body, buttons);
+  }
+
+  addCategoryBtn.addEventListener("click", () => openCategoryModal(null));
+
+  /***********************
+   * SALES SCREEN
+   ***********************/
+  const salesTableBody = document.querySelector("#sales-table tbody");
+
+  function renderSales() {
+    salesTableBody.innerHTML = "";
+    data.sales.forEach(sale => {
+      const date = new Date(sale.time);
+      const itemsCount = sale.items.reduce((sum, i) => sum + i.qty, 0);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${date.toLocaleString()}</td>
+        <td>${itemsCount}</td>
+        <td>£${sale.total.toFixed(2)}</td>
+        <td>${sale.method}</td>
+      `;
+      salesTableBody.appendChild(tr);
+    });
+  }
+
+  /***********************
+   * REPORTS
+   ***********************/
+  const reportsSummary = document.getElementById("reports-summary");
+  const exportReportBtn = document.getElementById("export-report-btn");
+
+  function renderReports() {
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+    let totalSales = 0;
+    let countSales = 0;
+    let itemsSold = 0;
+    data.sales.forEach(s => {
+      if (s.time.slice(0, 10) === todayStr) {
+        totalSales += s.total;
+        countSales += 1;
+        itemsSold += s.items.reduce((sum, i) => sum + i.qty, 0);
+      }
+    });
+    reportsSummary.innerHTML = `
+      <p>Date: <strong>${today.toLocaleDateString()}</strong></p>
+      <p>Total sales: <strong>£${totalSales.toFixed(2)}</strong></p>
+      <p>Transactions: <strong>${countSales}</strong></p>
+      <p>Items sold: <strong>${itemsSold}</strong></p>
+      <p class="muted mt-6">Export will download a JSON file with all sales.</p>
+    `;
+  }
+
+  exportReportBtn.addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(data.sales, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "sales-report.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  /***********************
+   * SETTINGS
+   ***********************/
+  const resetDataBtn = document.getElementById("reset-data-btn");
+  resetDataBtn.addEventListener("click", () => {
+    if (!confirm("Reset to demo data? This will erase current products, categories and sales.")) return;
+    data = defaultData();
+    saveData();
+    renderAll();
+  });
+
+  /***********************
+   * SCANNER (simple)
+   ***********************/
+  const openScannerBtn = document.getElementById("open-scanner-btn");
+
+  openScannerBtn.addEventListener("click", () => {
+    const body = `
+      <div style="font-size:13px;">
+        <p><strong>Barcode scanner</strong></p>
+        <p class="muted">This demo uses manual barcode entry. In a real setup, you’d connect a camera or USB scanner.</p>
+        <div class="field">
+          <label>Barcode</label>
+          <input id="scan-barcode" type="text" placeholder="Scan or type barcode" />
+        </div>
+      </div>
+    `;
+    openModal("Scan product", body, [
+      { label: "Cancel", primary: false, onClick: closeModal },
+      {
+        label: "Add to basket",
+        primary: true,
+        onClick: () => {
+          const code = document.getElementById("scan-barcode").value.trim();
+          if (!code) {
+            alert("Enter a barcode.");
+            return;
+          }
+          const product = data.products.find(p => p.barcode === code);
+          if (!product) {
+            alert("No product found with that barcode.");
+            return;
+          }
+          addToBasket(product.id);
+          closeModal();
+        }
+      }
+    ]);
+  });
+
+  /***********************
+   * INITIAL RENDER
+   ***********************/
+  function renderAll() {
+    renderCategoryBar();
+    renderProductGrid();
+    renderBasket();
+    renderProductsTable();
+    renderCategoriesTable();
+    renderSales();
+    renderReports();
+  }
+
+  if (!existingSession) {
+    // when not auto-logged in, still prepare UI so it's ready after login
+    renderAll();
+  }
+</script>
 </body>
 </html>
