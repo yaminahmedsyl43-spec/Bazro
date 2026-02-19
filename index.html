@@ -42,7 +42,7 @@ nav{flex:1;padding:10px 0;overflow-y:auto;}
 .scan-btn{background:var(--accent2);border:none;border-radius:10px;padding:9px 13px;color:#fff;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;transition:.15s;}
 .scan-btn:hover{background:#9a7aff;}
 .cats{display:flex;gap:6px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface);overflow-x:auto;flex-shrink:0;}
-.cats::-webkit-scrollbar{height:3px;} .cats::-webkit-scrollbar-thumb{background:var(--border);}
+.cats::-webkit-scrollbar{height:3px;}.cats::-webkit-scrollbar-thumb{background:var(--border);}
 .cb{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;transition:.15s;}
 .cb.on,.cb:hover{background:var(--accent);color:#000;border-color:var(--accent);}
 #pgrid{flex:1;overflow-y:auto;padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;align-content:start;}
@@ -55,9 +55,10 @@ nav{flex:1;padding:10px 0;overflow-y:auto;}
 .pbc{font-size:9px;color:var(--text2);font-family:monospace;}
 .pp{font-size:15px;font-weight:700;color:var(--accent);font-family:monospace;}
 .ps{font-size:9px;padding:2px 5px;border-radius:4px;width:fit-content;font-family:monospace;}
-.so{background:rgba(0,229,160,.1);color:var(--accent);}
-.sl{background:rgba(255,176,32,.1);color:var(--warning);}
-.sx{background:rgba(255,68,68,.1);color:var(--danger);}
+/* FIXED: renamed stock badge classes to avoid conflict with scanner .scan-line class */
+.stk-ok{background:rgba(0,229,160,.1);color:var(--accent);}
+.stk-low{background:rgba(255,176,32,.1);color:var(--warning);}
+.stk-out{background:rgba(255,68,68,.1);color:var(--danger);}
 
 /* ── BASKET ── */
 #bpanel{width:320px;min-width:320px;display:flex;flex-direction:column;background:var(--surface);}
@@ -91,7 +92,7 @@ nav{flex:1;padding:10px 0;overflow-y:auto;}
 .btn-d:hover{background:#ff6a6a;}
 .btn-s{background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:12px;padding:9px;}
 
-/* ── TOOLBAR (inventory etc) ── */
+/* ── TOOLBAR ── */
 .tb{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--surface);flex-shrink:0;flex-wrap:wrap;}
 .tb h2{font-size:18px;font-weight:800;}
 .sp{flex:1;}
@@ -106,11 +107,11 @@ nav{flex:1;padding:10px 0;overflow-y:auto;}
 .scan-grp{display:flex;gap:5px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:5px 9px;}
 .scan-grp label{font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:1px;}
 
-/* ── TABLE ── */
+/* ── INVENTORY TABLE ── */
 #pg-inv{flex-direction:column;}
 #inv-wrap{flex:1;overflow:auto;padding:14px 18px;}
 table{width:100%;border-collapse:collapse;}
-th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text2);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);}
+th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text2);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:1;}
 td{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.03);font-size:13px;vertical-align:middle;}
 tr:hover td{background:var(--surface2);}
 .sp-pill{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;font-family:monospace;}
@@ -138,6 +139,53 @@ tr:hover td{background:var(--surface2);}
 .ss{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px;}
 .ss h3{font-size:14px;font-weight:800;margin-bottom:12px;}
 
+/* ── EOD PAGE ── */
+#pg-eod{flex-direction:column;}
+#eod-wrap{flex:1;overflow-y:auto;padding:24px;display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;}
+
+/* EOD Input Panel */
+.eod-input-panel{flex:1;min-width:300px;max-width:480px;}
+.eod-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px;}
+.eod-section h3{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.eod-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.eod-field label{font-size:11px;color:var(--text2);font-weight:600;}
+.eod-field-row{display:flex;align-items:center;gap:8px;}
+.eod-prefix{font-size:16px;font-weight:700;color:var(--text2);font-family:monospace;}
+.eod-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:18px;font-weight:700;font-family:monospace;outline:none;text-align:right;}
+.eod-input:focus{border-color:var(--accent);}
+.eod-input.neg{color:var(--danger);}
+.eod-input.pos{color:var(--accent);}
+.eod-divider{border:none;border-top:1px dashed var(--border);margin:16px 0;}
+.eod-net-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;}
+.eod-net-label{font-size:18px;font-weight:800;}
+.eod-net-value{font-size:28px;font-weight:800;font-family:monospace;color:var(--accent);}
+.eod-net-value.negative{color:var(--danger);}
+.eod-till-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;}
+.eod-till-label{font-size:13px;color:var(--text2);font-weight:600;}
+.eod-till-value{font-size:16px;font-weight:700;font-family:monospace;color:var(--text2);}
+.eod-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;}
+
+/* EOD Receipt Preview */
+.eod-preview-panel{flex:1;min-width:280px;max-width:400px;}
+.eod-receipt{background:#fff;color:#000;border-radius:12px;padding:32px 28px;font-family:'Courier New',Courier,monospace;box-shadow:0 8px 40px rgba(0,0,0,.4);}
+.eod-receipt-title{text-align:center;margin-bottom:6px;}
+.eod-receipt-title h2{font-size:28px;font-weight:900;letter-spacing:1px;}
+.eod-receipt-date{text-align:center;font-size:14px;font-weight:700;margin-bottom:8px;}
+.eod-receipt-addr{text-align:center;font-size:12px;color:#666;margin-bottom:18px;}
+.eod-receipt-hr{border:none;border-top:1px solid #ccc;margin:12px 0;}
+.eod-receipt-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed #ddd;}
+.eod-receipt-row:last-of-type{border-bottom:none;}
+.eod-receipt-row .rl{font-size:14px;font-weight:700;}
+.eod-receipt-row .rv{font-size:14px;font-weight:700;}
+.eod-receipt-row .rv.neg{color:#c00;}
+.eod-receipt-total-hr{border:none;border-top:2px solid #999;margin:14px 0 6px;}
+.eod-receipt-net{display:flex;justify-content:space-between;padding:8px 0;}
+.eod-receipt-net .rl{font-size:18px;font-weight:900;}
+.eod-receipt-net .rv{font-size:18px;font-weight:900;}
+.eod-receipt-till{display:flex;justify-content:space-between;padding:10px 0 0;}
+.eod-receipt-till .rl{font-size:13px;color:#888;font-weight:600;}
+.eod-receipt-till .rv{font-size:13px;color:#888;font-weight:600;}
+
 /* ── SETTINGS ── */
 #pg-set{flex-direction:column;}
 #set-c{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;}
@@ -155,7 +203,8 @@ tr:hover td{background:var(--surface2);}
 .mclose{position:absolute;top:16px;right:16px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:16px;cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center;}
 .mclose:hover{color:var(--text);background:var(--border);}
 
-/* ── SCANNER ── */
+/* ── SCANNER MODAL ── */
+/* NOTE: renamed scan line class to .scan-line to avoid conflict with .sl stock badge */
 .mo.scan-mo{max-width:420px;}
 .vwrap{position:relative;border-radius:10px;overflow:hidden;background:#000;margin-bottom:10px;}
 #sv{width:100%;display:block;max-height:260px;object-fit:cover;}
@@ -163,7 +212,8 @@ tr:hover td{background:var(--surface2);}
 .sfr{width:210px;height:120px;border:2px solid var(--accent);border-radius:8px;box-shadow:0 0 0 999px rgba(0,0,0,.5);position:relative;}
 .sfr::before{content:'';position:absolute;top:-2px;left:-2px;width:16px;height:16px;border-top:3px solid #fff;border-left:3px solid #fff;border-radius:3px 0 0 0;}
 .sfr::after{content:'';position:absolute;bottom:-2px;right:-2px;width:16px;height:16px;border-bottom:3px solid #fff;border-right:3px solid #fff;border-radius:0 0 3px 0;}
-.sl{position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);box-shadow:0 0 8px var(--accent);animation:sla 2s ease-in-out infinite;}
+/* FIXED: was .sl — renamed to .scan-line to avoid clash with stock-low badge */
+.scan-line{position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);box-shadow:0 0 8px var(--accent);animation:sla 2s ease-in-out infinite;}
 @keyframes sla{0%,100%{top:0}50%{top:calc(100% - 2px)}}
 .sbadge{display:inline-block;font-size:9px;font-weight:700;padding:3px 10px;border-radius:20px;margin-bottom:10px;font-family:monospace;}
 .sb-co{background:rgba(124,92,252,.15);color:var(--accent2);border:1px solid var(--accent2);}
@@ -172,9 +222,9 @@ tr:hover td{background:var(--surface2);}
 .sb-as{background:rgba(255,107,53,.12);color:#ff6b35;border:1px solid #ff6b35;}
 .sres{font-size:11px;color:var(--text2);text-align:center;padding:8px;min-height:36px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);margin-bottom:8px;font-family:monospace;line-height:1.5;}
 .sctrls{display:flex;gap:7px;}
-.tb2{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px;color:var(--text);font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-size:12px;transition:.15s;}
-.tb2:hover{border-color:var(--warning);color:var(--warning);}
-.tb2.on{background:rgba(255,176,32,.15);border-color:var(--warning);color:var(--warning);}
+.torch-btn{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px;color:var(--text);font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px;font-size:12px;cursor:pointer;transition:.15s;}
+.torch-btn:hover{border-color:var(--warning);color:var(--warning);}
+.torch-btn.on{background:rgba(255,176,32,.15);border-color:var(--warning);color:var(--warning);}
 .manwrap{margin:8px 0;}
 .sip{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:12px;}
 .sip h4{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
@@ -238,6 +288,7 @@ tr:hover td{background:var(--surface2);}
     <button class="nb" data-pg="inv"><span class="ic">📦</span><span>Inventory</span></button>
     <button class="nb" data-pg="hist"><span class="ic">📋</span><span>Sales History</span></button>
     <button class="nb" data-pg="rep"><span class="ic">📊</span><span>Reports</span></button>
+    <button class="nb" data-pg="eod"><span class="ic">🏁</span><span>EOD</span></button>
     <button class="nb" data-pg="set"><span class="ic">⚙️</span><span>Settings</span></button>
   </nav>
   <div class="sfoot">
@@ -253,7 +304,7 @@ tr:hover td{background:var(--surface2);}
   <section id="pg-checkout" class="page on">
     <div id="prod-panel">
       <div class="ph">
-        <input class="si" id="psearch" placeholder="🔍 Search or type barcode + Enter">
+        <input class="si" id="psearch" placeholder="🔍  Search or type barcode + Enter">
         <button class="scan-btn" onclick="openScanner('checkout')">📷 Scan</button>
       </div>
       <div class="cats" id="cats"></div>
@@ -317,14 +368,116 @@ tr:hover td{background:var(--surface2);}
     <div id="hlist"></div>
   </section>
 
-  <!-- REPORTS -->
+  <!-- REPORTS (auto stats) -->
   <section id="pg-rep" class="page">
     <div class="tb">
       <h2>📊 Reports</h2>
       <div class="sp"></div>
-      <button class="bsm" onclick="exportReport()">⬇ PDF</button>
+      <button class="bsm" onclick="exportReport()">⬇ Export TXT</button>
     </div>
     <div id="rep-c"></div>
+  </section>
+
+  <!-- EOD — End of Day -->
+  <section id="pg-eod" class="page">
+    <div class="tb">
+      <h2>🏁 End of Day</h2>
+      <div class="sp"></div>
+      <input type="date" id="eod-date" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);outline:none;font-size:12px;" oninput="recalcEOD()">
+      <button class="bsm grn" onclick="saveEOD()">💾 Save Record</button>
+      <button class="bsm sec" onclick="printEOD()">🖨 Print / PDF</button>
+    </div>
+    <div id="eod-wrap">
+
+      <!-- Input Panel -->
+      <div class="eod-input-panel">
+        <div class="eod-section">
+          <h3>💵 Sales</h3>
+          <div class="eod-field">
+            <label>Cash Sales</label>
+            <div class="eod-field-row">
+              <span class="eod-prefix" id="eod-sym1">£</span>
+              <input class="eod-input pos" id="eod-cash" type="number" step="0.01" min="0" placeholder="0.00" oninput="recalcEOD()">
+            </div>
+          </div>
+          <div class="eod-field">
+            <label>Card Sales</label>
+            <div class="eod-field-row">
+              <span class="eod-prefix" id="eod-sym2">£</span>
+              <input class="eod-input pos" id="eod-card" type="number" step="0.01" min="0" placeholder="0.00" oninput="recalcEOD()">
+            </div>
+          </div>
+        </div>
+
+        <div class="eod-section">
+          <h3>🧾 Expenses / Refunds</h3>
+          <div class="eod-field">
+            <label>Total Expenses (enter as positive, shown as deduction)</label>
+            <div class="eod-field-row">
+              <span class="eod-prefix">−</span>
+              <span class="eod-prefix" id="eod-sym3">£</span>
+              <input class="eod-input neg" id="eod-exp" type="number" step="0.01" min="0" placeholder="0.00" oninput="recalcEOD()">
+            </div>
+          </div>
+          <div class="eod-field" style="margin-bottom:0">
+            <label>Expense Notes (optional)</label>
+            <input class="eod-input" id="eod-expnotes" type="text" placeholder="e.g. Staff wages, refunds…" style="font-size:13px;text-align:left;padding:10px 14px;" oninput="recalcEOD()">
+          </div>
+        </div>
+
+        <div class="eod-section">
+          <h3>💰 Till Cash</h3>
+          <div class="eod-field">
+            <label>Cash Left in Till (informational only)</label>
+            <div class="eod-field-row">
+              <span class="eod-prefix" id="eod-sym4">£</span>
+              <input class="eod-input" id="eod-till" type="number" step="0.01" min="0" placeholder="0.00" oninput="recalcEOD()">
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--text2);margin-top:4px;">This is just shown on the summary — it does not affect the Net Total.</div>
+        </div>
+
+        <!-- Saved EOD Records -->
+        <div class="eod-section" id="eod-history-section">
+          <h3>📅 Saved Records</h3>
+          <div id="eod-history-list"><p style="color:var(--text2);font-size:12px">No records saved yet.</p></div>
+        </div>
+      </div>
+
+      <!-- Live Receipt Preview -->
+      <div class="eod-preview-panel">
+        <div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">📄 Preview</div>
+        <div class="eod-receipt" id="eod-receipt-preview">
+          <div class="eod-receipt-title"><h2 id="pr-name">BAZRO</h2></div>
+          <div class="eod-receipt-date" id="pr-date">--/--/----</div>
+          <div class="eod-receipt-addr" id="pr-addr"></div>
+          <hr class="eod-receipt-hr">
+          <div class="eod-receipt-row">
+            <span class="rl">Cash Sales:</span>
+            <span class="rv" id="pr-cash">£0.00</span>
+          </div>
+          <div class="eod-receipt-row">
+            <span class="rl">Card Sales:</span>
+            <span class="rv" id="pr-card">£0.00</span>
+          </div>
+          <div class="eod-receipt-row">
+            <span class="rl">Expenses:</span>
+            <span class="rv neg" id="pr-exp">- £0.00</span>
+          </div>
+          <hr class="eod-receipt-total-hr">
+          <div class="eod-receipt-net">
+            <span class="rl">NET TOTAL:</span>
+            <span class="rv" id="pr-net">£0.00</span>
+          </div>
+          <hr class="eod-receipt-hr">
+          <div class="eod-receipt-till">
+            <span class="rl">Till Left:</span>
+            <span class="rv" id="pr-till">£0.00</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </section>
 
   <!-- SETTINGS -->
@@ -346,7 +499,7 @@ tr:hover td{background:var(--surface2);}
       </div>
       <div class="ss">
         <h3>💱 Localisation</h3>
-        <div class="fr"><label>Currency</label><input id="sc2" placeholder="£" style="max-width:80px"></div>
+        <div class="fr"><label>Currency Symbol</label><input id="sc2" placeholder="£" style="max-width:80px"></div>
         <div class="fr"><label>Tax Rate (%)</label><input id="stx" type="number" placeholder="20" style="max-width:100px"></div>
       </div>
       <div class="ss">
@@ -371,8 +524,12 @@ tr:hover td{background:var(--surface2);}
     <button class="mclose" onclick="closeScanner()">✕</button>
     <h2 id="sc-title">📷 Scanner</h2>
     <div id="sc-badge"></div>
-    <div class="vwrap"><video id="sv" autoplay playsinline muted></video>
-      <div class="sov"><div class="sfr"><div class="sl"></div></div></div>
+    <div class="vwrap">
+      <video id="sv" autoplay playsinline muted></video>
+      <div class="sov">
+        <!-- FIXED: class is now "scan-line" not "sl" -->
+        <div class="sfr"><div class="scan-line"></div></div>
+      </div>
     </div>
     <div class="sres" id="sres">Point camera at a barcode…</div>
     <div class="manwrap" id="manwrap" style="display:none">
@@ -380,10 +537,9 @@ tr:hover td{background:var(--surface2);}
         onkeydown="if(event.key==='Enter'&&this.value.trim()){handleScan(this.value.trim());this.value='';}">
     </div>
     <div class="sctrls">
-      <button class="tb2" id="torch-btn" onclick="toggleTorch()">🔦 Flashlight</button>
-      <button class="tb2" onclick="closeScanner()">✕ Close</button>
+      <button class="torch-btn" id="torch-btn" onclick="toggleTorch()">🔦 Flashlight</button>
+      <button class="torch-btn" onclick="closeScanner()">✕ Close</button>
     </div>
-    <!-- Stock-In panel -->
     <div class="sip" id="sip" style="display:none">
       <h4>⬆ Stock-In Controls</h4>
       <div id="sipl" style="color:var(--text2);font-size:12px">Scan a product…</div>
@@ -401,7 +557,7 @@ tr:hover td{background:var(--surface2);}
   </div>
 </div>
 
-<!-- PRODUCT FOUND (inv-find) -->
+<!-- PRODUCT FOUND -->
 <div class="ov" id="mo-found">
   <div class="mo" style="max-width:380px">
     <button class="mclose" onclick="closeMo('mo-found')">✕</button>
@@ -455,7 +611,7 @@ tr:hover td{background:var(--surface2);}
   </div>
 </div>
 
-<!-- ITEM (add/edit) -->
+<!-- ITEM MODAL -->
 <div class="ov" id="mo-item">
   <div class="mo" style="max-width:540px">
     <button class="mclose" onclick="closeMo('mo-item')">✕</button>
@@ -495,114 +651,79 @@ tr:hover td{background:var(--surface2);}
   </div>
 </div>
 
-<!-- TOAST -->
-<div id="toasts" style="position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:6px;"></div>
+<div id="toasts" style="position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:6px;pointer-events:none;"></div>
 
 <script>
 // ════════════════════════════════════════════════
-//  MINIMAL QR CODE (pure JS, no dependencies)
+//  MINIMAL QR CODE (pure JS)
 // ════════════════════════════════════════════════
-const QR = (function(){
-  // Reed-Solomon error correction
-  const GF = {exp:new Uint8Array(512),log:new Uint8Array(256)};
-  let x=1;
-  for(let i=0;i<255;i++){GF.exp[i]=x;GF.log[x]=i;x<<=1;if(x&256)x^=285;}
+const QR=(function(){
+  const GF={exp:new Uint8Array(512),log:new Uint8Array(256)};
+  let x=1;for(let i=0;i<255;i++){GF.exp[i]=x;GF.log[x]=i;x<<=1;if(x&256)x^=285;}
   for(let i=255;i<512;i++)GF.exp[i]=GF.exp[i-255];
   const gmul=(a,b)=>a&&b?GF.exp[(GF.log[a]+GF.log[b])%255]:0;
   function genPoly(ec){let p=[1];for(let i=0;i<ec;i++){let q=[1,GF.exp[i]];let r=[];for(let j=0;j<p.length+1;j++){r[j]=0;if(j<p.length)r[j]^=p[j];if(j>0)r[j]^=gmul(p[j-1],q[1]);}p=r;}return p;}
   function rsEncode(data,ec){const g=genPoly(ec);let r=[...data];for(let i=0;i<data.length;i++){const c=r.shift();if(c)for(let j=0;j<g.length-1;j++)r[j]^=gmul(c,g[j]);}return r;}
-
   const PAD=[236,17];
-  const INF=[[1,26,19,0],[1,26,16,0],[1,26,13,0],[1,26,9,0],[1,44,34,0],[1,44,28,0],[1,44,22,0],[1,44,16,0],[1,70,55,0],[1,70,44,0],[2,35,17,0],[2,35,13,0],[1,100,80,0],[2,50,32,0],[2,50,24,0],[4,25,9,0],[1,134,108,0],[2,67,43,0],[2,33,15,2],[2,33,11,2],[2,86,68,0],[4,43,27,0],[4,43,19,0],[4,43,15,0],[2,98,78,0],[4,49,31,0],[2,32,14,4],[4,39,13,1],[2,121,97,0],[2,60,38,2],[4,40,18,2],[4,40,14,2],[2,146,116,0],[3,58,36,2],[4,36,16,4],[4,36,12,4],[2,86,68,2],[4,69,43,1],[6,43,19,2],[6,43,15,2],[4,101,81,0],[1,80,50,4],[4,50,22,4],[3,36,12,8],[2,116,92,2],[6,58,36,2],[4,46,20,6],[7,42,14,4],[3,145,107,5],[5,74,47,5],[8,44,20,8],[12,36,11,11],[4,109,115,0]];
-
   function encode(text){
     const bytes=[];for(let i=0;i<text.length;i++)bytes.push(text.charCodeAt(i)&0xff);
-    // Find version
-    let ver=1;
-    for(;ver<=40;ver++){const inf=INF[(ver-1)*4+1];const cap=inf[1];if(bytes.length+2<=cap)break;}
+    let ver=1;for(;ver<=10;ver++){if(bytes.length+2<=(ver*4+17)*2)break;}
     ver=Math.max(1,Math.min(ver,10));
-    const inf=INF[(ver-1)*4+1];
-    const ec=inf[1]-inf[2];
-    // Build data
+    const ecBytes=Math.max(7,Math.floor(bytes.length*0.5));
     let bits=[];
     const push=(val,n)=>{for(let i=n-1;i>=0;i--)bits.push((val>>i)&1);};
-    push(4,4);push(bytes.length,8);
-    bytes.forEach(b=>push(b,8));
-    push(0,4);
+    push(4,4);push(bytes.length,8);bytes.forEach(b=>push(b,8));push(0,4);
     while(bits.length%8)bits.push(0);
     const data=[];for(let i=0;i<bits.length;i+=8){let b=0;for(let j=0;j<8;j++)b=(b<<1)|bits[i+j];data.push(b);}
-    while(data.length<inf[2]){data.push(PAD[data.length%2===0?0:1]);}
-    const ecc=rsEncode(data,ec);
-    const all=[...data,...ecc];
-    // Build matrix
+    const cap=Math.max(data.length+2,19+ver*3);
+    while(data.length<cap)data.push(PAD[data.length%2===0?0:1]);
+    const ec=Math.min(ecBytes,cap-data.length+ecBytes);
+    const ecc=rsEncode(data.slice(0,cap-ec),ec);
+    const all=[...data.slice(0,cap-ec),...ecc];
     const sz=ver*4+17;
     const mat=Array.from({length:sz},()=>new Uint8Array(sz).fill(2));
     const set=(r,c,v)=>{if(r>=0&&r<sz&&c>=0&&c<sz)mat[r][c]=v;};
     const finder=(r,c)=>{for(let i=-1;i<=7;i++)for(let j=-1;j<=7;j++){if(i>=0&&i<=6&&j>=0&&j<=6)set(r+i,c+j,(i===0||i===6||j===0||j===6)?1:(i>=2&&i<=4&&j>=2&&j<=4)?1:0);else set(r+i,c+j,0);}};
     finder(0,0);finder(0,sz-7);finder(sz-7,0);
-    for(let i=0;i<8;i++){set(7,i,0);set(i,7,0);set(7,sz-1-i,0);set(sz-8+i,7,0);set(sz-8,sz-1-i,0);set(sz-1-i,sz-8,0);}
-    for(let i=8;i<sz-8;i++){const v=i%2===0?1:0;if(mat[6][i]===2)mat[6][i]=v;if(mat[i][6]===2)mat[i][6]=v;}
+    for(let i=8;i<sz-8;i++){if(mat[6][i]===2)mat[6][i]=i%2===0?1:0;if(mat[i][6]===2)mat[i][6]=i%2===0?1:0;}
     mat[sz-8][8]=1;
-    // alignment patterns
-    if(ver>1){const apos=[6,18,22,26,30,34,38];const ap=apos.slice(0,Math.floor(ver/7)+2);for(let ai=0;ai<ap.length;ai++)for(let aj=0;aj<ap.length;aj++){const r=ap[ai],c=ap[aj];if(mat[r][c]===2){for(let i=-2;i<=2;i++)for(let j=-2;j<=2;j++)set(r+i,c+j,Math.abs(i)===2||Math.abs(j)===2?1:i===0&&j===0?1:0);}}}
-    // data placement
     let bi=0;let up=true;
-    for(let col=sz-1;col>=1;col-=2){if(col===6)col=5;for(let rr=0;rr<sz;rr++){const r=up?sz-1-rr:rr;for(let dc=0;dc<2;dc++){const c=col-dc;if(mat[r][c]===2){const bit=bi<all.length*8?(all[Math.floor(bi/8)]>>(7-bi%8))&1:0;mat[r][c]=bit^((r+c)%2===0?1:0);bi++;}}}} up=!up;
-    // Format info (ECC level M = 00, mask 2)
-    const fmt=0b101010000010010;
-    for(let i=0;i<6;i++){set(8,i,i<fmt.toString(2).length?(fmt>>(fmt.toString(2).length-1-i))&1:0);}
-    const fb=[...fmt.toString(2).padStart(15,'0')].map(Number);
-    for(let i=0;i<6;i++)mat[i][8]=fb[i];
-    mat[7][8]=fb[6];mat[8][8]=fb[7];mat[8][7]=fb[8];
-    for(let i=0;i<6;i++)mat[8][sz-1-i]=fb[i];
-    for(let i=0;i<7;i++)mat[sz-7+i][8]=fb[8+i];
+    for(let col=sz-1;col>=1;col-=2){if(col===6)col=5;for(let rr=0;rr<sz;rr++){const r=up?sz-1-rr:rr;for(let dc=0;dc<2;dc++){const c=col-dc;if(mat[r][c]===2){const bit=bi<all.length*8?(all[Math.floor(bi/8)]>>(7-bi%8))&1:0;mat[r][c]=bit^((r+c)%2===0?1:0);bi++;}}}up=!up;}
     return{mat,sz};
   }
-
   function draw(canvas,text,size){
     try{
       const{mat,sz}=encode(text);
-      const cell=Math.floor(size/sz);
-      const off=Math.floor((size-cell*sz)/2);
+      const cell=Math.floor(size/sz);const off=Math.floor((size-cell*sz)/2);
       canvas.width=canvas.height=size;
       const ctx=canvas.getContext('2d');
       ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size);
       ctx.fillStyle='#000';
       for(let r=0;r<sz;r++)for(let c=0;c<sz;c++)if(mat[r][c]===1)ctx.fillRect(off+c*cell,off+r*cell,cell,cell);
-    }catch(e){
-      // fallback: blank white
-      canvas.width=canvas.height=size;
-      const ctx=canvas.getContext('2d');
-      ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size);
-    }
+    }catch(e){canvas.width=canvas.height=size;const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size);}
   }
   return{draw};
 })();
 
 // ════════════════════════════════════════════════
-//  MINIMAL PDF GENERATOR (pure JS, no dependencies)
+//  MINIMAL PDF GENERATOR (pure JS)
 // ════════════════════════════════════════════════
-const PDF = (function(){
+const PDF=(function(){
   function create(){
-    // 58mm receipt width = ~165pt. Use points (1pt = 1/72 inch)
-    const W=226,H=800; // will crop
-    let objs=[],content=[],y=0;
-    const enc=s=>s.replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
-    function text(t,x,yt,size,bold){
-      content.push(`BT /F${bold?'B':'N'} ${size} Tf ${x} ${H-yt} Td (${enc(String(t))}) Tj ET`);
-    }
+    const W=226,H=800;let content=[];
+    const enc=s=>String(s).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
+    function text(t,x,yt,size,bold){content.push(`BT /F${bold?'B':'N'} ${size} Tf ${x} ${H-yt} Td (${enc(t)}) Tj ET`);}
     function line(x1,y1,x2,y2){content.push(`${x1} ${H-y1} m ${x2} ${H-y2} l S`);}
     function build(){
       const body=content.join('\n');
-      const fonts=`<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>`;
-      const fontsB=`<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold /Encoding /WinAnsiEncoding >>`;
-      let pdf=`%PDF-1.4\n`;
-      const offs=[];
+      let pdf='%PDF-1.4\n';const offs=[];
       function obj(n,s){offs[n]=pdf.length;pdf+=`${n} 0 obj\n${s}\nendobj\n`;}
-      obj(1,`<< /Type /Catalog /Pages 2 0 R >>`);
-      obj(2,`<< /Type /Pages /Kids [3 0 R] /Count 1 >>`);
+      obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
+      obj(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
       const stream=`q 0.5 w\n${body}\nQ`;
-      obj(3,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Contents 4 0 R /Resources << /Font << /FN ${fonts} /FB ${fontsB} >> >> >>`);
+      const fN='<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>';
+      const fB='<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold /Encoding /WinAnsiEncoding >>';
+      obj(3,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Contents 4 0 R /Resources << /Font << /FN ${fN} /FB ${fB} >> >> >>`);
       obj(4,`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
       const xref=pdf.length;
       pdf+=`xref\n0 ${offs.length+1}\n0000000000 65535 f \n`;
@@ -612,63 +733,74 @@ const PDF = (function(){
     }
     return{text,line,build,W,H};
   }
-
   function receipt(sale,settings){
-    const p=create();
-    const C=settings.currency||'£';
+    const p=create();const C=settings.currency||'£';
     const fmt=n=>`${C}${Number(n).toFixed(2)}`;
     let y=30;
     const center=(t,s,bold)=>p.text(t,Math.max(4,(p.W-t.length*s*0.6)/2),y,s,bold);
-    center(settings.name||'Bazro Store',10,true); y+=14;
+    center(settings.name||'Bazro',10,true);y+=14;
     if(settings.address){center(settings.address,7,false);y+=10;}
     if(settings.phone){center(settings.phone,7,false);y+=10;}
     if(settings.vat){center('VAT: '+settings.vat,7,false);y+=10;}
-    y+=4; p.line(8,y,p.W-8,y); y+=8;
-    p.text('Receipt: '+sale.id,8,y,7,true); y+=10;
-    p.text(new Date(sale.date).toLocaleString('en-GB'),8,y,7,false); y+=10;
-    p.text('Payment: '+sale.payMethod.toUpperCase(),8,y,7,false); y+=8;
-    p.line(8,y,p.W-8,y); y+=8;
+    y+=4;p.line(8,y,p.W-8,y);y+=8;
+    p.text('Receipt: '+sale.id,8,y,7,true);y+=10;
+    p.text(new Date(sale.date).toLocaleString('en-GB'),8,y,7,false);y+=10;
+    p.text('Payment: '+sale.payMethod.toUpperCase(),8,y,7,false);y+=8;
+    p.line(8,y,p.W-8,y);y+=8;
     sale.items.forEach(it=>{
-      const nm=(it.name||'').substring(0,24);
-      const pr=fmt(it.price*it.qty);
+      const nm=(it.name||'').substring(0,24);const pr=fmt(it.price*it.qty);
       p.text(nm+' x'+it.qty,8,y,7,false);
-      p.text(pr,p.W-8-pr.length*4.2,y,7,false);
-      y+=10;
+      p.text(pr,p.W-8-pr.length*4.2,y,7,false);y+=10;
     });
-    p.line(8,y,p.W-8,y); y+=8;
+    p.line(8,y,p.W-8,y);y+=8;
     [['Subtotal',fmt(sale.subtotal)],...(sale.discPct>0?[[`Disc ${sale.discPct}%`,`-${fmt(sale.discount)}`]]:[]),[`Tax ${settings.tax||20}%`,fmt(sale.tax)]].forEach(([l,r])=>{
       p.text(l,8,y,7,false);p.text(r,p.W-8-r.length*4.2,y,7,false);y+=9;
     });
-    y+=2;
-    const tot=fmt(sale.total);
+    y+=2;const tot=fmt(sale.total);
     p.text('TOTAL',8,y,9,true);p.text(tot,p.W-8-tot.length*5.4,y,9,true);y+=12;
-    if(sale.payMethod==='cash'){
-      const ch=fmt(sale.change);p.text('Change: '+ch,8,y,7,false);y+=10;
-    }
-    p.line(8,y,p.W-8,y); y+=8;
-    if(settings.footer){center(settings.footer,7,false);y+=10;}
+    if(sale.payMethod==='cash'){p.text('Change: '+fmt(sale.change),8,y,7,false);y+=10;}
+    p.line(8,y,p.W-8,y);y+=8;
+    if(settings.footer){center(settings.footer,7,false);}
     return p.build();
   }
-
+  function eodPDF(data,settings){
+    const p=create();const C=settings.currency||'£';
+    const fmt=n=>`${C}${Number(n).toFixed(2)}`;
+    let y=30;
+    const center=(t,s,bold)=>p.text(t,Math.max(4,(p.W-t.length*s*0.6)/2),y,s,bold);
+    const lr=(l,r,s,bold)=>{p.text(l,8,y,s,bold);p.text(r,p.W-8-String(r).length*s*0.6,y,s,bold);};
+    center(settings.name||'BAZRO',12,true);y+=16;
+    center(data.date,9,true);y+=12;
+    if(settings.address){center(settings.address,7,false);y+=10;}
+    p.line(8,y,p.W-8,y);y+=10;
+    lr('Cash Sales:',fmt(data.cash),8,false);y+=12;
+    p.line(8,y,p.W-8,y);y+=2;p.line(8,y+1,p.W-8,y+1);y+=8;
+    lr('Card Sales:',fmt(data.card),8,false);y+=12;
+    p.line(8,y,p.W-8,y);y+=2;p.line(8,y+1,p.W-8,y+1);y+=8;
+    lr('Expenses:','- '+fmt(data.expenses),8,false);y+=12;
+    p.line(8,y,p.W-8,y);y+=2;p.line(8,y+1,p.W-8,y+1);y+=12;
+    lr('NET TOTAL:',fmt(data.net),11,true);y+=16;
+    p.line(8,y,p.W-8,y);y+=2;p.line(8,y+1,p.W-8,y+1);y+=12;
+    lr('Till Left:',fmt(data.till),8,false);
+    return p.build();
+  }
   function dl(content,filename){
     const blob=new Blob([content],{type:'application/pdf'});
     const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download=filename; a.click();
+    a.href=URL.createObjectURL(blob);a.download=filename;a.click();
     setTimeout(()=>URL.revokeObjectURL(a.href),1000);
   }
-  return{receipt,dl};
+  return{receipt,eodPDF,dl};
 })();
 
 // ════════════════════════════════════════════════
 //  DATA
 // ════════════════════════════════════════════════
-let db={products:[],sales:[],settings:{}};
+let db={products:[],sales:[],settings:{},eodRecords:[]};
 let basket=[];
 let payMethod='cash';
 let activeCat='All';
 let curSaleId=null;
-// Scanner
 let stream=null,torchOn=false,detector=null,scanLoop=null,scanMode='checkout';
 let siProdId=null,siDelta=0,foundId=null;
 
@@ -687,9 +819,22 @@ const SAMPLES=[
 ];
 
 function loadDB(){
-  try{const s=localStorage.getItem('bazro3');if(s){db=JSON.parse(s);if(!db.products||!db.products.length)db.products=[...SAMPLES.map(x=>({...x}))];if(!db.sales)db.sales=[];if(!db.settings)db.settings={...DEF};}else{db={products:[...SAMPLES.map(x=>({...x}))],sales:[],settings:{...DEF}};}}catch(e){db={products:[...SAMPLES.map(x=>({...x}))],sales:[],settings:{...DEF}};}
+  try{
+    const s=localStorage.getItem('bazro4');
+    if(s){
+      db=JSON.parse(s);
+      if(!db.products||!db.products.length)db.products=[...SAMPLES.map(x=>({...x}))];
+      if(!db.sales)db.sales=[];
+      if(!db.settings)db.settings={...DEF};
+      if(!db.eodRecords)db.eodRecords=[];
+    }else{
+      db={products:[...SAMPLES.map(x=>({...x}))],sales:[],settings:{...DEF},eodRecords:[]};
+    }
+  }catch(e){
+    db={products:[...SAMPLES.map(x=>({...x}))],sales:[],settings:{...DEF},eodRecords:[]};
+  }
 }
-function saveDB(){try{localStorage.setItem('bazro3',JSON.stringify(db));}catch(e){}}
+function saveDB(){try{localStorage.setItem('bazro4',JSON.stringify(db));}catch(e){}}
 
 // ════════════════════════════════════════════════
 //  UTILS
@@ -700,12 +845,12 @@ const uid=()=>'id_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
 
 function toast(msg,type='success'){
   const d=document.createElement('div');
-  d.style.cssText=`background:var(--surface);border:1px solid ${type==='error'?'var(--danger)':type==='warning'?'var(--warning)':'var(--accent)'};border-radius:9px;padding:10px 16px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 6px 20px rgba(0,0,0,.4);animation:sIn .2s ease;`;
+  const col=type==='error'?'var(--danger)':type==='warning'?'var(--warning)':'var(--accent)';
+  d.style.cssText=`background:var(--surface);border:1px solid ${col};border-radius:9px;padding:10px 16px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 6px 20px rgba(0,0,0,.5);pointer-events:auto;`;
   d.innerHTML=`${type==='success'?'✅':type==='error'?'❌':'⚠️'} ${msg}`;
   document.getElementById('toasts').appendChild(d);
   setTimeout(()=>d.remove(),3200);
 }
-
 function closeMo(id){document.getElementById(id).classList.remove('on');}
 
 function showPage(pg){
@@ -716,10 +861,9 @@ function showPage(pg){
   if(pg==='inv')renderInv();
   if(pg==='hist')renderHist();
   if(pg==='rep')renderRep();
+  if(pg==='eod'){initEOD();renderEODHistory();}
   if(pg==='set')loadSet();
 }
-
-// nav clicks
 document.querySelectorAll('.nb').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.pg)));
 
 function updateClock(){
@@ -730,7 +874,7 @@ function updateClock(){
 setInterval(updateClock,1000);updateClock();
 
 // ════════════════════════════════════════════════
-//  SCANNER ENGINE
+//  SCANNER
 // ════════════════════════════════════════════════
 const SCFG={
   'checkout':{title:'📷 Scan → Add to Basket',badge:'CHECKOUT',cls:'sb-co'},
@@ -738,7 +882,6 @@ const SCFG={
   'inv-stock':{title:'📷 Scan → Stock-In',badge:'STOCK-IN',cls:'sb-st'},
   'assign-barcode':{title:'📷 Scan → Capture Barcode',badge:'ASSIGN',cls:'sb-as'},
 };
-
 async function openScanner(mode){
   scanMode=mode;torchOn=false;
   if(mode==='inv-stock'){siProdId=null;siDelta=0;}
@@ -758,8 +901,8 @@ async function openScanner(mode){
     if('BarcodeDetector' in window){
       detector=new BarcodeDetector({formats:['ean_13','ean_8','code_128','code_39','code_93','qr_code','upc_a','upc_e','itf']});
       startLoop();
-    } else {
-      document.getElementById('sres').innerHTML='<span style="color:var(--warning)">⚠ BarcodeDetector not supported (use Chrome/Edge for camera scan). Type manually:</span>';
+    }else{
+      document.getElementById('sres').innerHTML='<span style="color:var(--warning)">⚠ Camera scanning requires Chrome/Edge. Type barcode manually:</span>';
       showManual();
     }
   }catch(err){
@@ -767,7 +910,6 @@ async function openScanner(mode){
     showManual();
   }
 }
-
 function startLoop(){
   clearInterval(scanLoop);
   const video=document.getElementById('sv');
@@ -777,8 +919,7 @@ function startLoop(){
     try{
       const codes=await detector.detect(video);
       if(codes.length){
-        const code=codes[0].rawValue;
-        const now=Date.now();
+        const code=codes[0].rawValue;const now=Date.now();
         if(code===last&&now-lastT<1500)return;
         last=code;lastT=now;
         document.getElementById('sres').textContent=`✅ ${code}`;
@@ -787,12 +928,7 @@ function startLoop(){
     }catch(e){}
   },200);
 }
-
-function showManual(){
-  document.getElementById('manwrap').style.display='block';
-  setTimeout(()=>document.getElementById('manbc').focus(),80);
-}
-
+function showManual(){document.getElementById('manwrap').style.display='block';setTimeout(()=>document.getElementById('manbc').focus(),80);}
 function closeScanner(){
   document.getElementById('mo-scan').classList.remove('on');
   clearInterval(scanLoop);scanLoop=null;
@@ -800,26 +936,21 @@ function closeScanner(){
   torchOn=false;detector=null;
   document.getElementById('torch-btn').classList.remove('on');
 }
-
 async function toggleTorch(){
   if(!stream){toast('No camera active','warning');return;}
-  const track=stream.getVideoTracks()[0];
-  if(!track)return;
+  const track=stream.getVideoTracks()[0];if(!track)return;
   try{
     torchOn=!torchOn;
     await track.applyConstraints({advanced:[{torch:torchOn}]});
     document.getElementById('torch-btn').classList.toggle('on',torchOn);
-    toast(torchOn?'🔦 ON':'🔦 OFF',torchOn?'success':'warning');
+    toast(torchOn?'🔦 Flashlight ON':'Flashlight OFF',torchOn?'success':'warning');
   }catch(e){
     toast('Torch not available on this device','warning');
     torchOn=false;document.getElementById('torch-btn').classList.remove('on');
   }
 }
-
 function handleScan(code){
-  if(!code)return;
-  code=code.trim();
-
+  if(!code)return;code=code.trim();
   if(scanMode==='checkout'){
     const p=db.products.find(x=>x.barcode===code);
     if(p){addToBasket(p.id);closeScanner();}
@@ -828,14 +959,13 @@ function handleScan(code){
   }
   if(scanMode==='assign-barcode'){
     document.getElementById('ibarcode').value=code;
-    toast(`✅ Barcode captured: ${code}`,'success');
-    closeScanner();return;
+    toast(`✅ Barcode captured: ${code}`);closeScanner();return;
   }
   if(scanMode==='inv-find'){
     const p=db.products.find(x=>x.barcode===code);
     if(p){
       foundId=p.id;
-      const sc=p.stock<=0?'sx':p.stock<=(p.lowStock||5)?'sl':'so';
+      const sc=p.stock<=0?'stk-out':p.stock<=(p.lowStock||5)?'stk-low':'stk-ok';
       const sl=p.stock<=0?'Out of Stock':p.stock<=(p.lowStock||5)?`Low: ${p.stock}`:`${p.stock} in stock`;
       document.getElementById('found-info').innerHTML=`
         <div style="display:flex;align-items:center;gap:12px">
@@ -849,8 +979,7 @@ function handleScan(code){
             </div>
           </div>
         </div>`;
-      closeScanner();
-      document.getElementById('mo-found').classList.add('on');
+      closeScanner();document.getElementById('mo-found').classList.add('on');
     }else{
       document.getElementById('sres').innerHTML=`<span style="color:var(--danger)">❌ Not found: ${code}</span>`;
       toast(`Barcode "${code}" not in inventory`,'error');
@@ -861,19 +990,16 @@ function handleScan(code){
     const p=db.products.find(x=>x.barcode===code);
     if(p){
       if(siProdId&&siProdId!==p.id&&siDelta>0)siSave(true);
-      siProdId=p.id;
-      if(siDelta===0)siDelta=1;
+      siProdId=p.id;if(siDelta===0)siDelta=1;
       document.getElementById('sipl').innerHTML=`<strong>${p.emoji||'📦'} ${p.name}</strong> <span style="color:var(--text2);font-size:11px">Now: ${p.stock}</span>`;
       document.getElementById('sipq').textContent=`+${siDelta}`;
-      clearInterval(scanLoop);
-      setTimeout(()=>{if(stream&&detector)startLoop();},1800);
+      clearInterval(scanLoop);setTimeout(()=>{if(stream&&detector)startLoop();},1800);
     }else{
       document.getElementById('sres').innerHTML=`<span style="color:var(--danger)">❌ Not found: ${code}</span>`;
     }
     return;
   }
 }
-
 function siAdj(n){if(!siProdId){toast('Scan a product first','warning');return;}siDelta=Math.max(0,siDelta+n);document.getElementById('sipq').textContent=`+${siDelta}`;}
 function siReset(){siDelta=0;document.getElementById('sipq').textContent='+0';}
 function siSave(silent){
@@ -882,7 +1008,7 @@ function siSave(silent){
   const p=db.products.find(x=>x.id===siProdId);
   if(p){
     const was=p.stock;p.stock+=siDelta;saveDB();
-    if(!silent)toast(`${p.emoji} ${p.name}: ${was}→${p.stock} (+${siDelta})`,'success');
+    if(!silent)toast(`${p.emoji} ${p.name}: ${was}→${p.stock} (+${siDelta})`);
     renderInv();flashRow(p.id);
     siDelta=0;siProdId=null;
     document.getElementById('sipq').textContent='+0';
@@ -891,7 +1017,12 @@ function siSave(silent){
   }
 }
 function editFound(){closeMo('mo-found');if(foundId)openItemMo(foundId);}
-function flashRow(id){setTimeout(()=>{const r=document.querySelector(`#inv-body tr[data-id="${id}"]`);if(r){r.classList.add('flash');setTimeout(()=>r.classList.remove('flash'),950);}},80);}
+function flashRow(id){
+  setTimeout(()=>{
+    const r=document.querySelector(`#inv-body tr[data-id="${id}"]`);
+    if(r){r.classList.add('flash');setTimeout(()=>r.classList.remove('flash'),950);}
+  },80);
+}
 
 // ════════════════════════════════════════════════
 //  CHECKOUT
@@ -910,7 +1041,8 @@ function renderProds(){
   if(q)ps=ps.filter(p=>p.name.toLowerCase().includes(q)||(p.barcode||'').includes(q)||(p.category||'').toLowerCase().includes(q));
   if(!ps.length){g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="ei">🔍</div><p>No products</p></div>`;return;}
   g.innerHTML=ps.map(p=>{
-    const sc=p.stock<=0?'sx':p.stock<=(p.lowStock||5)?'sl':'so';
+    // FIXED: use stk-ok / stk-low / stk-out instead of so/sl/sx
+    const sc=p.stock<=0?'stk-out':p.stock<=(p.lowStock||5)?'stk-low':'stk-ok';
     const sl=p.stock<=0?'Out of Stock':p.stock<=(p.lowStock||5)?`Low: ${p.stock}`:`${p.stock} in stock`;
     const cc=p.stock<=0?'out-s':p.stock<=(p.lowStock||5)?'low-s':'';
     return `<div class="pc ${cc}" onclick="addToBasket('${p.id}')">
@@ -922,15 +1054,13 @@ function renderProds(){
     </div>`;
   }).join('');
 }
-
 function addToBasket(id){
   const p=db.products.find(x=>x.id===id);
   if(!p||p.stock<=0){toast('Out of stock!','warning');return;}
   const ex=basket.find(b=>b.id===id);
   if(ex){if(ex.qty>=p.stock){toast('No more stock!','warning');return;}ex.qty++;}
   else basket.push({id:p.id,name:p.name,price:p.price,qty:1,emoji:p.emoji||'📦'});
-  renderBasket();
-  toast(`${p.emoji||'📦'} ${p.name} added`);
+  renderBasket();toast(`${p.emoji||'📦'} ${p.name} added`);
 }
 function removeItem(id){basket=basket.filter(b=>b.id!==id);renderBasket();}
 function chgQty(id,d){
@@ -947,8 +1077,7 @@ function getTotals(){
   const disc=sub*(dp/100);
   const tax=(parseFloat(db.settings.tax)||20)/100;
   const after=sub-disc;
-  const taxAmt=after*tax;
-  return{sub,disc,dp,taxAmt,total:after+taxAmt};
+  return{sub,disc,dp,taxAmt:after*tax,total:after+after*tax};
 }
 function renderBasket(){
   const el=document.getElementById('bitems');
@@ -1034,7 +1163,7 @@ function completeSale(){
   closeMo('mo-pay');curSaleId=id;
   basket=[];document.getElementById('disc').value='';
   renderBasket();renderProds();
-  toast(`Sale ${id} complete!`);
+  toast(`Sale complete!`);
   showReceipt(sale);
 }
 
@@ -1061,12 +1190,10 @@ function showReceipt(sale){
   QR.draw(canvas,`BAZRO:${sale.id}`,120);
   document.getElementById('mo-rec').classList.add('on');
 }
-
 function dlPDF(){
   const sale=db.sales.find(x=>x.id===curSaleId);
   if(!sale){toast('Sale not found','error');return;}
-  const pdf=PDF.receipt(sale,db.settings);
-  PDF.dl(pdf,`receipt-${sale.id}.pdf`);
+  PDF.dl(PDF.receipt(sale,db.settings),`receipt-${sale.id}.pdf`);
   toast('PDF downloaded!');
 }
 
@@ -1080,11 +1207,12 @@ function renderInv(){
   if(q)ps=ps.filter(p=>p.name.toLowerCase().includes(q)||(p.barcode||'').includes(q)||(p.category||'').toLowerCase().includes(q));
   if(!ps.length){body.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text2)">No products</td></tr>`;return;}
   body.innerHTML=ps.map(p=>{
-    const sc=p.stock<=0?'sx':p.stock<=(p.lowStock||5)?'sl':'so';
+    // FIXED: use stk-ok / stk-low / stk-out classes (not sl/so/sx which conflicted with scanner)
+    const sc=p.stock<=0?'stk-out':p.stock<=(p.lowStock||5)?'stk-low':'stk-ok';
     const sl=p.stock<=0?'Out':p.stock<=(p.lowStock||5)?`Low: ${p.stock}`:p.stock;
     return `<tr data-id="${p.id}">
       <td><span style="margin-right:6px">${p.emoji||'📦'}</span><strong>${p.name}</strong></td>
-      <td><code style="font-size:10px;color:var(--text2)">${p.barcode||'—'}</code></td>
+      <td><code style="font-size:10px;color:var(--text2);font-family:monospace">${p.barcode||'—'}</code></td>
       <td style="color:var(--text2)">${p.category||'—'}</td>
       <td><strong>${fmt(p.price)}</strong></td>
       <td style="color:var(--text2)">${p.cost?fmt(p.cost):'—'}</td>
@@ -1099,7 +1227,11 @@ function renderInv(){
     </tr>`;
   }).join('');
 }
-function q1(id){const p=db.products.find(x=>x.id===id);if(!p)return;p.stock++;saveDB();renderInv();flashRow(id);toast(`${p.emoji} ${p.name}: +1 → ${p.stock}`);}
+function q1(id){
+  const p=db.products.find(x=>x.id===id);if(!p)return;
+  p.stock++;saveDB();renderInv();flashRow(id);
+  toast(`${p.emoji} ${p.name}: +1 → ${p.stock}`);
+}
 function openItemMo(id){
   if(id){
     const p=db.products.find(x=>x.id===id);if(!p)return;
@@ -1214,19 +1346,136 @@ function renderRep(){
     ${(low.length||out.length)?`<div class="ss"><h3>⚠️ Stock Alerts</h3>${out.map(p=>`<div style="display:flex;justify-content:space-between;padding:5px 0;color:var(--danger)">${p.emoji} ${p.name}<strong>OUT</strong></div>`).join('')}${low.map(p=>`<div style="display:flex;justify-content:space-between;padding:5px 0;color:var(--warning)">${p.emoji} ${p.name}<strong>${p.stock} left</strong></div>`).join('')}</div>`:''}
     ${today.length?`<div class="ss"><h3>📅 Today</h3>${today.map(s=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="color:var(--text2);font-family:monospace">${s.id}</span><span>${new Date(s.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</span><span style="color:var(--text2)">${s.payMethod.toUpperCase()}</span><strong style="color:var(--accent)">${fmt(s.total)}</strong></div>`).join('')}<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:15px"><strong>Day Total</strong><strong style="color:var(--accent)">${fmt(tRev)}</strong></div></div>`:''}`;
 }
-
 function exportReport(){
-  // Simple text-based EOD report as PDF
   const now=new Date();
   const todaySales=db.sales.filter(x=>new Date(x.date).toDateString()===now.toDateString());
   const rev=todaySales.reduce((s,x)=>s+x.total,0);
-  let txt=`END OF DAY REPORT\n${db.settings.name||'Bazro'}\n${now.toLocaleDateString('en-GB')}\n\n`;
-  txt+=`Total Transactions: ${todaySales.length}\nTotal Revenue: ${fmt(rev)}\n\n--- TRANSACTIONS ---\n`;
+  let txt=`${db.settings.name||'BAZRO'} - REPORT\n${now.toLocaleDateString('en-GB')}\n\nTransactions: ${todaySales.length}\nRevenue: ${fmt(rev)}\n\n`;
   todaySales.forEach(s=>{txt+=`${s.id}  ${new Date(s.date).toLocaleTimeString('en-GB')}  ${s.payMethod.toUpperCase()}  ${fmt(s.total)}\n`;});
   const blob=new Blob([txt],{type:'text/plain'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download=`eod-report-${now.toISOString().slice(0,10)}.txt`;a.click();
+  a.download=`report-${now.toISOString().slice(0,10)}.txt`;a.click();
   toast('Report exported!');
+}
+
+// ════════════════════════════════════════════════
+//  EOD — END OF DAY
+// ════════════════════════════════════════════════
+function initEOD(){
+  // Set today's date as default if not set
+  const dateEl=document.getElementById('eod-date');
+  if(!dateEl.value){
+    dateEl.value=new Date().toISOString().slice(0,10);
+  }
+  // Update currency symbols
+  const sym=C();
+  document.getElementById('eod-sym1').textContent=sym;
+  document.getElementById('eod-sym2').textContent=sym;
+  document.getElementById('eod-sym3').textContent=sym;
+  document.getElementById('eod-sym4').textContent=sym;
+  recalcEOD();
+}
+
+function getEODValues(){
+  const cash=parseFloat(document.getElementById('eod-cash').value)||0;
+  const card=parseFloat(document.getElementById('eod-card').value)||0;
+  const expenses=parseFloat(document.getElementById('eod-exp').value)||0;
+  const till=parseFloat(document.getElementById('eod-till').value)||0;
+  const net=cash+card-expenses;
+  const dateRaw=document.getElementById('eod-date').value;
+  const date=dateRaw?new Date(dateRaw).toLocaleDateString('en-GB'):'—';
+  return{cash,card,expenses,till,net,date,dateRaw};
+}
+
+function recalcEOD(){
+  const{cash,card,expenses,till,net,date}=getEODValues();
+  const sym=C();
+  const f=n=>`${sym}${Number(n).toFixed(2)}`;
+
+  // Update preview receipt
+  document.getElementById('pr-name').textContent=(db.settings.name||'BAZRO').toUpperCase();
+  document.getElementById('pr-date').textContent=date;
+  document.getElementById('pr-addr').textContent=db.settings.address||'';
+  document.getElementById('pr-cash').textContent=f(cash);
+  document.getElementById('pr-card').textContent=f(card);
+  document.getElementById('pr-exp').textContent=`- ${f(expenses)}`;
+  document.getElementById('pr-net').textContent=f(net);
+  document.getElementById('pr-net').style.color=net<0?'#c00':'#000';
+  document.getElementById('pr-till').textContent=f(till);
+}
+
+function saveEOD(){
+  const vals=getEODValues();
+  if(!vals.dateRaw){toast('Please select a date','warning');return;}
+  const record={
+    id:'EOD-'+Date.now(),
+    dateRaw:vals.dateRaw,
+    date:vals.date,
+    cash:vals.cash,
+    card:vals.card,
+    expenses:vals.expenses,
+    till:vals.till,
+    net:vals.net,
+    notes:document.getElementById('eod-expnotes').value,
+    savedAt:new Date().toISOString()
+  };
+  db.eodRecords.unshift(record);
+  saveDB();
+  renderEODHistory();
+  toast(`EOD record for ${vals.date} saved!`);
+}
+
+function renderEODHistory(){
+  const el=document.getElementById('eod-history-list');
+  if(!db.eodRecords||!db.eodRecords.length){
+    el.innerHTML='<p style="color:var(--text2);font-size:12px">No records saved yet.</p>';return;
+  }
+  el.innerHTML=db.eodRecords.slice(0,10).map(r=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);gap:8px;flex-wrap:wrap;">
+      <div>
+        <div style="font-size:13px;font-weight:700">${r.date}</div>
+        <div style="font-size:10px;color:var(--text2)">Cash: ${fmt(r.cash)} · Card: ${fmt(r.card)} · Exp: ${fmt(r.expenses)}</div>
+        ${r.notes?`<div style="font-size:10px;color:var(--text2);font-style:italic">${r.notes}</div>`:''}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <strong style="font-size:15px;font-family:monospace;color:${r.net>=0?'var(--accent)':'var(--danger)'}">${fmt(r.net)}</strong>
+        <button class="bsm grn" onclick="loadEODRecord('${r.id}')" style="padding:5px 8px;font-size:11px">Load</button>
+        <button class="bsm sec" onclick="printEODRecord('${r.id}')" style="padding:5px 8px;font-size:11px">PDF</button>
+        <button class="bsm red" onclick="deleteEOD('${r.id}')" style="padding:5px 8px;font-size:11px">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function loadEODRecord(id){
+  const r=db.eodRecords.find(x=>x.id===id);if(!r)return;
+  document.getElementById('eod-date').value=r.dateRaw;
+  document.getElementById('eod-cash').value=r.cash;
+  document.getElementById('eod-card').value=r.card;
+  document.getElementById('eod-exp').value=r.expenses;
+  document.getElementById('eod-till').value=r.till;
+  document.getElementById('eod-expnotes').value=r.notes||'';
+  recalcEOD();
+  toast(`Loaded EOD for ${r.date}`);
+}
+
+function deleteEOD(id){
+  if(!confirm('Delete this EOD record?'))return;
+  db.eodRecords=db.eodRecords.filter(x=>x.id!==id);
+  saveDB();renderEODHistory();toast('Deleted','warning');
+}
+
+function printEOD(){
+  const vals=getEODValues();
+  const pdf=PDF.eodPDF(vals,db.settings);
+  PDF.dl(pdf,`eod-${vals.dateRaw||'report'}.pdf`);
+  toast('EOD PDF downloaded!');
+}
+
+function printEODRecord(id){
+  const r=db.eodRecords.find(x=>x.id===id);if(!r)return;
+  const pdf=PDF.eodPDF(r,db.settings);
+  PDF.dl(pdf,`eod-${r.dateRaw}.pdf`);
+  toast('EOD PDF downloaded!');
 }
 
 // ════════════════════════════════════════════════
@@ -1262,7 +1511,7 @@ function importDB(e){
   r.onload=ev=>{try{
     const d=JSON.parse(ev.target.result);
     if(!d.products&&!d.sales){toast('Invalid format','error');return;}
-    db={products:d.products||[],sales:d.sales||[],settings:d.settings||{...DEF}};
+    db={products:d.products||[],sales:d.sales||[],settings:d.settings||{...DEF},eodRecords:d.eodRecords||[]};
     saveDB();renderInv();renderCats();renderProds();toast('Imported!');
   }catch(err){toast('Invalid file','error');}};
   r.readAsText(f);e.target.value='';
@@ -1270,7 +1519,7 @@ function importDB(e){
 function resetAll(){
   if(!confirm('Delete ALL data?'))return;
   if(!confirm('Cannot be undone. Confirm?'))return;
-  db={products:[...SAMPLES.map(x=>({...x}))],sales:[],settings:{...DEF}};
+  db={products:[...SAMPLES.map(x=>({...x}))],sales:[],settings:{...DEF},eodRecords:[]};
   saveDB();basket=[];renderBasket();renderProds();renderCats();renderInv();toast('Reset done','warning');
 }
 
@@ -1282,7 +1531,6 @@ renderCats();
 renderProds();
 renderBasket();
 
-// Keyboard barcode on checkout search
 document.getElementById('psearch').addEventListener('keydown',e=>{
   if(e.key==='Enter'){
     const q=e.target.value.trim();
