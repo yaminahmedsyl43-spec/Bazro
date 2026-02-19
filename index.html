@@ -15,7 +15,6 @@
     
     body { margin: 0; font-family: 'Segoe UI', Roboto, sans-serif; background: #f8f9fa; padding-bottom: 100px; color: #333; overflow-x: hidden; }
     
-    /* Luxury Header */
     header { background: linear-gradient(135deg, var(--dark), var(--slate)); padding: 20px; text-align: center; color: white; position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
     header h1 { margin: 0; font-size: 28px; letter-spacing: 4px; font-weight: 900; color: var(--gold); }
     header p { margin: 5px 0 0; font-size: 10px; opacity: 0.8; letter-spacing: 1px; }
@@ -25,13 +24,10 @@
     .active-page { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Cards & UI */
     .card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.05); }
     h3 { margin-top: 0; color: var(--dark); font-size: 18px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
     
     input { width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: 1px solid #ddd; font-size: 16px; box-sizing: border-box; background: #fdfdfd; }
-    input:focus { border-color: var(--gold); outline: none; background: #fff; }
-    
     button { width: 100%; padding: 16px; margin: 8px 0; border-radius: 12px; border: none; background: linear-gradient(135deg, var(--orange), var(--yellow)); color: white; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
     button:active { transform: scale(0.97); }
     
@@ -40,28 +36,23 @@
     .btn-qr { background: var(--gold); color: #000; }
     .btn-danger { background: var(--red); font-size: 12px; padding: 10px; width: auto; }
 
-    /* Scanner View */
     #scanner-wrap { background: #000; border-radius: 20px; display: none; margin-bottom: 20px; padding: 10px; position: relative; overflow: hidden; }
     #reader { width: 100%; border-radius: 15px; overflow: hidden; }
-    #flash-btn { position: absolute; bottom: 20px; right: 20px; width: 60px; height: 60px; border-radius: 50%; z-index: 10; padding: 0; display: none; background: rgba(255,255,255,0.2); backdrop-filter: blur(5px); font-size: 24px; }
+    #flash-btn { position: absolute; bottom: 20px; right: 20px; width: 60px; height: 60px; border-radius: 50%; z-index: 10; padding: 0; display: none; background: rgba(255,255,255,0.2); backdrop-filter: blur(5px); font-size: 24px; color: white; border: none; }
 
-    /* Basket Table */
     .row { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #f1f1f1; align-items: center; }
     .qty-ctrl { display: flex; align-items: center; gap: 15px; background: #f1f3f5; padding: 5px 12px; border-radius: 30px; }
     .q-btn { width: 28px; height: 28px; border-radius: 50%; background: var(--dark); color: white; display: flex; align-items: center; justify-content: center; font-size: 18px; border: none; cursor: pointer; }
     
-    /* Stock List Table */
     .stock-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
     .stock-table th { text-align: left; padding: 10px; color: #888; border-bottom: 1px solid #eee; }
     .stock-table td { padding: 12px 10px; border-bottom: 1px solid #f9f9f9; }
     .low-stock { color: var(--red); font-weight: bold; }
 
-    /* Nav Bar */
     nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; height: 80px; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); z-index: 1000; }
     nav button { flex: 1; background: none; color: #adb5bd; border-top: 4px solid transparent; border-radius: 0; margin: 0; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
     nav button.active-nav { color: var(--orange); border-top-color: var(--orange); }
 
-    /* Overlays */
     #qr-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10001; display: none; align-items: center; justify-content: center; flex-direction: column; color: white; }
     #qr-box { background: white; padding: 20px; border-radius: 20px; margin: 20px; }
 
@@ -74,7 +65,7 @@
 
 <header>
     <h1>BAZRO</h1>
-    <p>PREMIUM GROCERY • CAMBORNE</p>
+    <p>9a Commercial St, Camborne TR14 8AT • 07534 100986</p>
 </header>
 
 <div id="qr-overlay" onclick="this.style.display='none'">
@@ -93,8 +84,8 @@
 
     <div id="page-sales" class="page active-page">
         <div class="card">
-            <h3>Checkout <span style="font-size:12px; color:var(--gold)">Scanner Active</span></h3>
-            <button onclick="startScan('sell')">📷 SCAN ITEM TO ADD</button>
+            <h3>Checkout</h3>
+            <button onclick="startScan('sell')">📷 SCAN ITEM</button>
             <input id="sell_barcode" placeholder="Manual Barcode Entry">
             <button class="btn-sec" onclick="addToCart()">ADD MANUALLY</button>
         </div>
@@ -133,7 +124,7 @@
             </table>
         </div>
         <div class="card">
-            <h3>Data Management</h3>
+            <h3>Database</h3>
             <button class="btn-sec" onclick="exportDB()">💾 EXPORT BACKUP</button>
             <button class="btn-sec" onclick="document.getElementById('importFile').click()">📂 IMPORT BACKUP</button>
             <input type="file" id="importFile" style="display:none" accept=".json" onchange="importDB(event)">
@@ -143,11 +134,12 @@
     <div id="page-report" class="page">
         <div class="card">
             <h3>End of Day Report</h3>
+            <p style="font-size: 12px; color: #666; margin-bottom: 15px;">Enter totals to generate a luxury summary receipt.</p>
             <input type="date" id="report_date">
             <input type="number" id="cash_sales" placeholder="Total Cash Sales (£)">
             <input type="number" id="card_sales" placeholder="Total Card Sales (£)">
             <input type="number" id="expenses" placeholder="Total Expenses (£)">
-            <button onclick="saveReport()">GENERATE REPORT</button>
+            <button onclick="generateEODReport()">GENERATE SUMMARY RECEIPT</button>
         </div>
     </div>
 </div>
@@ -160,7 +152,6 @@
 </nav>
 
 <script>
-// --- CORE DATA ---
 let products = JSON.parse(localStorage.getItem("bazro_products") || "{}");
 let sales = JSON.parse(localStorage.getItem("bazro_sales") || "[]");
 let cart = [];
@@ -168,13 +159,8 @@ let html5QrCode = null;
 let scanPaused = false;
 let isFlashOn = false;
 
-const INFO = {
-    name: "BAZRO",
-    address: "9a Commercial St, Camborne TR14 8AT",
-    phone: "07534 100986"
-};
+const INFO = { name: "BAZRO", address: "9a Commercial St, Camborne TR14 8AT", phone: "07534 100986" };
 
-// --- NAVIGATION ---
 function showPage(p) {
     document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
     document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
@@ -191,7 +177,7 @@ function notify(msg, color) {
     setTimeout(() => el.style.opacity = "0", 2500);
 }
 
-// --- SCANNER SYSTEM (A-Z FIXED) ---
+// --- SCANNER ---
 async function startScan(mode) {
     if (html5QrCode) { try { await html5QrCode.stop(); } catch(e) {} }
     document.getElementById("reader").innerHTML = "";
@@ -203,14 +189,13 @@ async function startScan(mode) {
             if (scanPaused) return;
             if (mode === 'add') {
                 document.getElementById("p_barcode").value = code;
-                stopScan();
-                notify("Barcode Caught!", "var(--green)");
+                stopScan(); notify("Code Caught", "var(--green)");
             } else {
                 if (!products[code]) { notify("Unknown Item", "red"); return; }
                 scanPaused = true;
                 addToCart(code);
                 notify(products[code].name + " Added", "var(--green)");
-                setTimeout(() => { scanPaused = false; }, 2000); // 2 SECONDS AUTO-PAUSE
+                setTimeout(() => { scanPaused = false; }, 2000); // 2 SEC DELAY
             }
         });
         setTimeout(() => {
@@ -223,7 +208,6 @@ async function startScan(mode) {
 async function stopScan() {
     if (html5QrCode) { await html5QrCode.stop(); html5QrCode.clear(); }
     document.getElementById("scanner-wrap").style.display = "none";
-    isFlashOn = false;
 }
 
 async function toggleFlash() {
@@ -231,17 +215,13 @@ async function toggleFlash() {
     await html5QrCode.applyVideoConstraints({ advanced: [{ torch: isFlashOn }] });
 }
 
-// --- SHOP & BASKET ---
+// --- SHOP ---
 function addToCart(manualCode = null) {
     const b = (manualCode || document.getElementById("sell_barcode").value).trim();
-    if (!products[b]) return notify("Item not in stock", "red");
-    
+    if (!products[b]) return notify("No stock found", "red");
     let item = cart.find(i => i.barcode === b);
-    if (item) {
-        item.qty++;
-    } else {
-        cart.push({ barcode: b, name: products[b].name, price: products[b].price, qty: 1 });
-    }
+    if (item) item.qty++;
+    else cart.push({ barcode: b, name: products[b].name, price: products[b].price, qty: 1 });
     renderCart();
     document.getElementById("sell_barcode").value = "";
 }
@@ -256,17 +236,12 @@ function updateQty(barcode, change) {
 
 function renderCart() {
     let t = 0;
-    const list = document.getElementById("cart-list");
-    list.innerHTML = cart.map(i => {
+    document.getElementById("cart-list").innerHTML = cart.map(i => {
         t += i.qty * i.price;
         return `<div class="row">
             <div style="flex:1"><b>${i.name}</b><br><small>£${i.price.toFixed(2)}</small></div>
-            <div class="qty-ctrl">
-                <button class="q-btn" onclick="updateQty('${i.barcode}', -1)">-</button>
-                <span>${i.qty}</span>
-                <button class="q-btn" onclick="updateQty('${i.barcode}', 1)">+</button>
-            </div>
-            <div style="width:70px; text-align:right; font-weight:bold;">£${(i.qty * i.price).toFixed(2)}</div>
+            <div class="qty-ctrl"><button class="q-btn" onclick="updateQty('${i.barcode}',-1)">-</button><span>${i.qty}</span><button class="q-btn" onclick="updateQty('${i.barcode}',1)">+</button></div>
+            <div style="width:70px; text-align:right; font-weight:bold;">£${(i.qty*i.price).toFixed(2)}</div>
         </div>`;
     }).join("");
     document.getElementById("cart-total").innerText = `Total: £${t.toFixed(2)}`;
@@ -274,157 +249,120 @@ function renderCart() {
 
 function checkout() {
     if(!cart.length) return;
-    // Deduct stock
-    cart.forEach(item => {
-        if(products[item.barcode]) {
-            products[item.barcode].stock = Math.max(0, products[item.barcode].stock - item.qty);
-        }
-    });
+    cart.forEach(item => { if(products[item.barcode]) products[item.barcode].stock -= item.qty; });
     localStorage.setItem("bazro_products", JSON.stringify(products));
-    
-    sales.unshift({ id: Date.now(), time: new Date().toLocaleString(), items: [...cart] });
+    sales.unshift({ time: new Date().toLocaleString(), items: [...cart] });
     localStorage.setItem("bazro_sales", JSON.stringify(sales));
     notify("Transaction Complete", "var(--green)");
     cart = []; renderCart();
 }
 
-// --- LUXURY INVOICE & QR ---
-function buildPDF(idx) {
-    const items = (idx === null) ? cart : sales[idx].items;
-    if(!items.length) return null;
-    
+// --- PDF & QR ---
+function buildPDF(idx, isEOD = false, eodData = null) {
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('p', 'mm', [80, 200]); // Receipt format
-
-    doc.setFillColor(20, 30, 53); // Dark background
-    doc.rect(0, 0, 80, 30, 'F');
+    const doc = new jsPDF('p', 'mm', [80, 180]);
+    doc.setFillColor(20, 30, 53); doc.rect(0, 0, 80, 25, 'F');
+    doc.setTextColor(212, 175, 55); doc.setFontSize(20); doc.text(INFO.name, 40, 12, {align:'center'});
+    doc.setTextColor(255, 255, 255); doc.setFontSize(6); doc.text(INFO.address, 40, 17, {align:'center'});
+    doc.text(INFO.phone, 40, 21, {align:'center'});
     
-    doc.setTextColor(212, 175, 55); // Gold
-    doc.setFontSize(22);
-    doc.text(INFO.name, 40, 15, { align: 'center' });
-    
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(7);
-    doc.text(INFO.address, 40, 20, { align: 'center' });
-    doc.text(INFO.phone, 40, 24, { align: 'center' });
-
     doc.setTextColor(0,0,0);
-    doc.setFontSize(9);
-    doc.text("--------------------------------------------------", 40, 35, { align: 'center' });
-    doc.text(`DATE: ${new Date().toLocaleString()}`, 10, 42);
+    doc.setFontSize(10);
     
-    let y = 52;
-    let total = 0;
-    items.forEach(i => {
-        let sub = i.qty * i.price;
-        total += sub;
-        doc.text(`${i.name.substring(0,20)} x${i.qty}`, 10, y);
-        doc.text(`£${sub.toFixed(2)}`, 70, y, { align: 'right' });
-        y += 7;
-    });
-    
-    doc.line(10, y, 70, y);
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text(`TOTAL: £${total.toFixed(2)}`, 70, y + 10, { align: 'right' });
-    
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "italic");
-    doc.text("Thank you for shopping at Bazro", 40, y + 25, { align: 'center' });
-    
+    if(isEOD) {
+        doc.setFont("helvetica", "bold"); doc.text("END OF DAY SUMMARY", 40, 35, {align:'center'});
+        doc.setFont("helvetica", "normal"); doc.text(`Date: ${eodData.date}`, 10, 45);
+        doc.text("--------------------------------------------------", 40, 50, {align:'center'});
+        doc.text("CASH SALES:", 10, 60); doc.text(`£${eodData.cash}`, 70, 60, {align:'right'});
+        doc.text("CARD SALES:", 10, 68); doc.text(`£${eodData.card}`, 70, 68, {align:'right'});
+        doc.text("EXPENSES:", 10, 76); doc.text(`- £${eodData.exp}`, 70, 76, {align:'right'});
+        doc.line(10, 82, 70, 82);
+        doc.setFontSize(14); doc.text("NET TOTAL:", 10, 92); doc.text(`£${eodData.net}`, 70, 92, {align:'right'});
+    } else {
+        const items = (idx === null) ? cart : sales[idx].items;
+        if(!items.length) return null;
+        let y = 40; let total = 0;
+        items.forEach(i => {
+            let sub = i.qty * i.price; total += sub;
+            doc.text(`${i.name.substring(0,18)} x${i.qty}`, 10, y);
+            doc.text(`£${sub.toFixed(2)}`, 70, y, {align:'right'}); y += 6;
+        });
+        doc.line(10, y+2, 70, y+2);
+        doc.setFontSize(14); doc.text("TOTAL:", 10, y+10); doc.text(`£${total.toFixed(2)}`, 70, y+10, {align:'right'});
+    }
     return doc;
 }
 
-function downloadInvoice(idx) {
-    const doc = buildPDF(idx);
-    if(doc) doc.save(`Bazro_Invoice.pdf`);
-}
-
+function downloadInvoice(idx) { const doc = buildPDF(idx); if(doc) doc.save(`Bazro_Inv.pdf`); }
 function generateQR(idx) {
-    const doc = buildPDF(idx);
-    if(!doc) return notify("No items", "orange");
+    const doc = buildPDF(idx); if(!doc) return;
     const base64 = doc.output('datauristring');
     document.getElementById("qr-box").innerHTML = "";
-    new QRCode(document.getElementById("qr-box"), { text: base64, width: 250, height: 250 });
+    new QRCode(document.getElementById("qr-box"), { text: base64, width: 200, height: 200 });
     document.getElementById("qr-overlay").style.display = "flex";
 }
 
-// --- HISTORY & STOCK MANAGEMENT ---
+// --- EOD REPORT LOGIC (THE FIX) ---
+function generateEODReport() {
+    const date = document.getElementById("report_date").value;
+    const cash = parseFloat(document.getElementById("cash_sales").value || 0);
+    const card = parseFloat(document.getElementById("card_sales").value || 0);
+    const exp = parseFloat(document.getElementById("expenses").value || 0);
+    
+    if(!date) return notify("Please select a date", "red");
+    
+    const net = (cash + card) - exp;
+    const eodData = { date, cash: cash.toFixed(2), card: card.toFixed(2), exp: exp.toFixed(2), net: net.toFixed(2) };
+    
+    const doc = buildPDF(null, true, eodData);
+    doc.save(`Bazro_EOD_${date}.pdf`);
+    notify("EOD Receipt Generated!", "var(--green)");
+}
+
+// --- HISTORY & STOCK ---
 function renderHistory() {
-    const cont = document.getElementById("history-list");
-    if(!sales.length) { cont.innerHTML = "No sales recorded."; return; }
-    cont.innerHTML = sales.map((s, idx) => {
-        let stotal = s.items.reduce((acc, i) => acc + (i.qty * i.price), 0);
-        return `<div class="card" style="padding:15px; border-left: 4px solid var(--gold)">
-            <div style="font-size:13px"><b>${s.time}</b> | Total: £${stotal.toFixed(2)}</div>
+    document.getElementById("history-list").innerHTML = sales.map((s, idx) => `
+        <div class="card" style="padding:15px; border-left: 4px solid var(--gold)">
+            <div style="font-size:13px"><b>${s.time}</b></div>
             <div style="display:flex; gap:10px; margin-top:10px">
                 <button class="btn-pdf" style="padding:8px; font-size:11px" onclick="downloadInvoice(${idx})">PDF</button>
                 <button class="btn-qr" style="padding:8px; font-size:11px" onclick="generateQR(${idx})">QR</button>
-                <button class="btn-danger" style="color:white" onclick="deleteSale(${idx})">DEL</button>
             </div>
-        </div>`;
-    }).join("");
-}
-
-function deleteSale(idx) {
-    if(confirm("Delete this record?")) {
-        sales.splice(idx, 1);
-        localStorage.setItem("bazro_sales", JSON.stringify(sales));
-        renderHistory();
-    }
+        </div>`).join("");
 }
 
 function addProduct() {
     const b = document.getElementById("p_barcode").value, n = document.getElementById("p_name").value, p = document.getElementById("p_price").value, s = document.getElementById("p_stock").value;
-    if(!b || !n || !p) return notify("Fill required fields", "red");
-    
+    if(!b || !n || !p) return notify("Missing info", "red");
     products[b] = { name: n, price: Number(p), stock: Number(s || 0) };
     localStorage.setItem("bazro_products", JSON.stringify(products));
-    notify(n + " Saved", "var(--green)");
-    renderStockList();
-    ["p_barcode", "p_name", "p_price", "p_stock"].forEach(id => document.getElementById(id).value = "");
+    notify(n + " Saved", "var(--green)"); renderStockList();
 }
 
 function renderStockList() {
-    const list = document.getElementById("stock-inventory-list");
-    const items = Object.entries(products);
-    list.innerHTML = items.map(([code, p]) => `
-        <tr>
-            <td>${p.name}</td>
-            <td>£${p.price.toFixed(2)}</td>
-            <td class="${p.stock < 5 ? 'low-stock' : ''}">${p.stock}</td>
-        </tr>
+    document.getElementById("stock-inventory-list").innerHTML = Object.entries(products).map(([c, p]) => `
+        <tr><td>${p.name}</td><td>£${p.price.toFixed(2)}</td><td class="${p.stock < 5 ? 'low-stock' : ''}">${p.stock}</td></tr>
     `).join("");
 }
 
-// --- DATABASE TOOLS ---
 function exportDB() {
-    const data = JSON.stringify({ products, sales });
-    const blob = new Blob([data], { type: "application/json" });
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `Bazro_Backup_${new Date().toLocaleDateString()}.json`;
-    a.click();
+    a.href = URL.createObjectURL(new Blob([JSON.stringify({ products, sales })], { type: "application/json" }));
+    a.download = `Bazro_Backup.json`; a.click();
 }
 
 function importDB(e) {
     const reader = new FileReader();
     reader.onload = (event) => {
         const data = JSON.parse(event.target.result);
-        products = data.products || {};
-        sales = data.sales || [];
-        localStorage.setItem("bazro_products", JSON.stringify(products));
-        localStorage.setItem("bazro_sales", JSON.stringify(sales));
+        localStorage.setItem("bazro_products", JSON.stringify(data.products));
+        localStorage.setItem("bazro_sales", JSON.stringify(data.sales));
         location.reload();
     };
     reader.readAsText(e.target.files[0]);
 }
 
-// --- INITIALIZE ---
-window.onload = () => {
-    renderStockList();
-};
-
+window.onload = () => { renderStockList(); };
 </script>
 </body>
 </html>
