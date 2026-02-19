@@ -25,8 +25,9 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
     .card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.05); }
-    h3 { margin-top: 0; color: var(--dark); font-size: 18px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+    h3 { margin-top: 0; color: var(--dark); font-size: 18px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 15px; }
     
+    .input-row { display: flex; gap: 10px; }
     input { width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: 1px solid #ddd; font-size: 16px; box-sizing: border-box; background: #fdfdfd; }
     button { width: 100%; padding: 16px; margin: 8px 0; border-radius: 12px; border: none; background: linear-gradient(135deg, var(--orange), var(--yellow)); color: white; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
     button:active { transform: scale(0.97); }
@@ -52,10 +53,7 @@
     nav button { flex: 1; background: none; color: #adb5bd; border-top: 4px solid transparent; border-radius: 0; margin: 0; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
     nav button.active-nav { color: var(--orange); border-top-color: var(--orange); }
 
-    #qr-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10001; display: none; align-items: center; justify-content: center; flex-direction: column; color: white; }
-    #qr-box { background: white; padding: 20px; border-radius: 20px; margin: 20px; }
-
-    /* Hidden EOD Template for Image Generation */
+    /* Hidden Template for EOD JPEG */
     #eod-template { 
         width: 350px; background: white; padding: 40px 20px; border: 1px solid #eee; 
         position: fixed; left: -9999px; top: 0; color: #333; text-align: center;
@@ -84,17 +82,12 @@
         <p>CASH SALES: <span id="tmp-cash" style="float:right"></span></p>
         <p>CARD SALES: <span id="tmp-card" style="float:right"></span></p>
         <p>EXPENSES: <span id="tmp-exp" style="float:right"></span></p>
+        <p style="color: #666;">TILL LEFT: <span id="tmp-till" style="float:right"></span></p>
         <div style="border-top: 2px solid #000; margin-top: 10px; padding-top: 10px; font-size: 24px; font-weight: 900;">
             TOTAL: <span id="tmp-net" style="float:right"></span>
         </div>
     </div>
-    <p style="margin-top: 40px; font-style: italic; color: #888;">System Generated • Camborne</p>
-</div>
-
-<div id="qr-overlay" onclick="this.style.display='none'">
-    <h2 style="color:var(--gold)">SCAN TO DOWNLOAD</h2>
-    <div id="qr-box"></div>
-    <button style="width:150px" onclick="document.getElementById('qr-overlay').style.display='none'">CLOSE</button>
+    <p style="margin-top: 40px; font-style: italic; color: #888;">System Generated • Net = Cash + Card</p>
 </div>
 
 <div class="container">
@@ -116,8 +109,8 @@
             <div id="cart-list"></div>
             <div style="text-align:right; font-weight:800; font-size:26px; margin:20px 0;" id="cart-total">Total: £0.00</div>
             <button style="background:var(--green)" onclick="checkout()">COMPLETE SALE</button>
-            <button class="btn-qr" onclick="generateQR(null)">📱 CUSTOMER SCAN (QR)</button>
-            <button class="btn-pdf" onclick="downloadInvoice(null)">📄 DOWNLOAD PDF</button>
+            <button class="btn-qr" onclick="generateQR(null)">📱 QR SCAN</button>
+            <button class="btn-pdf" onclick="downloadInvoice(null)">📄 PDF INVOICE</button>
         </div>
     </div>
 
@@ -145,12 +138,6 @@
                 <tbody id="stock-inventory-list"></tbody>
             </table>
         </div>
-        <div class="card">
-            <h3>Backup</h3>
-            <button class="btn-sec" onclick="exportDB()">💾 EXPORT</button>
-            <button class="btn-sec" onclick="document.getElementById('importFile').click()">📂 IMPORT</button>
-            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importDB(event)">
-        </div>
     </div>
 
     <div id="page-report" class="page">
@@ -159,7 +146,10 @@
             <input type="date" id="report_date">
             <input type="number" id="cash_sales" placeholder="Cash Sales (£)">
             <input type="number" id="card_sales" placeholder="Card Sales (£)">
-            <input type="number" id="expenses" placeholder="Expenses (£)">
+            <div class="input-row">
+                <input type="number" id="expenses" placeholder="Expenses (£)">
+                <input type="number" id="till_left" placeholder="Till Left (£)">
+            </div>
             <button class="btn-share" onclick="shareEODReport()">📤 SHARE SUMMARY (JPEG)</button>
         </div>
     </div>
@@ -278,32 +268,33 @@ function checkout() {
     cart = []; renderCart();
 }
 
-// --- EOD JPEG SHARE (NEW) ---
+// --- EOD JPEG SHARE ---
 async function shareEODReport() {
     const date = document.getElementById("report_date").value;
     const cash = parseFloat(document.getElementById("cash_sales").value || 0);
     const card = parseFloat(document.getElementById("card_sales").value || 0);
     const exp = parseFloat(document.getElementById("expenses").value || 0);
+    const till = document.getElementById("till_left").value || "0";
     
     if(!date) return notify("Select a Date", "red");
     
-    const net = (cash + card) - exp;
+    // NET TOTAL = CASH + CARD (Expenses and Till Left are reference only)
+    const net = cash + card;
 
     // Update hidden template
     document.getElementById("tmp-date").innerText = `Date: ${date}`;
     document.getElementById("tmp-cash").innerText = `£${cash.toFixed(2)}`;
     document.getElementById("tmp-card").innerText = `£${card.toFixed(2)}`;
     document.getElementById("tmp-exp").innerText = `£${exp.toFixed(2)}`;
+    document.getElementById("tmp-till").innerText = `£${till}`;
     document.getElementById("tmp-net").innerText = `£${net.toFixed(2)}`;
 
     const template = document.getElementById("eod-template");
     
-    // Create JPEG
     const canvas = await html2canvas(template);
     canvas.toBlob(async (blob) => {
         const file = new File([blob], `Bazro_EOD_${date}.jpg`, { type: 'image/jpeg' });
         
-        // Share Feature
         if (navigator.share) {
             try {
                 await navigator.share({
@@ -312,19 +303,16 @@ async function shareEODReport() {
                     text: `EOD Net Total: £${net.toFixed(2)}`
                 });
             } catch (err) {
-                // Fallback if sharing is cancelled or fails
                 const a = document.createElement("a");
                 a.href = URL.createObjectURL(blob);
                 a.download = `Bazro_EOD_${date}.jpg`;
                 a.click();
             }
         } else {
-            // Desktop fallback (Download)
             const a = document.createElement("a");
             a.href = URL.createObjectURL(blob);
             a.download = `Bazro_EOD_${date}.jpg`;
             a.click();
-            notify("Download Started (Share not supported)", "orange");
         }
     }, 'image/jpeg', 0.9);
 }
@@ -356,17 +344,15 @@ function generateQR(idx) {
     const base64 = doc.output('datauristring');
     document.getElementById("qr-box").innerHTML = "";
     new QRCode(document.getElementById("qr-box"), { text: base64, width: 200, height: 200 });
-    document.getElementById("qr-overlay").style.display = "flex";
 }
 
-// --- DATABASE & HISTORY ---
+// --- STOCK & HISTORY ---
 function renderHistory() {
     document.getElementById("history-list").innerHTML = sales.map((s, idx) => `
         <div class="card" style="padding:15px; border-left: 4px solid var(--gold)">
             <div style="font-size:13px"><b>${s.time}</b></div>
             <div style="display:flex; gap:10px; margin-top:10px">
                 <button class="btn-pdf" style="padding:8px; font-size:11px" onclick="downloadInvoice(${idx})">PDF</button>
-                <button class="btn-qr" style="padding:8px; font-size:11px" onclick="generateQR(${idx})">QR</button>
             </div>
         </div>`).join("");
 }
@@ -381,19 +367,6 @@ function renderStockList() {
     document.getElementById("stock-inventory-list").innerHTML = Object.entries(products).map(([c, p]) => `
         <tr><td>${p.name}</td><td>£${p.price.toFixed(2)}</td><td style="color:${p.stock<5?'red':'black'}">${p.stock}</td></tr>
     `).join("");
-}
-function exportDB() {
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([JSON.stringify({ products, sales })], { type: "application/json" }));
-    a.download = `Bazro_Backup.json`; a.click();
-}
-function importDB(e) {
-    const reader = new FileReader(); reader.onload = (event) => {
-        const data = JSON.parse(event.target.result);
-        localStorage.setItem("bazro_products", JSON.stringify(data.products));
-        localStorage.setItem("bazro_sales", JSON.stringify(data.sales));
-        location.reload();
-    }; reader.readAsText(e.target.files[0]);
 }
 window.onload = () => { renderStockList(); };
 </script>
