@@ -30,7 +30,6 @@
     .input-row { display: flex; gap: 10px; }
     input { width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: 1px solid #ddd; font-size: 16px; box-sizing: border-box; background: #fdfdfd; }
     button { width: 100%; padding: 16px; margin: 8px 0; border-radius: 12px; border: none; background: linear-gradient(135deg, var(--orange), var(--yellow)); color: white; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
-    button:active { transform: scale(0.97); }
     
     .btn-sec { background: var(--slate); }
     .btn-pdf { background: #1a1a1a; border: 1px solid var(--gold); color: var(--gold); }
@@ -53,7 +52,7 @@
     nav button { flex: 1; background: none; color: #adb5bd; border-top: 4px solid transparent; border-radius: 0; margin: 0; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
     nav button.active-nav { color: var(--orange); border-top-color: var(--orange); }
 
-    /* Hidden Template for EOD JPEG */
+    /* Hidden EOD JPEG Template */
     #eod-template { 
         width: 350px; background: white; padding: 40px 20px; border: 1px solid #eee; 
         position: fixed; left: -9999px; top: 0; color: #333; text-align: center;
@@ -74,20 +73,17 @@
 <div id="eod-template">
     <div style="background: #141e30; color: #D4AF37; padding: 20px; margin-bottom: 20px; border-radius: 10px;">
         <h1 style="margin:0; letter-spacing:4px;">BAZRO</h1>
-        <p style="margin:5px 0 0; color:white; font-size:10px;">END OF DAY SUMMARY</p>
     </div>
-    <p id="tmp-date" style="font-weight: bold;"></p>
-    <hr>
-    <div style="text-align: left; padding: 10px 20px;">
+    <p id="tmp-date" style="font-weight: bold; margin-bottom: 20px;"></p>
+    <div style="text-align: left; padding: 0 20px;">
         <p>CASH SALES: <span id="tmp-cash" style="float:right"></span></p>
         <p>CARD SALES: <span id="tmp-card" style="float:right"></span></p>
         <p>EXPENSES: <span id="tmp-exp" style="float:right"></span></p>
-        <p style="color: #666;">TILL LEFT: <span id="tmp-till" style="float:right"></span></p>
-        <div style="border-top: 2px solid #000; margin-top: 10px; padding-top: 10px; font-size: 24px; font-weight: 900;">
+        <div style="border-top: 2px solid #000; margin-top: 15px; padding: 10px 0; font-size: 26px; font-weight: 900;">
             TOTAL: <span id="tmp-net" style="float:right"></span>
         </div>
+        <p style="margin-top: 10px; color: #444; font-weight: bold;">TILL LEFT: <span id="tmp-till" style="float:right"></span></p>
     </div>
-    <p style="margin-top: 40px; font-style: italic; color: #888;">System Generated • Net = Cash + Card</p>
 </div>
 
 <div class="container">
@@ -188,7 +184,7 @@ function notify(msg, color) {
     setTimeout(() => el.style.opacity = "0", 2500);
 }
 
-// --- SCANNER ---
+// --- SCANNER (2S Delay Included) ---
 async function startScan(mode) {
     if (html5QrCode) { try { await html5QrCode.stop(); } catch(e) {} }
     document.getElementById("reader").innerHTML = "";
@@ -200,13 +196,13 @@ async function startScan(mode) {
             if (scanPaused) return;
             if (mode === 'add') {
                 document.getElementById("p_barcode").value = code;
-                stopScan(); notify("Barcode Captured", "var(--green)");
+                stopScan(); notify("Barcode Caught", "var(--green)");
             } else {
                 if (!products[code]) { notify("Unknown Item", "red"); return; }
                 scanPaused = true;
                 addToCart(code);
                 notify(products[code].name + " Added", "var(--green)");
-                setTimeout(() => { scanPaused = false; }, 2000); // 2S DELAY
+                setTimeout(() => { scanPaused = false; }, 2000); 
             }
         });
         setTimeout(() => {
@@ -268,7 +264,7 @@ function checkout() {
     cart = []; renderCart();
 }
 
-// --- EOD JPEG SHARE ---
+// --- EOD JPEG SHARE (Fixed Layout) ---
 async function shareEODReport() {
     const date = document.getElementById("report_date").value;
     const cash = parseFloat(document.getElementById("cash_sales").value || 0);
@@ -276,32 +272,26 @@ async function shareEODReport() {
     const exp = parseFloat(document.getElementById("expenses").value || 0);
     const till = document.getElementById("till_left").value || "0";
     
-    if(!date) return notify("Select a Date", "red");
+    if(!date) return notify("Select Date", "red");
     
-    // NET TOTAL = CASH + CARD (Expenses and Till Left are reference only)
     const net = cash + card;
 
-    // Update hidden template
-    document.getElementById("tmp-date").innerText = `Date: ${date}`;
+    document.getElementById("tmp-date").innerText = `DATE: ${date}`;
     document.getElementById("tmp-cash").innerText = `£${cash.toFixed(2)}`;
     document.getElementById("tmp-card").innerText = `£${card.toFixed(2)}`;
     document.getElementById("tmp-exp").innerText = `£${exp.toFixed(2)}`;
-    document.getElementById("tmp-till").innerText = `£${till}`;
     document.getElementById("tmp-net").innerText = `£${net.toFixed(2)}`;
+    document.getElementById("tmp-till").innerText = `£${till}`;
 
     const template = document.getElementById("eod-template");
-    
     const canvas = await html2canvas(template);
+    
     canvas.toBlob(async (blob) => {
         const file = new File([blob], `Bazro_EOD_${date}.jpg`, { type: 'image/jpeg' });
         
         if (navigator.share) {
             try {
-                await navigator.share({
-                    files: [file],
-                    title: `Bazro EOD Summary ${date}`,
-                    text: `EOD Net Total: £${net.toFixed(2)}`
-                });
+                await navigator.share({ files: [file], title: `Bazro EOD ${date}` });
             } catch (err) {
                 const a = document.createElement("a");
                 a.href = URL.createObjectURL(blob);
@@ -325,8 +315,6 @@ function buildPDF(idx) {
     const doc = new jsPDF('p', 'mm', [80, 150]);
     doc.setFillColor(20, 30, 53); doc.rect(0, 0, 80, 25, 'F');
     doc.setTextColor(212, 175, 55); doc.setFontSize(20); doc.text(INFO.name, 40, 12, {align:'center'});
-    doc.setTextColor(255, 255, 255); doc.setFontSize(6); doc.text(INFO.address, 40, 17, {align:'center'});
-    doc.text(INFO.phone, 40, 21, {align:'center'});
     doc.setTextColor(0,0,0); doc.setFontSize(9);
     let y = 35; let total = 0;
     items.forEach(i => {
@@ -339,21 +327,13 @@ function buildPDF(idx) {
     return doc;
 }
 function downloadInvoice(idx) { const doc = buildPDF(idx); if(doc) doc.save(`Bazro_Inv.pdf`); }
-function generateQR(idx) {
-    const doc = buildPDF(idx); if(!doc) return;
-    const base64 = doc.output('datauristring');
-    document.getElementById("qr-box").innerHTML = "";
-    new QRCode(document.getElementById("qr-box"), { text: base64, width: 200, height: 200 });
-}
 
 // --- STOCK & HISTORY ---
 function renderHistory() {
     document.getElementById("history-list").innerHTML = sales.map((s, idx) => `
         <div class="card" style="padding:15px; border-left: 4px solid var(--gold)">
             <div style="font-size:13px"><b>${s.time}</b></div>
-            <div style="display:flex; gap:10px; margin-top:10px">
-                <button class="btn-pdf" style="padding:8px; font-size:11px" onclick="downloadInvoice(${idx})">PDF</button>
-            </div>
+            <button class="btn-pdf" style="padding:8px; font-size:11px" onclick="downloadInvoice(${idx})">PDF</button>
         </div>`).join("");
 }
 function addProduct() {
