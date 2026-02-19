@@ -134,6 +134,12 @@
                 <tbody id="stock-inventory-list"></tbody>
             </table>
         </div>
+        <div class="card">
+            <h3>Database Backup</h3>
+            <button class="btn-sec" onclick="exportDB()">💾 EXPORT BACKUP</button>
+            <button class="btn-sec" onclick="document.getElementById('importFile').click()">📂 IMPORT BACKUP</button>
+            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importDB(event)">
+        </div>
     </div>
 
     <div id="page-report" class="page">
@@ -307,6 +313,32 @@ async function shareEODReport() {
     }, 'image/jpeg', 0.9);
 }
 
+// --- BACKUP FUNCTIONS (RESTORED) ---
+function exportDB() {
+    const data = JSON.stringify({ products, sales });
+    const blob = new Blob([data], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "Bazro_Backup.json";
+    a.click();
+    notify("Backup Exported", "var(--green)");
+}
+
+function importDB(e) {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        try {
+            const data = JSON.parse(event.target.result);
+            if(data.products) {
+                localStorage.setItem("bazro_products", JSON.stringify(data.products));
+                localStorage.setItem("bazro_sales", JSON.stringify(data.sales || []));
+                location.reload();
+            }
+        } catch(err) { notify("Invalid File", "red"); }
+    };
+    reader.readAsText(e.target.files[0]);
+}
+
 // --- PDF & QR ---
 function buildPDF(idx) {
     const items = (idx === null) ? cart : sales[idx].items;
@@ -327,6 +359,12 @@ function buildPDF(idx) {
     return doc;
 }
 function downloadInvoice(idx) { const doc = buildPDF(idx); if(doc) doc.save(`Bazro_Inv.pdf`); }
+function generateQR(idx) {
+    const doc = buildPDF(idx); if(!doc) return;
+    const base64 = doc.output('datauristring');
+    document.getElementById("qr-box").innerHTML = "";
+    new QRCode(document.getElementById("qr-box"), { text: base64, width: 200, height: 200 });
+}
 
 // --- STOCK & HISTORY ---
 function renderHistory() {
