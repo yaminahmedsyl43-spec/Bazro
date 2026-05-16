@@ -312,7 +312,7 @@ async function shareEODReport() {
     }, 'image/jpeg', 0.9);
 }
 
-// --- BACKUP FUNCTIONS (RESTORED) ---
+// --- BACKUP FUNCTIONS ---
 function exportDB() {
     const data = JSON.stringify({ products, sales });
     const blob = new Blob([data], { type: "application/json" });
@@ -328,10 +328,30 @@ function importDB(e) {
     reader.onload = (event) => {
         try {
             const data = JSON.parse(event.target.result);
-            if(data.products) {
-                localStorage.setItem("bazro_products", JSON.stringify(data.products));
+            if (data.products) {
+                let productsObj = {};
+
+                if (Array.isArray(data.products)) {
+                    // Laptop version format: array of product objects with a barcode field
+                    data.products.forEach(p => {
+                        const key = (p.barcode && p.barcode.trim() !== "") ? p.barcode.trim() : p.id;
+                        productsObj[key] = {
+                            name: p.name || "Unknown",
+                            price: Number(p.price) || 0,
+                            stock: Number(p.stock) || 0
+                        };
+                    });
+                } else {
+                    // Mobile version format: already an object keyed by barcode
+                    productsObj = data.products;
+                }
+
+                localStorage.setItem("bazro_products", JSON.stringify(productsObj));
                 localStorage.setItem("bazro_sales", JSON.stringify(data.sales || []));
-                location.reload();
+                notify("Import Successful!", "var(--green)");
+                setTimeout(() => location.reload(), 800);
+            } else {
+                notify("Invalid File", "red");
             }
         } catch(err) { notify("Invalid File", "red"); }
     };
@@ -389,4 +409,3 @@ window.onload = () => { renderStockList(); };
 </script>
 </body>
 </html>
-
